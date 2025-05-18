@@ -2,12 +2,13 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, SeparatorVertical } from "lucide-react";
 import MainNavigation from "@/components/MainNavigation";
 import Footer from "@/components/Footer";
 import { Link } from "react-router-dom";
 import HeroSection from "@/components/HeroSection";
 import FeatureSection from "@/components/FeatureSection";
+import { Separator } from "@/components/ui/separator";
 
 const Index = () => {
   return (
@@ -128,23 +129,21 @@ const Index = () => {
           </p>
         </div>
 
-        <div className="flex justify-center relative">
-          <div className="absolute -bottom-8 flex justify-center w-full z-20">
-            <div className="flex items-end">
-              <div className="w-[260px] h-[500px] bg-white rounded-[36px] overflow-hidden mx-4 shadow-lg transform -rotate-3">
-                <img src="https://images.unsplash.com/photo-1605810230434-7631ac76ec81" alt="App Screen 1" className="w-full h-full object-cover" />
-              </div>
-              <div className="w-[300px] h-[580px] bg-white rounded-[36px] overflow-hidden mx-4 shadow-xl z-10">
-                <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158" alt="App Screen 2" className="w-full h-full object-cover" />
-              </div>
-              <div className="w-[260px] h-[500px] bg-white rounded-[36px] overflow-hidden mx-4 shadow-lg transform rotate-3">
-                <img src="https://images.unsplash.com/photo-1605810230434-7631ac76ec81" alt="App Screen 3" className="w-full h-full object-cover" />
-              </div>
+        <div className="flex justify-center relative mb-20">
+          <div className="flex items-end">
+            <div className="w-[260px] h-[500px] bg-white rounded-[36px] overflow-hidden mx-4 shadow-lg transform -rotate-3">
+              <img src="https://images.unsplash.com/photo-1605810230434-7631ac76ec81" alt="App Screen 1" className="w-full h-full object-cover" />
+            </div>
+            <div className="w-[300px] h-[580px] bg-white rounded-[36px] overflow-hidden mx-4 shadow-xl z-10">
+              <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158" alt="App Screen 2" className="w-full h-full object-cover" />
+            </div>
+            <div className="w-[260px] h-[500px] bg-white rounded-[36px] overflow-hidden mx-4 shadow-lg transform rotate-3">
+              <img src="https://images.unsplash.com/photo-1605810230434-7631ac76ec81" alt="App Screen 3" className="w-full h-full object-cover" />
             </div>
           </div>
         </div>
 
-        <div className="border border-[#342567] p-10 mt-[400px] grid grid-cols-1 md:grid-cols-3 gap-0 text-center relative">
+        <div className="border border-[#342567] p-10 grid grid-cols-1 md:grid-cols-3 gap-0 text-center relative">
           <div className="pb-10 flex flex-col items-center">
             <div className="text-[90px] font-lyon font-medium text-[#2C1B5D]">24lbs</div>
             <p className="text-2xl text-[#5A5A5A]">
@@ -153,8 +152,9 @@ const Index = () => {
           </div>
           
           <div className="pb-10 flex flex-col items-center relative">
-            <div className="absolute left-0 top-1/2 transform -translate-y-1/2">
-              <div className="w-8 h-8 rounded-full bg-[#342567] flex items-center justify-center text-white text-2xl font-bold">+</div>
+            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 flex items-center h-full">
+              <Separator orientation="vertical" className="h-28 w-[2px] bg-[#8E9196]" />
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#342567] flex items-center justify-center text-white text-2xl font-bold">+</div>
             </div>
             <div className="text-[90px] font-lyon font-medium text-[#2C1B5D]">95%</div>
             <p className="text-2xl text-[#5A5A5A]">
@@ -163,8 +163,9 @@ const Index = () => {
           </div>
           
           <div className="pb-10 flex flex-col items-center relative">
-            <div className="absolute left-0 top-1/2 transform -translate-y-1/2">
-              <div className="w-8 h-8 rounded-full bg-[#342567] flex items-center justify-center text-white text-2xl font-bold">+</div>
+            <div className="absolute left-0 top-1/2 transform -translate-y-1/2 flex items-center h-full">
+              <Separator orientation="vertical" className="h-28 w-[2px] bg-[#8E9196]" />
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#342567] flex items-center justify-center text-white text-2xl font-bold">+</div>
             </div>
             <div className="text-[90px] font-lyon font-medium text-[#2C1B5D]">32%</div>
             <p className="text-2xl text-[#5A5A5A]">
