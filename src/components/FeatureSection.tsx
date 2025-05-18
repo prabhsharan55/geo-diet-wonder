@@ -5,14 +5,13 @@ import { Microscope, Heart, Dumbbell, Circle, Zap, Lock } from "lucide-react";
 interface FeatureItemProps {
   icon: React.ReactNode;
   title: React.ReactNode;
-  iconBgClass?: string;
 }
 
-const FeatureItem = ({ icon, title, iconBgClass = "bg-[#241254]" }: FeatureItemProps) => {
+const FeatureItem = ({ icon, title }: FeatureItemProps) => {
   return (
     <div className="flex flex-col items-center gap-4 relative">
       <div className="relative">
-        <div className={`w-[66px] h-[71px] ${iconBgClass} flex items-center justify-center`}>
+        <div className="w-[66px] h-[71px] flex items-center justify-center">
           {icon}
         </div>
       </div>
@@ -23,12 +22,12 @@ const FeatureItem = ({ icon, title, iconBgClass = "bg-[#241254]" }: FeatureItemP
 
 const FeatureSection = () => {
   return (
-    <section className="w-full bg-[#E7E8FF] p-14 rounded-lg mx-auto my-20 max-w-[1689px]">
+    <section className="w-full p-14 rounded-lg mx-auto my-20 max-w-[1200px]">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
         <div className="flex flex-col items-center">
           <FeatureItem 
-            icon={<Microscope size={36} color="white" />}
-            title="Science-Backed Personalization"
+            icon={<Microscope size={36} color="#241254" />}
+            title={<>Science-Backed<br/>Personalization</>}
           />
         </div>
         
@@ -37,11 +36,11 @@ const FeatureSection = () => {
           <FeatureItem 
             icon={
               <div className="flex items-center">
-                <Heart size={30} color="white" />
-                <Dumbbell size={30} color="white" className="ml-1" />
+                <Heart size={30} color="#241254" />
+                <Dumbbell size={30} color="#241254" className="ml-1" />
               </div>
             }
-            title="Integrated Health & Fitness"
+            title={<>Integrated<br/>Health & Fitness</>}
           />
         </div>
         
@@ -50,18 +49,18 @@ const FeatureSection = () => {
           <FeatureItem 
             icon={
               <div className="relative">
-                <Circle size={36} color="white" />
-                <Zap size={24} color="white" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+                <Circle size={36} color="#241254" />
+                <Zap size={24} color="#241254" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
               </div>
             }
-            title="Sustainable & Measurable Results"
+            title={<>Sustainable &<br/>Measurable Results</>}
           />
         </div>
         
         <div className="flex flex-col items-center relative">
           <div className="absolute h-full w-[1px] bg-gray-300 left-0"></div>
           <FeatureItem 
-            icon={<Lock size={36} color="white" />}
+            icon={<Lock size={36} color="#241254" />}
             title={<>Privacy &<br/>Control</>}
           />
         </div>

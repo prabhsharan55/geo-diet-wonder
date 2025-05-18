@@ -1,11 +1,9 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
-import { ArrowRight, SeparatorVertical } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import MainNavigation from "@/components/MainNavigation";
 import Footer from "@/components/Footer";
-import { Link } from "react-router-dom";
 import HeroSection from "@/components/HeroSection";
 import FeatureSection from "@/components/FeatureSection";
 import { Separator } from "@/components/ui/separator";
@@ -54,7 +52,7 @@ const Index = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Product Card 1 */}
-          <div className="rounded-3xl overflow-hidden">
+          <div className="rounded-3xl overflow-hidden h-[700px]">
             <div className="relative h-[520px]">
               <img src="https://images.unsplash.com/photo-1518495973542-4542c06a5843" alt="Workout sessions" className="w-full h-full object-cover" />
               <div className="absolute top-10 left-10">
@@ -63,8 +61,8 @@ const Index = () => {
                 </span>
               </div>
             </div>
-            <div className="bg-[#EBEAEF] p-10 relative rounded-b-3xl">
-              <h3 className="text-3xl font-medium text-[#102F32] mb-2 truncate">In-person workout sessions</h3>
+            <div className="bg-[#EBEAEF] p-10 relative rounded-b-3xl h-[180px]">
+              <h3 className="text-3xl font-medium text-[#102F32] mb-2 truncate">Workout sessions</h3>
               <p className="text-lg text-[#102F32] opacity-70 mb-4">Starting at $225/month</p>
               <div className="absolute right-10 bottom-10">
                 <div className="w-[55px] h-[55px] rounded-full bg-gradient-to-b from-[#312164] to-[#7B80C6] flex items-center justify-center">
@@ -75,7 +73,7 @@ const Index = () => {
           </div>
 
           {/* Product Card 2 */}
-          <div className="rounded-3xl overflow-hidden">
+          <div className="rounded-3xl overflow-hidden h-[700px]">
             <div className="relative h-[520px]">
               <img src="https://images.unsplash.com/photo-1500673922987-e212871fec22" alt="GeoDiet" className="w-full h-full object-cover" />
               <div className="absolute top-10 left-10">
@@ -84,7 +82,7 @@ const Index = () => {
                 </span>
               </div>
             </div>
-            <div className="bg-[#EBEAEF] p-10 relative rounded-b-3xl">
+            <div className="bg-[#EBEAEF] p-10 relative rounded-3xl h-[180px]">
               <h3 className="text-3xl font-medium text-[#102F32] mb-2">GeoDiet Access</h3>
               <p className="text-lg text-[#102F32] opacity-70 mb-4">$0 out-of-pocket for most members</p>
               <div className="absolute right-10 bottom-10">
@@ -96,7 +94,7 @@ const Index = () => {
           </div>
 
           {/* Product Card 3 */}
-          <div className="rounded-3xl overflow-hidden">
+          <div className="rounded-3xl overflow-hidden h-[700px]">
             <div className="relative h-[520px]">
               <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158" alt="CGM App" className="w-full h-full object-cover" />
               <div className="absolute top-10 left-10">
@@ -105,7 +103,7 @@ const Index = () => {
                 </span>
               </div>
             </div>
-            <div className="bg-[#EBEAEF] p-10 relative rounded-b-3xl">
+            <div className="bg-[#EBEAEF] p-10 relative rounded-3xl h-[180px]">
               <h3 className="text-3xl font-medium text-[#102F32] mb-2">CGM Monitoring</h3>
               <p className="text-lg text-[#102F32] opacity-70 mb-4">Use Nutrisense with your own CGMs</p>
               <div className="absolute right-10 bottom-10">
@@ -120,7 +118,7 @@ const Index = () => {
 
       {/* Eat Smart Section with Mobile Phones */}
       <section className="py-16 px-4 md:px-8 lg:px-20 bg-[#E6E8FF] rounded-3xl mx-auto max-w-[1847px] my-20 relative">
-        <div className="text-center mb-16">
+        <div className="text-center mb-32">
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-lyon font-medium mb-8">
             Eat smart. Move smarter. Let data guide the way.
           </h2>
@@ -129,21 +127,21 @@ const Index = () => {
           </p>
         </div>
 
-        <div className="flex justify-center relative mb-20">
-          <div className="flex items-end">
+        <div className="flex justify-center relative mb-0">
+          <div className="flex items-end absolute bottom-[-60px] z-10">
             <div className="w-[260px] h-[500px] bg-white rounded-[36px] overflow-hidden mx-4 shadow-lg transform -rotate-3">
-              <img src="https://images.unsplash.com/photo-1605810230434-7631ac76ec81" alt="App Screen 1" className="w-full h-full object-cover" />
+              <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158" alt="App Screen 1" className="w-full h-full object-cover" />
             </div>
             <div className="w-[300px] h-[580px] bg-white rounded-[36px] overflow-hidden mx-4 shadow-xl z-10">
               <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158" alt="App Screen 2" className="w-full h-full object-cover" />
             </div>
             <div className="w-[260px] h-[500px] bg-white rounded-[36px] overflow-hidden mx-4 shadow-lg transform rotate-3">
-              <img src="https://images.unsplash.com/photo-1605810230434-7631ac76ec81" alt="App Screen 3" className="w-full h-full object-cover" />
+              <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158" alt="App Screen 3" className="w-full h-full object-cover" />
             </div>
           </div>
         </div>
 
-        <div className="border border-[#342567] p-10 grid grid-cols-1 md:grid-cols-3 gap-0 text-center relative">
+        <div className="border border-[#342567] p-10 grid grid-cols-1 md:grid-cols-3 gap-0 text-center relative mt-[120px]">
           <div className="pb-10 flex flex-col items-center">
             <div className="text-[90px] font-lyon font-medium text-[#2C1B5D]">24lbs</div>
             <p className="text-2xl text-[#5A5A5A]">
@@ -179,7 +177,7 @@ const Index = () => {
       <section className="py-24 px-4 md:px-8 lg:px-40">
         <div className="flex flex-col lg:flex-row gap-12">
           <div className="lg:w-1/2">
-            <img src="https://images.unsplash.com/photo-1518495973542-4542c06a5843" alt="Woman Exercising with Laptop" className="w-full h-auto rounded-3xl" />
+            <img src="https://images.unsplash.com/photo-1518495973542-4542c06a5843" alt="Woman Exercising with Laptop" className="w-full h-[500px] object-cover rounded-3xl" />
           </div>
           <div className="lg:w-1/2">
             <p className="text-lg font-medium mb-2">The Science</p>
@@ -207,9 +205,9 @@ const Index = () => {
       {/* Call to Action Section */}
       <section className="py-16 px-4 md:px-8 lg:px-40 mb-20">
         <div className="flex flex-col lg:flex-row gap-8">
-          <div className="lg:w-1/2 border border-gray-200 rounded-3xl p-12 lg:p-24 flex flex-col justify-center order-2 lg:order-1">
+          <div className="lg:w-1/2 border border-gray-200 rounded-3xl p-12 lg:p-24 flex flex-col justify-center order-1">
             <h2 className="text-4xl md:text-5xl font-lyon font-normal mb-8">
-              Ready to elevate your<br />health with GeoDiet?
+              Ready to elevate<br />your health with GeoDiet?
             </h2>
             <p className="text-xl text-[#363230] mb-10">
               Track, Workouts, Balanced diets, Live sessions and many more.
@@ -218,11 +216,11 @@ const Index = () => {
               Get Started for Free
             </Button>
           </div>
-          <div className="lg:w-1/2 bg-[#E3E1DC] rounded-3xl p-12 lg:p-24 relative overflow-hidden order-1 lg:order-2">
+          <div className="lg:w-1/2 bg-[#E3E1DC] rounded-3xl p-12 lg:p-24 relative overflow-hidden order-2">
             <img 
-              src="https://images.unsplash.com/photo-1605810230434-7631ac76ec81" 
+              src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158" 
               alt="Video Call" 
-              className="w-full h-full object-cover absolute inset-0"
+              className="w-full h-[500px] object-cover absolute inset-0"
             />
           </div>
         </div>
@@ -232,7 +230,7 @@ const Index = () => {
       <section className="py-16 px-4 md:px-8 lg:px-40">
         <div className="flex flex-col lg:flex-row gap-12">
           <div className="lg:w-1/2">
-            <img src="https://images.unsplash.com/photo-1582562124811-c09040d0a901" alt="Handshake" className="w-full h-auto rounded-3xl" />
+            <img src="https://images.unsplash.com/photo-1582562124811-c09040d0a901" alt="Handshake" className="w-full h-[500px] object-cover rounded-3xl" />
           </div>
           <div className="lg:w-1/2 flex flex-col justify-center">
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-lyon font-medium mb-6">
@@ -386,8 +384,7 @@ const Index = () => {
             </div>
           </div>
 
-          <style>
-            {`
+          <style jsx>{`
             @keyframes marquee {
               0% {
                 transform: translateX(0);
@@ -399,8 +396,7 @@ const Index = () => {
             .animate-marquee {
               animation: marquee 30s linear infinite;
             }
-            `}
-          </style>
+          `}</style>
         </div>
       </section>
 

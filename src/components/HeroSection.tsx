@@ -1,7 +1,6 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
 
 const HeroSection = () => {
   return (
@@ -23,34 +22,25 @@ const HeroSection = () => {
         </Button>
       </div>
 
-      {/* ECG Monitor Animation */}
-      <div className="absolute left-[20%] right-[20%] bottom-[300px] h-[100px] flex items-center justify-center">
-        <svg viewBox="0 0 1000 100" className="w-full">
-          <path 
-            d="M0,50 Q50,50 60,50 T100,50 T150,50 T200,50 T250,50 T300,50 L350,50 L380,20 L410,80 L440,50 L470,50 L500,10 L530,90 L560,50 L590,50 L620,30 L650,70 L680,50 L710,50 L740,50 L800,50 T850,50 T900,50 T950,50 T1000,50" 
-            fill="none" 
-            stroke="#3D3174" 
-            strokeWidth="2"
-            className="ecg-line"
-          />
-        </svg>
-        <style>
-          {`
-          @keyframes ecg-animation {
-            0% {
-              stroke-dashoffset: 1000;
-            }
-            100% {
-              stroke-dashoffset: 0;
-            }
-          }
-          .ecg-line {
-            stroke-dasharray: 1000;
-            stroke-dashoffset: 1000;
-            animation: ecg-animation 3s linear infinite;
-          }
-          `}
-        </style>
+      {/* Heart beat with beating heart animation */}
+      <div className="flex justify-center mt-12">
+        <div className="relative w-full max-w-[600px] h-[40px]">
+          <svg viewBox="0 0 1000 40" className="w-full">
+            <path 
+              d="M0,20 Q25,20 30,20 T50,20 T75,20 T100,20 T125,20 T150,20 L175,20 L190,10 L205,30 L220,20 L235,20 L250,5 L265,35 L280,20 L295,20 L310,15 L325,25 L340,20 L355,20 L370,20 L400,20 T450,20 T500,20 T550,20"
+              fill="none" 
+              stroke="#ea384c" 
+              strokeWidth="1.5"
+              className="ecg-line"
+              strokeOpacity="0.7"
+            />
+          </svg>
+          
+          {/* Beating heart in background */}
+          <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 -z-10">
+            <div className="text-[#ea384c] opacity-20 beating-heart">❤</div>
+          </div>
+        </div>
       </div>
 
       {/* Floating elements */}
@@ -83,18 +73,46 @@ const HeroSection = () => {
         <div className="relative w-full h-full">
           <div className="absolute left-[20%] top-[5%] w-[260px] h-[567px] bg-white rounded-[36px] overflow-hidden z-10">
             <img 
-              src="https://placehold.co/261x1310" 
+              src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158" 
               alt="App Screen" 
-              className="w-full h-auto transform -translate-y-[623px]"
+              className="w-full h-full object-cover"
             />
           </div>
           <img 
-            src="https://placehold.co/496x660" 
+            src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158" 
             alt="Hand Holding Phone" 
             className="absolute inset-0 w-full h-full object-contain"
           />
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes ecg-animation {
+          0% {
+            stroke-dashoffset: 1000;
+          }
+          100% {
+            stroke-dashoffset: 0;
+          }
+        }
+        .ecg-line {
+          stroke-dasharray: 1000;
+          stroke-dashoffset: 1000;
+          animation: ecg-animation 3s linear infinite;
+        }
+        @keyframes heartbeat {
+          0%, 100% {
+            transform: scale(1);
+          }
+          50% {
+            transform: scale(1.3);
+          }
+        }
+        .beating-heart {
+          font-size: 2rem;
+          animation: heartbeat 1.5s ease-in-out infinite;
+        }
+      `}</style>
     </section>
   );
 };
