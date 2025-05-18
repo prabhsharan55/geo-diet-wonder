@@ -23,6 +23,34 @@ const HeroSection = () => {
         </Button>
       </div>
 
+      {/* ECG Monitor Animation */}
+      <div className="absolute left-[20%] right-[20%] bottom-[300px] h-[100px] flex items-center justify-center">
+        <svg viewBox="0 0 1000 100" className="w-full">
+          <path 
+            d="M0,50 Q50,50 60,50 T100,50 T150,50 T200,50 T250,50 T300,50 L350,50 L380,20 L410,80 L440,50 L470,50 L500,10 L530,90 L560,50 L590,50 L620,30 L650,70 L680,50 L710,50 L740,50 L800,50 T850,50 T900,50 T950,50 T1000,50" 
+            fill="none" 
+            stroke="#3D3174" 
+            strokeWidth="2"
+            className="ecg-line"
+          />
+        </svg>
+        <style jsx>{`
+          @keyframes ecg-animation {
+            0% {
+              stroke-dashoffset: 1000;
+            }
+            100% {
+              stroke-dashoffset: 0;
+            }
+          }
+          .ecg-line {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: ecg-animation 3s linear infinite;
+          }
+        `}</style>
+      </div>
+
       {/* Floating elements */}
       <div className="absolute left-[20%] top-[650px] -rotate-3 bg-[#BED1AB] rounded-md p-4 z-10 max-w-[276px]">
         <div className="relative">

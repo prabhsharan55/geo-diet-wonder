@@ -55,15 +55,15 @@ const Index = () => {
           {/* Product Card 1 */}
           <div className="rounded-3xl overflow-hidden">
             <div className="relative h-[520px]">
-              <img src="https://images.unsplash.com/photo-1618160702438-9b02ab6515c9" alt="Workout sessions" className="w-full h-full object-cover" />
+              <img src="https://images.unsplash.com/photo-1518495973542-4542c06a5843" alt="Workout sessions" className="w-full h-full object-cover" />
               <div className="absolute top-10 left-10">
                 <span className="bg-[#F4D374] text-[#102F32] text-sm font-semibold uppercase rounded-full px-5 py-2">
                   Subscription
                 </span>
               </div>
             </div>
-            <div className="bg-[#EBEAEF] p-10 relative">
-              <h3 className="text-3xl font-medium text-[#102F32] mb-2">In-person workout sessions</h3>
+            <div className="bg-[#EBEAEF] p-10 relative rounded-b-3xl">
+              <h3 className="text-3xl font-medium text-[#102F32] mb-2 truncate">In-person workout sessions</h3>
               <p className="text-lg text-[#102F32] opacity-70 mb-4">Starting at $225/month</p>
               <div className="absolute right-10 bottom-10">
                 <div className="w-[55px] h-[55px] rounded-full bg-gradient-to-b from-[#312164] to-[#7B80C6] flex items-center justify-center">
@@ -76,14 +76,14 @@ const Index = () => {
           {/* Product Card 2 */}
           <div className="rounded-3xl overflow-hidden">
             <div className="relative h-[520px]">
-              <img src="https://images.unsplash.com/photo-1721322800607-8c38375eef04" alt="GeoDiet" className="w-full h-full object-cover" />
+              <img src="https://images.unsplash.com/photo-1500673922987-e212871fec22" alt="GeoDiet" className="w-full h-full object-cover" />
               <div className="absolute top-10 left-10">
                 <span className="bg-[#BED1AB] text-[#102F32] text-sm font-semibold uppercase rounded-full px-5 py-2">
                   certified GeoDiet partners
                 </span>
               </div>
             </div>
-            <div className="bg-[#EBEAEF] p-10 relative">
+            <div className="bg-[#EBEAEF] p-10 relative rounded-b-3xl">
               <h3 className="text-3xl font-medium text-[#102F32] mb-2">GeoDiet Access</h3>
               <p className="text-lg text-[#102F32] opacity-70 mb-4">$0 out-of-pocket for most members</p>
               <div className="absolute right-10 bottom-10">
@@ -96,15 +96,15 @@ const Index = () => {
 
           {/* Product Card 3 */}
           <div className="rounded-3xl overflow-hidden">
-            <div className="relative h-[520px] bg-[#E6E8FF]">
-              <img src="https://images.unsplash.com/photo-1500673922987-e212871fec22" alt="CGM App" className="w-full h-full object-cover" />
+            <div className="relative h-[520px]">
+              <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158" alt="CGM App" className="w-full h-full object-cover" />
               <div className="absolute top-10 left-10">
                 <span className="bg-[#A6B8B9] text-[#102F32] text-sm font-semibold uppercase rounded-full px-5 py-2">
                   CGM App
                 </span>
               </div>
             </div>
-            <div className="bg-[#EBEAEF] p-10 relative">
+            <div className="bg-[#EBEAEF] p-10 relative rounded-b-3xl">
               <h3 className="text-3xl font-medium text-[#102F32] mb-2">CGM Monitoring</h3>
               <p className="text-lg text-[#102F32] opacity-70 mb-4">Use Nutrisense with your own CGMs</p>
               <div className="absolute right-10 bottom-10">
@@ -117,8 +117,8 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Eat Smart Section */}
-      <section className="py-16 px-4 md:px-8 lg:px-20 bg-[#E6E8FF] rounded-3xl mx-auto max-w-[1847px] my-20">
+      {/* Eat Smart Section with Mobile Phones */}
+      <section className="py-16 px-4 md:px-8 lg:px-20 bg-[#E6E8FF] rounded-3xl mx-auto max-w-[1847px] my-20 relative">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-lyon font-medium mb-8">
             Eat smart. Move smarter. Let data guide the way.
@@ -128,29 +128,44 @@ const Index = () => {
           </p>
         </div>
 
-        <div className="flex flex-col lg:flex-row justify-around mb-20">
-          <div className="max-w-[330px] mx-auto lg:mx-0 mb-10 lg:mb-0">
-            <img src="https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07" alt="App Demo" className="w-full h-auto" />
-          </div>
-          <div className="max-w-[590px] mx-auto lg:mx-0 mb-10 lg:mb-0">
-            <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb" alt="App Demo" className="w-full h-auto" />
+        <div className="flex justify-center relative">
+          <div className="absolute -bottom-8 flex justify-center w-full z-20">
+            <div className="flex items-end">
+              <div className="w-[260px] h-[500px] bg-white rounded-[36px] overflow-hidden mx-4 shadow-lg transform -rotate-3">
+                <img src="https://images.unsplash.com/photo-1605810230434-7631ac76ec81" alt="App Screen 1" className="w-full h-full object-cover" />
+              </div>
+              <div className="w-[300px] h-[580px] bg-white rounded-[36px] overflow-hidden mx-4 shadow-xl z-10">
+                <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158" alt="App Screen 2" className="w-full h-full object-cover" />
+              </div>
+              <div className="w-[260px] h-[500px] bg-white rounded-[36px] overflow-hidden mx-4 shadow-lg transform rotate-3">
+                <img src="https://images.unsplash.com/photo-1605810230434-7631ac76ec81" alt="App Screen 3" className="w-full h-full object-cover" />
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="border border-[#342567] p-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          <div className="border-r border-[#352669] pb-10">
+        <div className="border border-[#342567] p-10 mt-[400px] grid grid-cols-1 md:grid-cols-3 gap-0 text-center relative">
+          <div className="pb-10 flex flex-col items-center">
             <div className="text-[90px] font-lyon font-medium text-[#2C1B5D]">24lbs</div>
             <p className="text-2xl text-[#5A5A5A]">
               Achieve your weight loss goals<br />in 90 days
             </p>
           </div>
-          <div className="border-r border-[#2D1C5E] pb-10">
+          
+          <div className="pb-10 flex flex-col items-center relative">
+            <div className="absolute left-0 top-1/2 transform -translate-y-1/2">
+              <div className="w-8 h-8 rounded-full bg-[#342567] flex items-center justify-center text-white text-2xl font-bold">+</div>
+            </div>
             <div className="text-[90px] font-lyon font-medium text-[#2C1B5D]">95%</div>
             <p className="text-2xl text-[#5A5A5A]">
               Reach goals with expert support<br />Empowered by dietitian 1:1s
             </p>
           </div>
-          <div className="pb-10">
+          
+          <div className="pb-10 flex flex-col items-center relative">
+            <div className="absolute left-0 top-1/2 transform -translate-y-1/2">
+              <div className="w-8 h-8 rounded-full bg-[#342567] flex items-center justify-center text-white text-2xl font-bold">+</div>
+            </div>
             <div className="text-[90px] font-lyon font-medium text-[#2C1B5D]">32%</div>
             <p className="text-2xl text-[#5A5A5A]">
               Improvement in energy levels<br />within 7 weeks
@@ -163,7 +178,7 @@ const Index = () => {
       <section className="py-24 px-4 md:px-8 lg:px-40">
         <div className="flex flex-col lg:flex-row gap-12">
           <div className="lg:w-1/2">
-            <img src="https://images.unsplash.com/photo-1500673922987-e212871fec22" alt="Tracking Demo" className="w-full h-auto rounded-3xl" />
+            <img src="https://images.unsplash.com/photo-1518495973542-4542c06a5843" alt="Woman Exercising with Laptop" className="w-full h-auto rounded-3xl" />
           </div>
           <div className="lg:w-1/2">
             <p className="text-lg font-medium mb-2">The Science</p>
@@ -191,19 +206,23 @@ const Index = () => {
       {/* Call to Action Section */}
       <section className="py-16 px-4 md:px-8 lg:px-40 mb-20">
         <div className="flex flex-col lg:flex-row gap-8">
-          <div className="lg:w-1/2 bg-[#E3E1DC] rounded-3xl p-12 lg:p-24 relative overflow-hidden">
-            <img src="https://images.unsplash.com/photo-1721322800607-8c38375eef04" alt="Video Call" className="w-full h-auto object-cover absolute inset-0" />
-          </div>
-          <div className="lg:w-1/2 border border-gray-200 rounded-3xl p-12 lg:p-24 flex flex-col justify-center">
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-lyon font-normal mb-8">
+          <div className="lg:w-1/2 border border-gray-200 rounded-3xl p-12 lg:p-24 flex flex-col justify-center order-2 lg:order-1">
+            <h2 className="text-4xl md:text-5xl font-lyon font-normal mb-8">
               Ready to elevate your<br />health with GeoDiet?
             </h2>
-            <p className="text-xl md:text-2xl text-[#363230] mb-10">
+            <p className="text-xl text-[#363230] mb-10">
               Track, Workouts, Balanced diets, Live sessions and many more.
             </p>
             <Button className="bg-gradient-to-r from-[#3A2D70] to-[#7072B7] rounded-full text-lg w-fit uppercase">
               Get Started for Free
             </Button>
+          </div>
+          <div className="lg:w-1/2 bg-[#E3E1DC] rounded-3xl p-12 lg:p-24 relative overflow-hidden order-1 lg:order-2">
+            <img 
+              src="https://images.unsplash.com/photo-1605810230434-7631ac76ec81" 
+              alt="Video Call" 
+              className="w-full h-full object-cover absolute inset-0"
+            />
           </div>
         </div>
       </section>
@@ -212,7 +231,7 @@ const Index = () => {
       <section className="py-16 px-4 md:px-8 lg:px-40">
         <div className="flex flex-col lg:flex-row gap-12">
           <div className="lg:w-1/2">
-            <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb" alt="Partner" className="w-full h-auto rounded-3xl" />
+            <img src="https://images.unsplash.com/photo-1582562124811-c09040d0a901" alt="Handshake" className="w-full h-auto rounded-3xl" />
           </div>
           <div className="lg:w-1/2 flex flex-col justify-center">
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-lyon font-medium mb-6">
@@ -274,7 +293,7 @@ const Index = () => {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-20 px-4 md:px-8 lg:px-40">
+      <section className="py-20 px-4 md:px-8 lg:px-40 overflow-hidden">
         <div className="text-center mb-12">
           <p className="text-lg font-medium mb-2">Testimonials</p>
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-lyon font-medium mb-6">Real Stories, Real Transformations</h2>
@@ -283,53 +302,103 @@ const Index = () => {
           </p>
         </div>
 
-        <Carousel className="w-full">
-          <CarouselContent className="-ml-4">
-            <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3">
-              <Card className="bg-[#E6E8FF] h-full rounded-3xl">
-                <CardContent className="p-8">
-                  <p className="text-2xl mb-6">
-                    I think the GeoDiet CGM program is a great value for what you're getting. Especially since you can also talk to a dietitian while using the service.
-                  </p>
-                  <div className="mt-auto">
-                    <p className="font-normal text-xl">Stuart Tutler</p>
-                    <div className="mt-4 w-[140px] h-[58px] bg-[#FED564]"></div>
+        <div className="overflow-hidden relative">
+          <div className="flex animate-marquee">
+            {/* Testimonial 1 - Image */}
+            <div className="min-w-[300px] h-[400px] rounded-3xl overflow-hidden mx-2">
+              <img src="https://images.unsplash.com/photo-1531297484001-80022131f5a1" alt="Testimonial Person" className="w-full h-full object-cover" />
+            </div>
+            
+            {/* Testimonial 1 - Content */}
+            <div className="min-w-[300px] h-[400px] bg-[#E6E8FF] rounded-3xl p-8 mx-2">
+              <div className="h-full flex flex-col">
+                <p className="text-2xl mb-6">
+                  I think the GeoDiet CGM program is a great value for what you're getting. Especially since you can also talk to a dietitian while using the service.
+                </p>
+                <div className="mt-auto">
+                  <p className="font-normal text-xl">Stuart Tutler</p>
+                  <div className="mt-2 flex">
+                    {[...Array(5)].map((_, i) => (
+                      <svg key={i} width="24" height="24" viewBox="0 0 24 24" fill="#FED564">
+                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                      </svg>
+                    ))}
                   </div>
-                </CardContent>
-              </Card>
-            </CarouselItem>
+                </div>
+              </div>
+            </div>
 
-            <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3">
-              <Card className="h-full rounded-3xl overflow-hidden">
-                <CardContent className="p-0">
-                  <img src="https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07" alt="Testimonial" className="w-full h-full object-cover" />
-                </CardContent>
-              </Card>
-            </CarouselItem>
-
-            <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3">
-              <Card className="bg-[#A6B8B9] h-full rounded-3xl">
-                <CardContent className="p-8">
-                  <p className="text-2xl mb-6">
-                    I knew I wanted to keep using the CGM because when I didn't have it, I missed it! . . . the 12 months is like a yearly gym membership.
-                  </p>
-                  <div className="mt-auto">
-                    <p className="font-normal text-xl">Stuart Tutler</p>
-                    <div className="mt-4 w-[140px] h-[58px] bg-[#FED564]"></div>
+            {/* Testimonial 2 - Image Before/After */}
+            <div className="min-w-[300px] h-[400px] rounded-3xl overflow-hidden mx-2 relative">
+              <div className="flex h-full">
+                <div className="w-1/2 h-full relative">
+                  <img src="https://images.unsplash.com/photo-1518495973542-4542c06a5843" alt="Before" className="w-full h-full object-cover" />
+                  <div className="absolute top-4 left-4 bg-black text-white px-2 py-1 rounded">Before</div>
+                </div>
+                <div className="w-1/2 h-full relative">
+                  <img src="https://images.unsplash.com/photo-1518495973542-4542c06a5843" alt="After" className="w-full h-full object-cover" />
+                  <div className="absolute top-4 right-4 bg-black text-white px-2 py-1 rounded">After</div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Testimonial 2 - Content */}
+            <div className="min-w-[300px] h-[400px] bg-[#A6B8B9] rounded-3xl p-8 mx-2">
+              <div className="h-full flex flex-col">
+                <p className="text-2xl mb-6">
+                  I knew I wanted to keep using the CGM because when I didn't have it, I missed it! . . . the 12 months is like a yearly gym membership.
+                </p>
+                <div className="mt-auto">
+                  <p className="font-normal text-xl">John Smith</p>
+                  <div className="mt-2 flex">
+                    {[...Array(5)].map((_, i) => (
+                      <svg key={i} width="24" height="24" viewBox="0 0 24 24" fill="#FED564">
+                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                      </svg>
+                    ))}
                   </div>
-                </CardContent>
-              </Card>
-            </CarouselItem>
+                </div>
+              </div>
+            </div>
+            
+            {/* Additional testimonials repeated for marquee effect */}
+            <div className="min-w-[300px] h-[400px] rounded-3xl overflow-hidden mx-2">
+              <img src="https://images.unsplash.com/photo-1618160702438-9b02ab6515c9" alt="Testimonial" className="w-full h-full object-cover" />
+            </div>
+            
+            <div className="min-w-[300px] h-[400px] bg-[#BED1AB] rounded-3xl p-8 mx-2">
+              <div className="h-full flex flex-col">
+                <p className="text-2xl mb-6">
+                  The personalized nutrition plan changed my life. I've lost 15lbs and have so much more energy throughout the day!
+                </p>
+                <div className="mt-auto">
+                  <p className="font-normal text-xl">Maria Johnson</p>
+                  <div className="mt-2 flex">
+                    {[...Array(5)].map((_, i) => (
+                      <svg key={i} width="24" height="24" viewBox="0 0 24 24" fill="#FED564">
+                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                      </svg>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-            <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3">
-              <Card className="h-full rounded-3xl overflow-hidden">
-                <CardContent className="p-0">
-                  <img src="https://images.unsplash.com/photo-1618160702438-9b02ab6515c9" alt="Testimonial" className="w-full h-full object-cover" />
-                </CardContent>
-              </Card>
-            </CarouselItem>
-          </CarouselContent>
-        </Carousel>
+          <style jsx>{`
+            @keyframes marquee {
+              0% {
+                transform: translateX(0);
+              }
+              100% {
+                transform: translateX(-50%);
+              }
+            }
+            .animate-marquee {
+              animation: marquee 30s linear infinite;
+            }
+          `}</style>
+        </div>
       </section>
 
       <Footer />

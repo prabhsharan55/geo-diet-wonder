@@ -2,7 +2,15 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { Menu } from "lucide-react";
+import { Menu, ChevronDown } from "lucide-react";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
 
 const MainNavigation = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -19,7 +27,7 @@ const MainNavigation = () => {
         <div className="max-w-[1920px] mx-auto h-full flex items-center justify-between">
           <div className="flex items-center">
             <Link to="/">
-              <h1 className="text-4xl md:text-5xl font-normal">
+              <h1 className="text-3xl md:text-4xl font-normal">
                 <span className="text-black">Geo</span>
                 <span className="text-[#1B5E20]">Di</span>
                 <span className="text-black">et</span>
@@ -29,19 +37,35 @@ const MainNavigation = () => {
 
           <nav className="hidden md:flex items-center gap-12">
             <div className="flex items-center gap-12">
-              <Link to="/shop" className="flex items-center gap-1">
-                <span className="text-[#2C2C2C] text-lg">Shop</span>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M2 5L6 9L10 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </Link>
+              <NavigationMenu>
+                <NavigationMenuList>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger className="text-[#2C2C2C] text-lg bg-transparent hover:bg-transparent">Shop</NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <div className="grid gap-3 p-4 w-[400px]">
+                        <Link to="/shop/cgm" className="block p-2 hover:bg-gray-100 rounded-md">CGM Monitoring</Link>
+                        <Link to="/shop/workouts" className="block p-2 hover:bg-gray-100 rounded-md">Workout Plans</Link>
+                        <Link to="/shop/diet" className="block p-2 hover:bg-gray-100 rounded-md">Diet Plans</Link>
+                      </div>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                </NavigationMenuList>
+              </NavigationMenu>
               
-              <Link to="/nutritionists" className="flex items-center gap-1">
-                <span className="text-[#2C2C2C] text-lg">Nutritionists</span>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M2 5L6 9L10 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              </Link>
+              <NavigationMenu>
+                <NavigationMenuList>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger className="text-[#2C2C2C] text-lg bg-transparent hover:bg-transparent">Nutritionists</NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <div className="grid gap-3 p-4 w-[400px]">
+                        <Link to="/nutritionists/find" className="block p-2 hover:bg-gray-100 rounded-md">Find a Nutritionist</Link>
+                        <Link to="/nutritionists/become" className="block p-2 hover:bg-gray-100 rounded-md">Become a Nutritionist</Link>
+                        <Link to="/nutritionists/about" className="block p-2 hover:bg-gray-100 rounded-md">About our Experts</Link>
+                      </div>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                </NavigationMenuList>
+              </NavigationMenu>
 
               <Link to="/journal" className="text-[#2C2C2C] text-lg">Journal</Link>
               <Link to="/our-story" className="text-[#2C2C2C] text-lg">Our Story</Link>
