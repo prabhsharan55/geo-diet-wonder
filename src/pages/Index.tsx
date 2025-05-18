@@ -55,37 +55,41 @@ const Index = () => {
           {/* Product Card 1 */}
           <div className="rounded-3xl overflow-hidden">
             <div className="relative h-[520px]">
-              <img src="https://placehold.co/752x620" alt="Workout sessions" className="w-full h-full object-cover" />
+              <img src="https://images.unsplash.com/photo-1618160702438-9b02ab6515c9" alt="Workout sessions" className="w-full h-full object-cover" />
               <div className="absolute top-10 left-10">
                 <span className="bg-[#F4D374] text-[#102F32] text-sm font-semibold uppercase rounded-full px-5 py-2">
                   Subscription
                 </span>
               </div>
             </div>
-            <div className="bg-[#EBEAEF] p-10">
+            <div className="bg-[#EBEAEF] p-10 relative">
               <h3 className="text-3xl font-medium text-[#102F32] mb-2">In-person workout sessions</h3>
               <p className="text-lg text-[#102F32] opacity-70 mb-4">Starting at $225/month</p>
-              <div className="absolute right-10 bottom-10 w-[55px] h-[55px] rounded-full bg-gradient-to-b from-[#312164] to-[#7B80C6] flex items-center justify-center">
-                <ArrowRight className="text-white transform rotate-45" />
+              <div className="absolute right-10 bottom-10">
+                <div className="w-[55px] h-[55px] rounded-full bg-gradient-to-b from-[#312164] to-[#7B80C6] flex items-center justify-center">
+                  <ArrowRight className="text-white transform rotate-45" />
+                </div>
               </div>
             </div>
           </div>
 
           {/* Product Card 2 */}
           <div className="rounded-3xl overflow-hidden">
-            <div className="relative h-[520px] bg-cover">
-              <img src="https://placehold.co/629x544" alt="GeoDiet" className="w-full h-full object-cover" />
+            <div className="relative h-[520px]">
+              <img src="https://images.unsplash.com/photo-1721322800607-8c38375eef04" alt="GeoDiet" className="w-full h-full object-cover" />
               <div className="absolute top-10 left-10">
                 <span className="bg-[#BED1AB] text-[#102F32] text-sm font-semibold uppercase rounded-full px-5 py-2">
                   certified GeoDiet partners
                 </span>
               </div>
             </div>
-            <div className="bg-[#EBEAEF] p-10">
+            <div className="bg-[#EBEAEF] p-10 relative">
               <h3 className="text-3xl font-medium text-[#102F32] mb-2">GeoDiet Access</h3>
               <p className="text-lg text-[#102F32] opacity-70 mb-4">$0 out-of-pocket for most members</p>
-              <div className="absolute right-10 bottom-10 w-[55px] h-[55px] rounded-full bg-gradient-to-b from-[#312164] to-[#7B80C6] flex items-center justify-center">
-                <ArrowRight className="text-white transform rotate-45" />
+              <div className="absolute right-10 bottom-10">
+                <div className="w-[55px] h-[55px] rounded-full bg-gradient-to-b from-[#312164] to-[#7B80C6] flex items-center justify-center">
+                  <ArrowRight className="text-white transform rotate-45" />
+                </div>
               </div>
             </div>
           </div>
@@ -93,18 +97,20 @@ const Index = () => {
           {/* Product Card 3 */}
           <div className="rounded-3xl overflow-hidden">
             <div className="relative h-[520px] bg-[#E6E8FF]">
-              <img src="https://placehold.co/318x492" alt="CGM App" className="w-[318px] h-[492px] object-contain mx-auto my-7" />
+              <img src="https://images.unsplash.com/photo-1500673922987-e212871fec22" alt="CGM App" className="w-[318px] h-[492px] object-contain mx-auto my-7" />
               <div className="absolute top-10 left-10">
                 <span className="bg-[#A6B8B9] text-[#102F32] text-sm font-semibold uppercase rounded-full px-5 py-2">
                   CGM App
                 </span>
               </div>
             </div>
-            <div className="bg-[#EBEAEF] p-10">
+            <div className="bg-[#EBEAEF] p-10 relative">
               <h3 className="text-3xl font-medium text-[#102F32] mb-2">CGM Monitoring</h3>
               <p className="text-lg text-[#102F32] opacity-70 mb-4">Use Nutrisense with your own CGMs</p>
-              <div className="absolute right-10 bottom-10 w-[55px] h-[55px] rounded-full bg-gradient-to-b from-[#352769] to-[#7C80C7] flex items-center justify-center">
-                <ArrowRight className="text-white transform rotate-45" />
+              <div className="absolute right-10 bottom-10">
+                <div className="w-[55px] h-[55px] rounded-full bg-gradient-to-b from-[#352769] to-[#7C80C7] flex items-center justify-center">
+                  <ArrowRight className="text-white transform rotate-45" />
+                </div>
               </div>
             </div>
           </div>
@@ -124,10 +130,10 @@ const Index = () => {
 
         <div className="flex flex-col lg:flex-row justify-around mb-20">
           <div className="max-w-[330px] mx-auto lg:mx-0 mb-10 lg:mb-0">
-            <img src="https://placehold.co/331x613" alt="App Demo" className="w-full h-auto" />
+            <img src="https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07" alt="App Demo" className="w-full h-auto" />
           </div>
           <div className="max-w-[590px] mx-auto lg:mx-0 mb-10 lg:mb-0">
-            <img src="https://placehold.co/434x583" alt="App Demo" className="w-full h-auto" />
+            <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb" alt="App Demo" className="w-full h-auto" />
           </div>
         </div>
 
@@ -157,7 +163,7 @@ const Index = () => {
       <section className="py-24 px-4 md:px-8 lg:px-40">
         <div className="flex flex-col lg:flex-row gap-12">
           <div className="lg:w-1/2">
-            <img src="https://placehold.co/904x819" alt="Tracking Demo" className="w-full h-auto rounded-3xl" />
+            <img src="https://images.unsplash.com/photo-1500673922987-e212871fec22" alt="Tracking Demo" className="w-full h-auto rounded-3xl" />
           </div>
           <div className="lg:w-1/2">
             <p className="text-lg font-medium mb-2">The Science</p>
@@ -186,7 +192,7 @@ const Index = () => {
       <section className="py-16 px-4 md:px-8 lg:px-40 mb-20">
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="lg:w-1/2 bg-[#E3E1DC] rounded-3xl p-12 lg:p-24 relative overflow-hidden">
-            <img src="https://placehold.co/895x1216" alt="Video Call" className="w-full h-auto object-cover absolute inset-0" />
+            <img src="https://images.unsplash.com/photo-1721322800607-8c38375eef04" alt="Video Call" className="w-full h-auto object-cover absolute inset-0" />
           </div>
           <div className="lg:w-1/2 border border-gray-200 rounded-3xl p-12 lg:p-24 flex flex-col justify-center">
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-lyon font-normal mb-8">
@@ -206,7 +212,7 @@ const Index = () => {
       <section className="py-16 px-4 md:px-8 lg:px-40">
         <div className="flex flex-col lg:flex-row gap-12">
           <div className="lg:w-1/2">
-            <img src="https://placehold.co/900x813" alt="Partner" className="w-full h-auto rounded-3xl" />
+            <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb" alt="Partner" className="w-full h-auto rounded-3xl" />
           </div>
           <div className="lg:w-1/2 flex flex-col justify-center">
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-lyon font-medium mb-6">
@@ -216,35 +222,45 @@ const Index = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12 mt-6">
               <div className="flex items-center gap-4">
                 <div className="w-8 h-8 rounded-full bg-[#E6E8FF] flex items-center justify-center">
-                  <div className="w-4 h-3 bg-[#3D3174]"></div>
+                  <svg width="16" height="12" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6.2781 11.1296L0.121949 4.97335L1.95052 3.14478L6.2781 7.44192L14.0496 -0.329529L15.8781 1.52962L6.2781 11.1296Z" fill="#3D3174"/>
+                  </svg>
                 </div>
                 <span className="text-lg font-semibold uppercase">Weight management</span>
               </div>
 
               <div className="flex items-center gap-4">
                 <div className="w-8 h-8 rounded-full bg-[#E6E8FF] flex items-center justify-center">
-                  <div className="w-4 h-3 bg-[#3D3174]"></div>
+                  <svg width="16" height="12" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6.2781 11.1296L0.121949 4.97335L1.95052 3.14478L6.2781 7.44192L14.0496 -0.329529L15.8781 1.52962L6.2781 11.1296Z" fill="#3D3174"/>
+                  </svg>
                 </div>
                 <span className="text-lg font-semibold uppercase">CGM PLANS</span>
               </div>
 
               <div className="flex items-center gap-4">
                 <div className="w-8 h-8 rounded-full bg-[#E6E8FF] flex items-center justify-center">
-                  <div className="w-4 h-3 bg-[#3D3174]"></div>
+                  <svg width="16" height="12" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6.2781 11.1296L0.121949 4.97335L1.95052 3.14478L6.2781 7.44192L14.0496 -0.329529L15.8781 1.52962L6.2781 11.1296Z" fill="#3D3174"/>
+                  </svg>
                 </div>
                 <span className="text-lg font-semibold uppercase">Insulin Resistance</span>
               </div>
 
               <div className="flex items-center gap-4">
                 <div className="w-8 h-8 rounded-full bg-[#E6E8FF] flex items-center justify-center">
-                  <div className="w-4 h-3 bg-[#3D3174]"></div>
+                  <svg width="16" height="12" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6.2781 11.1296L0.121949 4.97335L1.95052 3.14478L6.2781 7.44192L14.0496 -0.329529L15.8781 1.52962L6.2781 11.1296Z" fill="#3D3174"/>
+                  </svg>
                 </div>
                 <span className="text-lg font-semibold uppercase">NUTRITIONISTS</span>
               </div>
 
               <div className="flex items-center gap-4">
                 <div className="w-8 h-8 rounded-full bg-[#E6E8FF] flex items-center justify-center">
-                  <div className="w-4 h-3 bg-[#3D3174]"></div>
+                  <svg width="16" height="12" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6.2781 11.1296L0.121949 4.97335L1.95052 3.14478L6.2781 7.44192L14.0496 -0.329529L15.8781 1.52962L6.2781 11.1296Z" fill="#3D3174"/>
+                  </svg>
                 </div>
                 <span className="text-lg font-semibold uppercase">Face-to-face support</span>
               </div>
@@ -286,7 +302,7 @@ const Index = () => {
             <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3">
               <Card className="h-full rounded-3xl overflow-hidden">
                 <CardContent className="p-0">
-                  <img src="https://placehold.co/378x423" alt="Testimonial" className="w-full h-full object-cover" />
+                  <img src="https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07" alt="Testimonial" className="w-full h-full object-cover" />
                 </CardContent>
               </Card>
             </CarouselItem>
@@ -308,7 +324,7 @@ const Index = () => {
             <CarouselItem className="pl-4 md:basis-1/2 lg:basis-1/3">
               <Card className="h-full rounded-3xl overflow-hidden">
                 <CardContent className="p-0">
-                  <img src="https://placehold.co/371x423" alt="Testimonial" className="w-full h-full object-cover" />
+                  <img src="https://images.unsplash.com/photo-1618160702438-9b02ab6515c9" alt="Testimonial" className="w-full h-full object-cover" />
                 </CardContent>
               </Card>
             </CarouselItem>
