@@ -8,9 +8,9 @@ const Footer = () => {
       <div className="max-w-[1920px] mx-auto">
         <div className="flex justify-center mb-12">
           <h1 className="text-6xl sm:text-8xl lg:text-[332px] font-normal">
-            <span className="text-black">Won</span>
-            <span className="text-[#1B5E20]">de</span>
-            <span className="text-black">r</span>
+            <span className="text-black">Geo</span>
+            <span className="text-[#1B5E20]">Di</span>
+            <span className="text-black">et</span>
           </h1>
         </div>
 
@@ -38,7 +38,7 @@ const Footer = () => {
         </div>
 
         <div className="text-center text-[#767676] text-sm">
-          ©2025 WonderHealth. ALL RIGHTS RESERVED
+          ©2025 GeoDietHealth. ALL RIGHTS RESERVED
         </div>
       </div>
     </footer>

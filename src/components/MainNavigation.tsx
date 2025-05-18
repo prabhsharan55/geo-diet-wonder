@@ -8,21 +8,21 @@ const MainNavigation = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   return (
-    <>
+    <header className="w-full">
       {/* Announcement Bar */}
       <div className="w-full h-[69px] bg-gradient-to-r from-[#160041] to-[#8D97DE] flex items-center justify-center">
         <p className="text-white text-lg font-normal">95% pay $0 for nutritionist support. How?</p>
       </div>
 
       {/* Navigation */}
-      <header className="w-full h-[116px] bg-white border-b border-gray-100 px-4 md:px-8 lg:px-40">
+      <div className="w-full h-[116px] bg-white border-b border-gray-100 px-4 md:px-8 lg:px-40">
         <div className="max-w-[1920px] mx-auto h-full flex items-center justify-between">
           <div className="flex items-center">
             <Link to="/">
               <h1 className="text-4xl md:text-5xl font-normal">
-                <span className="text-black">Won</span>
-                <span className="text-[#1B5E20]">de</span>
-                <span className="text-black">r</span>
+                <span className="text-black">Geo</span>
+                <span className="text-[#1B5E20]">Di</span>
+                <span className="text-black">et</span>
               </h1>
             </Link>
           </div>
@@ -72,7 +72,7 @@ const MainNavigation = () => {
             </Button>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Mobile menu */}
       {mobileMenuOpen && (
@@ -87,7 +87,7 @@ const MainNavigation = () => {
           </div>
         </div>
       )}
-    </>
+    </header>
   );
 };
 
