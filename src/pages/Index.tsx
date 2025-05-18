@@ -220,7 +220,7 @@ const Index = () => {
             <img 
               src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158" 
               alt="Video Call" 
-              className="w-full h-[500px] object-cover absolute inset-0"
+              className="w-full h-full object-cover absolute inset-0"
             />
           </div>
         </div>
@@ -384,7 +384,8 @@ const Index = () => {
             </div>
           </div>
 
-          <style jsx>{`
+          <style>
+            {`
             @keyframes marquee {
               0% {
                 transform: translateX(0);
@@ -396,7 +397,8 @@ const Index = () => {
             .animate-marquee {
               animation: marquee 30s linear infinite;
             }
-          `}</style>
+            `}
+          </style>
         </div>
       </section>
 

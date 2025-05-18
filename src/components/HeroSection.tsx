@@ -86,7 +86,8 @@ const HeroSection = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>
+        {`
         @keyframes ecg-animation {
           0% {
             stroke-dashoffset: 1000;
@@ -112,7 +113,8 @@ const HeroSection = () => {
           font-size: 2rem;
           animation: heartbeat 1.5s ease-in-out infinite;
         }
-      `}</style>
+        `}
+      </style>
     </section>
   );
 };
