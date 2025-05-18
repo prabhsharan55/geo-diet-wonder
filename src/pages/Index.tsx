@@ -55,7 +55,7 @@ const Index = () => {
           {/* Product Card 1 */}
           <div className="rounded-3xl overflow-hidden">
             <div className="relative h-[520px]">
-              <img src="https://placehold.co/520x520" alt="Workout sessions" className="w-full h-full object-cover" />
+              <img src="https://placehold.co/752x620" alt="Workout sessions" className="w-full h-full object-cover" />
               <div className="absolute top-10 left-10">
                 <span className="bg-[#F4D374] text-[#102F32] text-sm font-semibold uppercase rounded-full px-5 py-2">
                   Subscription
@@ -73,7 +73,7 @@ const Index = () => {
 
           {/* Product Card 2 */}
           <div className="rounded-3xl overflow-hidden">
-            <div className="relative h-[520px] bg-cover" style={{ backgroundImage: `url(https://placehold.co/520x520)` }}>
+            <div className="relative h-[520px] bg-cover">
               <img src="https://placehold.co/629x544" alt="GeoDiet" className="w-full h-full object-cover" />
               <div className="absolute top-10 left-10">
                 <span className="bg-[#BED1AB] text-[#102F32] text-sm font-semibold uppercase rounded-full px-5 py-2">
