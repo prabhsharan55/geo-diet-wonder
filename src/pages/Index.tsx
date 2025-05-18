@@ -117,7 +117,7 @@ const Index = () => {
 
       {/* Eat Smart Section with Mobile Phones */}
       <section className="py-16 px-4 md:px-8 lg:px-20 bg-[#E6E8FF] rounded-3xl mx-auto max-w-[1847px] my-20 relative">
-        <div className="text-center mb-14">
+        <div className="text-center mb-4">
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-lyon font-medium mb-8">
             Eat smart. Move smarter. Let data guide the way.
           </h2>
@@ -126,8 +126,9 @@ const Index = () => {
           </p>
         </div>
 
-        <div className="h-[200px] relative">
-          <div className="flex items-end absolute bottom-[-60px] z-10 left-1/2 transform -translate-x-1/2">
+        {/* Phone mockups container with increased height */}
+        <div className="h-[300px] relative mb-[200px]">
+          <div className="flex items-end absolute bottom-0 z-10 left-1/2 transform -translate-x-1/2">
             <div className="w-[260px] h-[500px] bg-white rounded-[36px] overflow-hidden mx-4 shadow-lg transform -rotate-3">
               <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158" alt="App Screen 1" className="w-full h-full object-cover" />
             </div>
@@ -140,7 +141,8 @@ const Index = () => {
           </div>
         </div>
 
-        <div className="border border-[#342567] p-10 grid grid-cols-1 md:grid-cols-3 gap-0 text-center relative mt-[200px]">
+        {/* Statistics section moved below phones */}
+        <div className="border border-[#342567] p-10 grid grid-cols-1 md:grid-cols-3 gap-0 text-center relative">
           <div className="pb-10 flex flex-col items-center">
             <div className="text-[90px] font-lyon font-medium text-[#2C1B5D]">24lbs</div>
             <p className="text-2xl text-[#5A5A5A]">
