@@ -1,13 +1,16 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { ArrowRight } from "lucide-react";
+import MainNavigation from "@/components/MainNavigation";
+import Footer from "@/components/Footer";
 import { Link } from "react-router-dom";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
+      <MainNavigation />
+
       {/* Announcement Bar */}
       <div className="w-full h-[69px] bg-gradient-to-r from-[#160041] to-[#8D97DE] flex items-center justify-center">
         <p className="text-white text-lg font-normal">95% pay $0 for nutritionist support. How?</p>
@@ -458,46 +461,7 @@ const Index = () => {
         </Carousel>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-white py-16 px-4 md:px-8 lg:px-40 relative mt-20">
-        <div className="absolute left-[1017px] top-[300px] w-[332px] h-[324px] rounded-full bg-[#E6E8FF] blur-[175px]"></div>
-        <div className="max-w-[1920px] mx-auto">
-          <div className="flex justify-center mb-12">
-            <h1 className="text-6xl sm:text-8xl lg:text-[332px] font-normal">
-              <span className="text-black">Won</span>
-              <span className="text-[#1B5E20]">de</span>
-              <span className="text-black">r</span>
-            </h1>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center mb-12">
-            <div className="flex flex-col gap-6">
-              <Link to="/" className="text-2xl text-[#767676]">Shop</Link>
-              <Link to="/" className="text-2xl text-[#767676]">Nutritionists</Link>
-              <Link to="/" className="text-2xl text-[#767676]">Clinics</Link>
-              <Link to="/" className="text-2xl text-[#767676]">All Blogs</Link>
-            </div>
-            
-            <div className="flex flex-col gap-6">
-              <Link to="/" className="text-2xl text-[#767676]">Our Story</Link>
-              <Link to="/" className="text-2xl text-[#767676]">Contact Us</Link>
-              <Link to="/" className="text-2xl text-[#767676]">X</Link>
-              <Link to="/" className="text-2xl text-[#767676]">Give Feedback</Link>
-            </div>
-            
-            <div className="flex flex-col gap-6">
-              <Link to="/" className="text-2xl text-[#767676]">Privacy Policy</Link>
-              <Link to="/" className="text-2xl text-[#767676]">Terms & Conditions</Link>
-              <Link to="/" className="text-2xl text-[#767676]">Instagram</Link>
-              <Link to="/" className="text-2xl text-[#767676]">LinkedIn</Link>
-            </div>
-          </div>
-
-          <div className="text-center text-[#767676] text-sm">
-            ©2025 WonderHealth. ALL RIGHTS RESERVED
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };
