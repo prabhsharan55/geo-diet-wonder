@@ -34,7 +34,8 @@ const HeroSection = () => {
             className="ecg-line"
           />
         </svg>
-        <style jsx>{`
+        <style>
+          {`
           @keyframes ecg-animation {
             0% {
               stroke-dashoffset: 1000;
@@ -48,7 +49,8 @@ const HeroSection = () => {
             stroke-dashoffset: 1000;
             animation: ecg-animation 3s linear infinite;
           }
-        `}</style>
+          `}
+        </style>
       </div>
 
       {/* Floating elements */}

@@ -385,7 +385,8 @@ const Index = () => {
             </div>
           </div>
 
-          <style jsx>{`
+          <style>
+            {`
             @keyframes marquee {
               0% {
                 transform: translateX(0);
@@ -397,7 +398,8 @@ const Index = () => {
             .animate-marquee {
               animation: marquee 30s linear infinite;
             }
-          `}</style>
+            `}
+          </style>
         </div>
       </section>
 

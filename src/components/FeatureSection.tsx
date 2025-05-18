@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Microscope, Heart, Dumbbell, Circle, Flash, Lock } from "lucide-react";
+import { Microscope, Heart, Dumbbell, Circle, Zap, Lock } from "lucide-react";
 
 interface FeatureItemProps {
   icon: React.ReactNode;
@@ -51,7 +51,7 @@ const FeatureSection = () => {
             icon={
               <div className="relative">
                 <Circle size={36} color="white" />
-                <Flash size={24} color="white" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
+                <Zap size={24} color="white" className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" />
               </div>
             }
             title="Sustainable & Measurable Results"
