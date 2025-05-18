@@ -45,8 +45,8 @@ const Index = () => {
             </h2>
           </div>
           <div className="max-w-[313px]">
-            <p className="text-xl md:text-2xl text-[#102F32]">
-              Solutions that work with your body, for results that stick.
+            <p className="text-lg md:text-xl text-[#102F32] leading-tight">
+              Solutions that work with<br/>your body, for results that stick.
             </p>
           </div>
         </div>
@@ -67,7 +67,7 @@ const Index = () => {
               <p className="text-lg text-[#102F32] opacity-70 mb-4">Starting at $225/month</p>
               <div className="absolute right-10 bottom-10">
                 <div className="w-[55px] h-[55px] rounded-full bg-gradient-to-b from-[#312164] to-[#7B80C6] flex items-center justify-center">
-                  <ArrowRight className="text-white transform rotate-45" />
+                  <ArrowRight className="text-white rotate-[-45deg]" />
                 </div>
               </div>
             </div>
@@ -88,7 +88,7 @@ const Index = () => {
               <p className="text-lg text-[#102F32] opacity-70 mb-4">$0 out-of-pocket for most members</p>
               <div className="absolute right-10 bottom-10">
                 <div className="w-[55px] h-[55px] rounded-full bg-gradient-to-b from-[#312164] to-[#7B80C6] flex items-center justify-center">
-                  <ArrowRight className="text-white transform rotate-45" />
+                  <ArrowRight className="text-white rotate-[-45deg]" />
                 </div>
               </div>
             </div>
@@ -97,7 +97,7 @@ const Index = () => {
           {/* Product Card 3 */}
           <div className="rounded-3xl overflow-hidden">
             <div className="relative h-[520px] bg-[#E6E8FF]">
-              <img src="https://images.unsplash.com/photo-1500673922987-e212871fec22" alt="CGM App" className="w-[318px] h-[492px] object-contain mx-auto my-7" />
+              <img src="https://images.unsplash.com/photo-1500673922987-e212871fec22" alt="CGM App" className="w-full h-full object-cover" />
               <div className="absolute top-10 left-10">
                 <span className="bg-[#A6B8B9] text-[#102F32] text-sm font-semibold uppercase rounded-full px-5 py-2">
                   CGM App
@@ -109,7 +109,7 @@ const Index = () => {
               <p className="text-lg text-[#102F32] opacity-70 mb-4">Use Nutrisense with your own CGMs</p>
               <div className="absolute right-10 bottom-10">
                 <div className="w-[55px] h-[55px] rounded-full bg-gradient-to-b from-[#352769] to-[#7C80C7] flex items-center justify-center">
-                  <ArrowRight className="text-white transform rotate-45" />
+                  <ArrowRight className="text-white rotate-[-45deg]" />
                 </div>
               </div>
             </div>
