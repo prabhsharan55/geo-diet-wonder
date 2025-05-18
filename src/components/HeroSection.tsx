@@ -1,10 +1,7 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
-
 const HeroSection = () => {
-  return (
-    <section className="relative w-full pt-16 pb-32 px-4 md:px-8 lg:px-40 overflow-hidden">
+  return <section className="relative w-full pt-16 pb-32 px-4 md:px-8 lg:px-40 overflow-hidden">
       {/* Background elements */}
       <div className="absolute left-[479px] top-[280px] w-[332px] h-[324px] rounded-full bg-[rgba(157,163,204,0.6)] blur-[175px]"></div>
       <div className="absolute left-[323px] top-[686px] w-[332px] h-[324px] rounded-full bg-white blur-[191px]"></div>
@@ -12,7 +9,7 @@ const HeroSection = () => {
       
       <div className="max-w-[1429px] mx-auto text-center flex flex-col items-center gap-10">
         <h2 className="text-5xl md:text-7xl lg:text-[120px] font-medium leading-[1.1] font-lyon text-black">
-          Track, invest, get advice, and<br/>protect your health.
+          Track, invest, get advice, and<br />protect your health.
         </h2>
         <p className="text-xl md:text-2xl text-[#363230] font-sans">
           Build your health all in one place with GeoDiet.
@@ -26,14 +23,7 @@ const HeroSection = () => {
       <div className="flex justify-center mt-12">
         <div className="relative w-full max-w-[600px] h-[40px]">
           <svg viewBox="0 0 1000 40" className="w-full">
-            <path 
-              d="M0,20 Q25,20 30,20 T50,20 T75,20 T100,20 T125,20 T150,20 L175,20 L190,10 L205,30 L220,20 L235,20 L250,5 L265,35 L280,20 L295,20 L310,15 L325,25 L340,20 L355,20 L370,20 L400,20 T450,20 T500,20 T550,20"
-              fill="none" 
-              stroke="#ea384c" 
-              strokeWidth="1.5"
-              className="ecg-line"
-              strokeOpacity="0.7"
-            />
+            <path d="M0,20 Q25,20 30,20 T50,20 T75,20 T100,20 T125,20 T150,20 L175,20 L190,10 L205,30 L220,20 L235,20 L250,5 L265,35 L280,20 L295,20 L310,15 L325,25 L340,20 L355,20 L370,20 L400,20 T450,20 T500,20 T550,20" fill="none" stroke="#ea384c" strokeWidth="1.5" className="ecg-line" strokeOpacity="0.7" />
           </svg>
           
           {/* Beating heart in background */}
@@ -72,17 +62,9 @@ const HeroSection = () => {
       <div className="w-full max-w-[495px] h-[660px] absolute right-[10%] top-[350px]">
         <div className="relative w-full h-full">
           <div className="absolute left-[20%] top-[5%] w-[260px] h-[567px] bg-white rounded-[36px] overflow-hidden z-10">
-            <img 
-              src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158" 
-              alt="App Screen" 
-              className="w-full h-full object-cover"
-            />
+            
           </div>
-          <img 
-            src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158" 
-            alt="Hand Holding Phone" 
-            className="absolute inset-0 w-full h-full object-contain"
-          />
+          <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158" alt="Hand Holding Phone" className="absolute inset-0 w-full h-full object-contain" />
         </div>
       </div>
 
@@ -115,8 +97,6 @@ const HeroSection = () => {
         }
         `}
       </style>
-    </section>
-  );
+    </section>;
 };
-
 export default HeroSection;
