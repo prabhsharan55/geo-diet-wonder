@@ -41,6 +41,11 @@ import CustomerSupport from "./pages/customer/Support";
 import PartnerDashboard from "./pages/partner/Dashboard";
 import ClientManagement from "./pages/partner/ClientManagement";
 import AccessRequests from "./pages/partner/AccessRequests";
+import PlansManagement from "./pages/partner/PlansManagement";
+import ContentManagement from "./pages/partner/ContentManagement";
+import Announcements from "./pages/partner/Announcements";
+import Settings from "./pages/partner/Settings";
+import Support from "./pages/partner/Support";
 
 // Admin pages
 import AdminLogin from "./pages/admin/Login";
@@ -59,7 +64,7 @@ import PartnerLocator from "./pages/admin/partner-locator";
 import Email from "./pages/admin/email";
 import Terms from "./pages/admin/legal/terms";
 import Policy from "./pages/admin/legal/policy";
-import Settings from "./pages/admin/settings";
+import Settings as AdminSettings from "./pages/admin/settings";
 
 const queryClient = new QueryClient();
 
@@ -108,11 +113,11 @@ const App = () => (
           <Route path="/partner/clients" element={<ClientManagement />} />
           <Route path="/partner/requests" element={<AccessRequests />} />
           <Route path="/partner/reports" element={<PartnerDashboard />} />
-          <Route path="/partner/plans" element={<PartnerDashboard />} />
-          <Route path="/partner/content" element={<PartnerDashboard />} />
-          <Route path="/partner/announcements" element={<PartnerDashboard />} />
-          <Route path="/partner/settings" element={<PartnerDashboard />} />
-          <Route path="/partner/support" element={<PartnerDashboard />} />
+          <Route path="/partner/plans" element={<PlansManagement />} />
+          <Route path="/partner/content" element={<ContentManagement />} />
+          <Route path="/partner/announcements" element={<Announcements />} />
+          <Route path="/partner/settings" element={<Settings />} />
+          <Route path="/partner/support" element={<Support />} />
           
           {/* Admin routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
@@ -131,7 +136,7 @@ const App = () => (
           <Route path="/admin/email" element={<Email />} />
           <Route path="/admin/legal/terms" element={<Terms />} />
           <Route path="/admin/legal/policy" element={<Policy />} />
-          <Route path="/admin/settings" element={<Settings />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
