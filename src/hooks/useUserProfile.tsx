@@ -33,9 +33,8 @@ export const useUserProfile = () => {
       
       try {
         setLoading(true);
-        // Type assertion to avoid type errors with the table name
         const { data, error: profileError } = await supabase
-          .from('user_profiles' as any)
+          .from('user_profiles')
           .select('*')
           .eq('user_id', user.id)
           .single();
@@ -44,7 +43,10 @@ export const useUserProfile = () => {
           throw profileError;
         }
         
-        setProfile(data as UserProfile);
+        // Type assertion after validating the data exists
+        if (data) {
+          setProfile(data as UserProfile);
+        }
       } catch (err: any) {
         console.error('Error fetching profile:', err);
         setError(err.message);
@@ -60,9 +62,8 @@ export const useUserProfile = () => {
     if (!user) return { success: false, error: 'Not authenticated' };
     
     try {
-      // Type assertion to avoid type errors with the table name
       const { error } = await supabase
-        .from('user_profiles' as any)
+        .from('user_profiles')
         .update(updates)
         .eq('user_id', user.id);
         

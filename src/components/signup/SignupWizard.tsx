@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -62,14 +61,14 @@ const SignupWizard = () => {
         userData.fullName
       );
       
-      if (!signUpResult || signUpResult.error) {
-        throw signUpResult?.error || new Error("Failed to sign up");
+      if (signUpResult && signUpResult.error) {
+        throw new Error(signUpResult.error.message || "Failed to sign up");
       }
       
       // Store profile data in user_profiles table if user was created successfully
-      if (signUpResult.data?.user) {
+      if (signUpResult && signUpResult.data?.user) {
         const { error: profileError } = await supabase
-          .from('user_profiles' as any)
+          .from('user_profiles')
           .insert({
             user_id: signUpResult.data.user.id,
             full_name: userData.fullName,
