@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -112,6 +113,46 @@ const App = () => (
             <Route path="/customer" element={
               <ProtectedRoute requiredRole="customer">
                 <CustomerDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/customer/program" element={
+              <ProtectedRoute requiredRole="customer">
+                <CustomerProgram />
+              </ProtectedRoute>
+            } />
+            <Route path="/customer/cgm" element={
+              <ProtectedRoute requiredRole="customer">
+                <CustomerCGMTracker />
+              </ProtectedRoute>
+            } />
+            <Route path="/customer/coach" element={
+              <ProtectedRoute requiredRole="customer">
+                <CustomerGeoDietCoach />
+              </ProtectedRoute>
+            } />
+            <Route path="/customer/progress" element={
+              <ProtectedRoute requiredRole="customer">
+                <CustomerProgress />
+              </ProtectedRoute>
+            } />
+            <Route path="/customer/ask-coach" element={
+              <ProtectedRoute requiredRole="customer">
+                <CustomerAskCoach />
+              </ProtectedRoute>
+            } />
+            <Route path="/customer/videos" element={
+              <ProtectedRoute requiredRole="customer">
+                <CustomerVideos />
+              </ProtectedRoute>
+            } />
+            <Route path="/customer/settings" element={
+              <ProtectedRoute requiredRole="customer">
+                <CustomerSettings />
+              </ProtectedRoute>
+            } />
+            <Route path="/customer/support" element={
+              <ProtectedRoute requiredRole="customer">
+                <CustomerSupport />
               </ProtectedRoute>
             } />
             
