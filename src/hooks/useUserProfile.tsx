@@ -14,6 +14,7 @@ export type UserProfile = {
   selected_plan: string | null;
   health_data: Record<string, string> | null;
   created_at: string;
+  user_id: string;
 }
 
 export const useUserProfile = () => {
@@ -32,8 +33,9 @@ export const useUserProfile = () => {
       
       try {
         setLoading(true);
+        // Type assertion to avoid type errors with the table name
         const { data, error: profileError } = await supabase
-          .from('user_profiles')
+          .from('user_profiles' as any)
           .select('*')
           .eq('user_id', user.id)
           .single();
@@ -58,8 +60,9 @@ export const useUserProfile = () => {
     if (!user) return { success: false, error: 'Not authenticated' };
     
     try {
+      // Type assertion to avoid type errors with the table name
       const { error } = await supabase
-        .from('user_profiles')
+        .from('user_profiles' as any)
         .update(updates)
         .eq('user_id', user.id);
         

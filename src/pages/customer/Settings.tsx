@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import CustomerLayout from "@/components/customer/CustomerLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,12 +21,13 @@ const Settings = () => {
   const [lastName, setLastName] = useState("");
   const [mobile, setMobile] = useState("");
   const [city, setCity] = useState("");
-  const [dob, setDob] = useState("");
   const [gender, setGender] = useState("female");
+  const [weight, setWeight] = useState("");
+  const [height, setHeight] = useState("");
   const [formLoading, setFormLoading] = useState(false);
   
   // Set form values when profile data loads
-  useState(() => {
+  useEffect(() => {
     if (profile) {
       const nameParts = profile.full_name.split(" ");
       setFirstName(nameParts[0] || "");
@@ -34,8 +35,10 @@ const Settings = () => {
       setMobile(profile.mobile || "");
       setCity(profile.city || "");
       setGender(profile.gender || "female");
+      setWeight(profile.weight ? profile.weight.toString() : "");
+      setHeight(profile.height ? profile.height.toString() : "");
     }
-  });
+  }, [profile]);
   
   const handleSaveProfile = async () => {
     setFormLoading(true);
@@ -45,7 +48,9 @@ const Settings = () => {
         full_name: fullName,
         mobile,
         city,
-        gender
+        gender,
+        weight: weight ? parseFloat(weight) : null,
+        height: height ? parseFloat(height) : null
       });
       
       if (success) {
@@ -196,6 +201,26 @@ const Settings = () => {
                         <Label htmlFor="other">Other</Label>
                       </div>
                     </RadioGroup>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="weight">Weight (kg)</Label>
+                    <Input 
+                      id="weight" 
+                      type="number"
+                      value={weight}
+                      onChange={(e) => setWeight(e.target.value)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="height">Height (cm)</Label>
+                    <Input 
+                      id="height" 
+                      type="number"
+                      value={height}
+                      onChange={(e) => setHeight(e.target.value)}
+                    />
                   </div>
                 </div>
                 

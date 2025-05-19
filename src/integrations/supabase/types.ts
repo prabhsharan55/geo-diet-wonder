@@ -131,6 +131,48 @@ export type Database = {
           },
         ]
       }
+      user_profiles: {
+        Row: {
+          city: string | null
+          created_at: string
+          full_name: string
+          gender: string | null
+          health_data: Json | null
+          height: number | null
+          id: string
+          mobile: string | null
+          selected_plan: string | null
+          user_id: string
+          weight: number | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          full_name: string
+          gender?: string | null
+          health_data?: Json | null
+          height?: number | null
+          id?: string
+          mobile?: string | null
+          selected_plan?: string | null
+          user_id: string
+          weight?: number | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          full_name?: string
+          gender?: string | null
+          health_data?: Json | null
+          height?: number | null
+          id?: string
+          mobile?: string | null
+          selected_plan?: string | null
+          user_id?: string
+          weight?: number | null
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           clinic_id: string | null

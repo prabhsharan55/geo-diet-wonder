@@ -55,40 +55,38 @@ const SignupWizard = () => {
     try {
       setUserData(prev => ({ ...prev, selectedPlan: plan }));
       
-      // Register the user with Supabase
-      const { data, error } = await signUp(
+      // Register the user with Supabase Auth
+      const signUpResult = await signUp(
         userData.email,
         userData.password,
-        userData.fullName,
-        {
-          mobile: userData.mobile,
-          city: userData.city,
-          healthData: userData.healthData,
-          selectedPlan: plan
-        }
+        userData.fullName
       );
       
-      if (error) throw error;
+      if (!signUpResult || signUpResult.error) {
+        throw signUpResult?.error || new Error("Failed to sign up");
+      }
       
-      toast.success("Registration successful! Welcome to GeoDiet!");
-      
-      // Store additional profile data
-      if (data?.user) {
-        // Store profile data
-        const { error: profileError } = await supabase.from('user_profiles').insert({
-          user_id: data.user.id,
-          full_name: userData.fullName,
-          mobile: userData.mobile,
-          city: userData.city,
-          health_data: userData.healthData,
-          selected_plan: plan,
-          gender: userData.healthData.gender || 'Not specified',
-          weight: parseFloat(userData.healthData.weight || '0'),
-          height: parseFloat(userData.healthData.height || '0'),
-        });
+      // Store profile data in user_profiles table if user was created successfully
+      if (signUpResult.data?.user) {
+        const { error: profileError } = await supabase
+          .from('user_profiles' as any)
+          .insert({
+            user_id: signUpResult.data.user.id,
+            full_name: userData.fullName,
+            mobile: userData.mobile,
+            city: userData.city,
+            health_data: userData.healthData,
+            selected_plan: plan,
+            gender: userData.healthData.gender || 'Not specified',
+            weight: parseFloat(userData.healthData.weight || '0'),
+            height: parseFloat(userData.healthData.height || '0'),
+          });
 
         if (profileError) {
           console.error('Error saving profile data:', profileError);
+          toast.error("Profile data could not be saved. Please update in settings.");
+        } else {
+          toast.success("Registration successful! Welcome to GeoDiet!");
         }
       }
       
