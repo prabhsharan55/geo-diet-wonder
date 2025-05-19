@@ -57,10 +57,12 @@ const PackagesPage = () => {
       <div className="p-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Package Management</h1>
-          <Button as={Link} to="/admin/packages/add">
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Create Package
-          </Button>
+          <Link to="/admin/packages/add">
+            <Button>
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Create Package
+            </Button>
+          </Link>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
