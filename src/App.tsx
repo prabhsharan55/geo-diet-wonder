@@ -26,6 +26,10 @@ import NutritionistsAbout from "./pages/nutritionists/NutritionistsAbout";
 // Journal page
 import ArticleDetail from "./pages/journal/ArticleDetail";
 
+// Admin pages
+import AdminLogin from "./pages/admin/Login";
+import AdminDashboard from "./pages/admin/Dashboard";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -56,6 +60,10 @@ const App = () => (
           
           <Route path="/our-story" element={<OurStory />} />
           <Route path="/contact" element={<Contact />} />
+          
+          {/* Admin routes */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin" element={<AdminDashboard />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
