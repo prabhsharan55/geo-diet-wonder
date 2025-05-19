@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,8 +45,15 @@ const UserDetailsForm = ({ onSubmit }: UserDetailsFormProps) => {
     },
   });
 
-  const handleSubmit = (data: z.infer<typeof formSchema>) => {
-    onSubmit(data);
+  const handleSubmit = (values: z.infer<typeof formSchema>) => {
+    // Now we explicitly pass all required fields to ensure TypeScript is happy
+    onSubmit({
+      fullName: values.fullName,
+      email: values.email,
+      password: values.password,
+      mobile: values.mobile,
+      city: values.city,
+    });
   };
 
   return (
