@@ -1,71 +1,76 @@
 
+import React from "react";
+import { Link } from "react-router-dom";
 import MainNavigation from "@/components/MainNavigation";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { articleData } from "./journal/journalData";
+import { Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 const Journal = () => {
-  const articles = [
-    {
-      id: 1,
-      title: "Understanding Blood Glucose Patterns",
-      category: "CGM Guide",
-      image: "https://placehold.co/800x500",
-      preview: "Learn how to interpret your CGM data to make informed decisions about diet and exercise.",
-      date: "May 16, 2025"
-    },
-    {
-      id: 2,
-      title: "The Science Behind Exercise and Metabolism",
-      category: "Fitness",
-      image: "https://placehold.co/800x500",
-      preview: "Discover how different types of exercise affect your metabolic rate and overall health.",
-      date: "May 12, 2025"
-    },
-    {
-      id: 3,
-      title: "Nutrition Myths Debunked by Science",
-      category: "Nutrition",
-      image: "https://placehold.co/800x500",
-      preview: "Our expert nutritionists separate fact from fiction regarding popular nutrition claims.",
-      date: "May 8, 2025"
-    },
-    {
-      id: 4,
-      title: "Sleep Quality and Its Impact on Weight Management",
-      category: "Wellness",
-      image: "https://placehold.co/800x500",
-      preview: "How your sleep patterns affect hormone regulation and weight management efforts.",
-      date: "May 5, 2025"
-    },
-    {
-      id: 5,
-      title: "Client Success Story: Jane's Journey to Metabolic Health",
-      category: "Success Stories",
-      image: "https://placehold.co/800x500",
-      preview: "Read about Jane's remarkable transformation and improved health metrics in just 90 days.",
-      date: "April 30, 2025"
-    },
-    {
-      id: 6,
-      title: "The Connection Between Gut Health and Immunity",
-      category: "Health Research",
-      image: "https://placehold.co/800x500",
-      preview: "New research reveals how your gut microbiome influences your immune system.",
-      date: "April 25, 2025"
-    }
-  ];
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null);
+  
+  const categories = [...new Set(articleData.map(article => article.category))];
+  
+  const filteredArticles = React.useMemo(() => {
+    return articleData.filter(article => {
+      const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          article.preview.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesCategory = selectedCategory ? article.category === selectedCategory : true;
+      
+      return matchesSearch && matchesCategory;
+    });
+  }, [searchTerm, selectedCategory]);
 
   return (
     <div className="min-h-screen bg-white">
       <MainNavigation />
       
-      <main className="max-w-7xl mx-auto px-4 py-16">
-        <h1 className="text-4xl md:text-5xl font-medium text-center mb-4">Wonder Journal</h1>
-        <p className="text-xl text-center text-gray-600 mb-12">Evidence-based articles to support your health journey</p>
+      <main className="max-w-7xl mx-auto px-4 py-8 md:py-16">
+        <h1 className="text-3xl md:text-4xl lg:text-5xl font-medium text-center mb-4">GeoDiet Journal</h1>
+        <p className="text-lg md:text-xl text-center text-gray-600 mb-8 max-w-3xl mx-auto">
+          Evidence-based articles to support your health journey
+        </p>
         
+        {/* Search and filter */}
+        <div className="flex flex-col md:flex-row gap-4 mb-12">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Input 
+              placeholder="Search articles..." 
+              className="pl-10" 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              variant={selectedCategory === null ? "default" : "outline"}
+              onClick={() => setSelectedCategory(null)}
+              className="rounded-full"
+            >
+              All
+            </Button>
+            {categories.map(category => (
+              <Button
+                key={category}
+                variant={selectedCategory === category ? "default" : "outline"}
+                onClick={() => setSelectedCategory(category)}
+                className="rounded-full"
+              >
+                {category}
+              </Button>
+            ))}
+          </div>
+        </div>
+        
+        {/* Articles grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {articles.map(article => (
+          {filteredArticles.map(article => (
             <Card key={article.id} className="overflow-hidden flex flex-col">
               <div className="relative">
                 <img 
@@ -79,17 +84,26 @@ const Journal = () => {
               </div>
               <CardContent className="pt-6 flex-1">
                 <p className="text-gray-500 text-sm mb-2">{article.date}</p>
-                <h2 className="text-2xl font-medium mb-2">{article.title}</h2>
+                <h2 className="text-xl font-medium mb-2">{article.title}</h2>
                 <p className="text-gray-600">{article.preview}</p>
               </CardContent>
               <CardFooter>
-                <Button variant="outline" className="w-full rounded-full">
-                  Read Article
-                </Button>
+                <Link to={`/journal/${article.id}`} className="w-full">
+                  <Button variant="outline" className="w-full rounded-full">
+                    Read Article
+                  </Button>
+                </Link>
               </CardFooter>
             </Card>
           ))}
         </div>
+        
+        {filteredArticles.length === 0 && (
+          <div className="text-center py-16">
+            <h3 className="text-xl text-gray-700 mb-2">No articles found</h3>
+            <p className="text-gray-500">Try adjusting your search terms or filters</p>
+          </div>
+        )}
       </main>
       
       <Footer />
