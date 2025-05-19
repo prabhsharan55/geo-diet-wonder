@@ -29,6 +29,21 @@ import ArticleDetail from "./pages/journal/ArticleDetail";
 // Admin pages
 import AdminLogin from "./pages/admin/Login";
 import AdminDashboard from "./pages/admin/Dashboard";
+import Partners from "./pages/admin/partners";
+import AddPartner from "./pages/admin/partners/add";
+import PartnersMap from "./pages/admin/partners/map";
+import Customers from "./pages/admin/customers";
+import CustomerReports from "./pages/admin/customers/reports";
+import Packages from "./pages/admin/packages";
+import AddPackage from "./pages/admin/packages/add";
+import Videos from "./pages/admin/content/videos";
+import Blog from "./pages/admin/content/blog";
+import Analytics from "./pages/admin/analytics";
+import PartnerLocator from "./pages/admin/partner-locator";
+import Email from "./pages/admin/email";
+import Terms from "./pages/admin/legal/terms";
+import Policy from "./pages/admin/legal/policy";
+import Settings from "./pages/admin/settings";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +79,21 @@ const App = () => (
           {/* Admin routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/partners" element={<Partners />} />
+          <Route path="/admin/partners/add" element={<AddPartner />} />
+          <Route path="/admin/partners/map" element={<PartnersMap />} />
+          <Route path="/admin/customers" element={<Customers />} />
+          <Route path="/admin/customers/reports" element={<CustomerReports />} />
+          <Route path="/admin/packages" element={<Packages />} />
+          <Route path="/admin/packages/add" element={<AddPackage />} />
+          <Route path="/admin/content/videos" element={<Videos />} />
+          <Route path="/admin/content/blog" element={<Blog />} />
+          <Route path="/admin/analytics" element={<Analytics />} />
+          <Route path="/admin/partner-locator" element={<PartnerLocator />} />
+          <Route path="/admin/email" element={<Email />} />
+          <Route path="/admin/legal/terms" element={<Terms />} />
+          <Route path="/admin/legal/policy" element={<Policy />} />
+          <Route path="/admin/settings" element={<Settings />} />
           
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
