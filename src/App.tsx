@@ -26,6 +26,17 @@ import NutritionistsAbout from "./pages/nutritionists/NutritionistsAbout";
 // Journal page
 import ArticleDetail from "./pages/journal/ArticleDetail";
 
+// Customer Dashboard pages
+import CustomerDashboard from "./pages/customer/Dashboard";
+import CustomerProgram from "./pages/customer/Program";
+import CustomerCGMTracker from "./pages/customer/CGMTracker";
+import CustomerGeoDietCoach from "./pages/customer/GeoDietCoach";
+import CustomerProgress from "./pages/customer/Progress";
+import CustomerVideos from "./pages/customer/Videos";
+import CustomerSettings from "./pages/customer/Settings";
+import CustomerAskCoach from "./pages/customer/AskCoach";
+import CustomerSupport from "./pages/customer/Support";
+
 // Admin pages
 import AdminLogin from "./pages/admin/Login";
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -75,6 +86,17 @@ const App = () => (
           
           <Route path="/our-story" element={<OurStory />} />
           <Route path="/contact" element={<Contact />} />
+          
+          {/* Customer Dashboard routes */}
+          <Route path="/customer" element={<CustomerDashboard />} />
+          <Route path="/customer/program" element={<CustomerProgram />} />
+          <Route path="/customer/cgm" element={<CustomerCGMTracker />} />
+          <Route path="/customer/coach" element={<CustomerGeoDietCoach />} />
+          <Route path="/customer/progress" element={<CustomerProgress />} />
+          <Route path="/customer/ask-coach" element={<CustomerAskCoach />} />
+          <Route path="/customer/videos" element={<CustomerVideos />} />
+          <Route path="/customer/settings" element={<CustomerSettings />} />
+          <Route path="/customer/support" element={<CustomerSupport />} />
           
           {/* Admin routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
