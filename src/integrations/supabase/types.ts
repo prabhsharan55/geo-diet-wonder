@@ -9,16 +9,218 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      clinics: {
+        Row: {
+          address: string
+          created_at: string
+          id: string
+          name: string
+          owner_email: string
+          region: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          id?: string
+          name: string
+          owner_email: string
+          region: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          id?: string
+          name?: string
+          owner_email?: string
+          region?: string
+        }
+        Relationships: []
+      }
+      customers: {
+        Row: {
+          access_status: Database["public"]["Enums"]["access_status"]
+          clinic_id: string | null
+          created_at: string
+          email: string
+          expiry_date: string | null
+          extended_days: number | null
+          freeze_reason: string | null
+          freeze_until: string | null
+          id: string
+          purchase_date: string
+          user_id: string
+        }
+        Insert: {
+          access_status?: Database["public"]["Enums"]["access_status"]
+          clinic_id?: string | null
+          created_at?: string
+          email: string
+          expiry_date?: string | null
+          extended_days?: number | null
+          freeze_reason?: string | null
+          freeze_until?: string | null
+          id?: string
+          purchase_date?: string
+          user_id: string
+        }
+        Update: {
+          access_status?: Database["public"]["Enums"]["access_status"]
+          clinic_id?: string | null
+          created_at?: string
+          email?: string
+          expiry_date?: string | null
+          extended_days?: number | null
+          freeze_reason?: string | null
+          freeze_until?: string | null
+          id?: string
+          purchase_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      progress_reports: {
+        Row: {
+          created_at: string
+          customer_id: string
+          energy_level: number | null
+          glucose_avg: number | null
+          id: string
+          week: number
+          weight: number | null
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          energy_level?: number | null
+          glucose_avg?: number | null
+          id?: string
+          week: number
+          weight?: number | null
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          energy_level?: number | null
+          glucose_avg?: number | null
+          id?: string
+          week?: number
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progress_reports_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          clinic_id: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+        }
+        Insert: {
+          clinic_id?: string | null
+          created_at?: string
+          email: string
+          full_name: string
+          id: string
+          role?: Database["public"]["Enums"]["user_role"]
+        }
+        Update: {
+          clinic_id?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+        }
+        Relationships: []
+      }
+      videos: {
+        Row: {
+          clinic_id: string | null
+          created_at: string
+          id: string
+          title: string
+          uploaded_by: string | null
+          url: string
+          visibility: Database["public"]["Enums"]["content_visibility"]
+        }
+        Insert: {
+          clinic_id?: string | null
+          created_at?: string
+          id?: string
+          title: string
+          uploaded_by?: string | null
+          url: string
+          visibility?: Database["public"]["Enums"]["content_visibility"]
+        }
+        Update: {
+          clinic_id?: string | null
+          created_at?: string
+          id?: string
+          title?: string
+          uploaded_by?: string | null
+          url?: string
+          visibility?: Database["public"]["Enums"]["content_visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "videos_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "videos_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_clinic_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
     }
     Enums: {
-      [_ in never]: never
+      access_status: "active" | "frozen" | "expired"
+      content_visibility: "public" | "partner" | "customer"
+      user_role: "admin" | "partner" | "customer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +335,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      access_status: ["active", "frozen", "expired"],
+      content_visibility: ["public", "partner", "customer"],
+      user_role: ["admin", "partner", "customer"],
+    },
   },
 } as const
