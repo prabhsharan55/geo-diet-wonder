@@ -1,5 +1,7 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
+
 const HeroSection = () => {
   return <section className="relative w-full pt-16 pb-32 px-4 md:px-8 lg:px-40 overflow-hidden">
       {/* Background elements */}
@@ -58,13 +60,13 @@ const HeroSection = () => {
         </div>
       </div>
 
-      {/* Phone mockup */}
+      {/* Phone mockup container - removed the image but kept the container */}
       <div className="w-full max-w-[495px] h-[660px] absolute right-[10%] top-[350px]">
         <div className="relative w-full h-full">
           <div className="absolute left-[20%] top-[5%] w-[260px] h-[567px] bg-white rounded-[36px] overflow-hidden z-10">
-            
+            {/* Phone content goes here */}
           </div>
-          <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158" alt="Hand Holding Phone" className="absolute inset-0 w-full h-full object-contain" />
+          {/* Phone image removed */}
         </div>
       </div>
 
