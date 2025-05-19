@@ -14,7 +14,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { User, Mail, Phone, City, Lock } from "lucide-react";
+import { User, Mail, Phone, MapPin, Lock } from "lucide-react";
 
 type UserDetailsFormProps = {
   onSubmit: (data: {
@@ -135,7 +135,7 @@ const UserDetailsForm = ({ onSubmit }: UserDetailsFormProps) => {
                 <FormLabel>City</FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <City className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <Input className="pl-10" placeholder="New York" {...field} />
                   </div>
                 </FormControl>
