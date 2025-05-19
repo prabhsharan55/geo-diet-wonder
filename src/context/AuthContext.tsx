@@ -25,19 +25,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userDetails, setUserDetails] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Prevent multiple initialization attempts
+    if (authChecked) return;
+    
+    let mounted = true;
+    
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
+        if (!mounted) return;
+        
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
-        if (event === 'SIGNED_IN') {
+        if (event === 'SIGNED_IN' && currentSession?.user) {
           // Defer data fetching to prevent deadlocks
           setTimeout(() => {
-            fetchUserDetails(currentSession?.user?.id);
+            if (mounted) {
+              fetchUserDetails(currentSession.user.id);
+            }
           }, 0);
         } else if (event === 'SIGNED_OUT') {
           setUserDetails(null);
@@ -46,21 +56,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      
-      if (currentSession?.user) {
-        fetchUserDetails(currentSession.user.id);
+    const initializeAuth = async () => {
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        
+        if (mounted) {
+          setSession(currentSession);
+          setUser(currentSession?.user ?? null);
+          
+          if (currentSession?.user) {
+            await fetchUserDetails(currentSession.user.id);
+          }
+          
+          setLoading(false);
+          setAuthChecked(true);
+        }
+      } catch (error) {
+        console.error("Error initializing auth:", error);
+        if (mounted) {
+          setLoading(false);
+          setAuthChecked(true);
+        }
       }
-      
-      setLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [authChecked]);
 
   const fetchUserDetails = async (userId: string | undefined) => {
     if (!userId) return;

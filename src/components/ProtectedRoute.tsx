@@ -1,6 +1,7 @@
 
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { useEffect, useState } from "react";
 
 type ProtectedRouteProps = {
   children: React.ReactNode;
@@ -9,6 +10,30 @@ type ProtectedRouteProps = {
 
 const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   const { user, userDetails, loading } = useAuth();
+  const [redirectPath, setRedirectPath] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Only calculate the redirect path once when authentication is complete
+    if (!loading) {
+      if (!user) {
+        setRedirectPath("/auth");
+      } else if (requiredRole && userDetails?.role !== requiredRole) {
+        // Redirect based on the user's actual role
+        if (userDetails?.role === 'admin') {
+          setRedirectPath("/admin");
+        } else if (userDetails?.role === 'partner') {
+          setRedirectPath("/partner");
+        } else if (userDetails?.role === 'customer') {
+          setRedirectPath("/customer");
+        } else {
+          setRedirectPath("/auth");
+        }
+      } else {
+        // No redirect needed
+        setRedirectPath(null);
+      }
+    }
+  }, [user, userDetails?.role, loading, requiredRole]);
 
   // Show loading state
   if (loading) {
@@ -19,24 +44,9 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     );
   }
 
-  // If not authenticated, redirect to login
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  // If role is required and user doesn't have the role, redirect to appropriate dashboard
-  if (requiredRole && userDetails?.role !== requiredRole) {
-    // Redirect based on the user's actual role
-    if (userDetails?.role === 'admin') {
-      return <Navigate to="/admin" replace />;
-    } else if (userDetails?.role === 'partner') {
-      return <Navigate to="/partner" replace />;
-    } else if (userDetails?.role === 'customer') {
-      return <Navigate to="/customer" replace />;
-    }
-    
-    // If role is still loading or undefined, redirect to auth page
-    return <Navigate to="/auth" replace />;
+  // Handle redirects
+  if (redirectPath) {
+    return <Navigate to={redirectPath} replace />;
   }
 
   // If authenticated and has the required role (or no role required), render the children
