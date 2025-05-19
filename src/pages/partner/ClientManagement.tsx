@@ -1,5 +1,4 @@
-
-import { Search, PlusCircle, Clock, FileBarChart } from "lucide-react";
+import { Search, PlusCircle, Clock, FileBarChart, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
