@@ -13,14 +13,25 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Bell, LogOut, Settings, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 const CustomerHeaderUser = () => {
   const { userDetails, signOut } = useAuth();
+  const { profile } = useUserProfile();
   const navigate = useNavigate();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   // Function to get user initials for avatar
   const getUserInitials = () => {
+    if (profile?.full_name) {
+      return profile.full_name
+        .split(" ")
+        .map((name: string) => name[0])
+        .join("")
+        .toUpperCase()
+        .substring(0, 2);
+    }
+    
     if (!userDetails?.full_name) return "U";
     
     return userDetails.full_name
@@ -34,6 +45,9 @@ const CustomerHeaderUser = () => {
   const handleSignOut = async () => {
     await signOut();
   };
+
+  const displayName = profile?.full_name || userDetails?.full_name || "User";
+  const email = userDetails?.email || "";
 
   return (
     <div className="flex items-center gap-2">
@@ -79,14 +93,14 @@ const CustomerHeaderUser = () => {
               </AvatarFallback>
             </Avatar>
             <span className="font-medium hidden md:inline-block">
-              {userDetails?.full_name || "User"}
+              {displayName}
             </span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>
-            {userDetails?.full_name || "User"}
-            <p className="text-xs text-muted-foreground">{userDetails?.email}</p>
+            {displayName}
+            <p className="text-xs text-muted-foreground">{email}</p>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => navigate("/customer/settings")}>

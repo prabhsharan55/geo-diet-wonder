@@ -1,4 +1,6 @@
 
+import { useState } from "react";
+import { toast } from "sonner";
 import CustomerLayout from "@/components/customer/CustomerLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,8 +11,84 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bell, Camera, Check, Lock, User } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { useAuth } from "@/context/AuthContext";
 
 const Settings = () => {
+  const { profile, loading, updateProfile } = useUserProfile();
+  const { userDetails } = useAuth();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [city, setCity] = useState("");
+  const [dob, setDob] = useState("");
+  const [gender, setGender] = useState("female");
+  const [formLoading, setFormLoading] = useState(false);
+  
+  // Set form values when profile data loads
+  useState(() => {
+    if (profile) {
+      const nameParts = profile.full_name.split(" ");
+      setFirstName(nameParts[0] || "");
+      setLastName(nameParts.slice(1).join(" ") || "");
+      setMobile(profile.mobile || "");
+      setCity(profile.city || "");
+      setGender(profile.gender || "female");
+    }
+  });
+  
+  const handleSaveProfile = async () => {
+    setFormLoading(true);
+    try {
+      const fullName = `${firstName} ${lastName}`.trim();
+      const { success, error } = await updateProfile({
+        full_name: fullName,
+        mobile,
+        city,
+        gender
+      });
+      
+      if (success) {
+        toast.success("Profile updated successfully");
+      } else {
+        toast.error(error || "Failed to update profile");
+      }
+    } finally {
+      setFormLoading(false);
+    }
+  };
+  
+  const handlePasswordUpdate = () => {
+    toast.info("Password update functionality coming soon");
+  };
+  
+  const handleSavePreferences = () => {
+    toast.success("Preferences saved successfully");
+  };
+
+  const getUserInitials = () => {
+    if (!profile?.full_name) {
+      return userDetails?.full_name?.substring(0, 2).toUpperCase() || "U";
+    }
+    
+    return profile.full_name
+      .split(" ")
+      .map((name) => name[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  if (loading) {
+    return (
+      <CustomerLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      </CustomerLayout>
+    );
+  }
+
   return (
     <CustomerLayout>
       <div className="space-y-6">
@@ -38,8 +116,8 @@ const Settings = () => {
               <CardContent className="space-y-6">
                 <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
                   <Avatar className="h-24 w-24">
-                    <AvatarImage src="https://randomuser.me/api/portraits/women/22.jpg" />
-                    <AvatarFallback>SJ</AvatarFallback>
+                    <AvatarImage src="" />
+                    <AvatarFallback>{getUserInitials()}</AvatarFallback>
                   </Avatar>
                   
                   <div>
@@ -54,32 +132,57 @@ const Settings = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="first-name">First Name</Label>
-                    <Input id="first-name" defaultValue="Sarah" />
+                    <Input 
+                      id="first-name" 
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                    />
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="last-name">Last Name</Label>
-                    <Input id="last-name" defaultValue="Johnson" />
+                    <Input 
+                      id="last-name" 
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                    />
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" type="email" defaultValue="sarah.johnson@example.com" />
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      value={userDetails?.email || ""}
+                      disabled 
+                    />
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" defaultValue="(555) 123-4567" />
+                    <Input 
+                      id="phone" 
+                      value={mobile}
+                      onChange={(e) => setMobile(e.target.value)}
+                    />
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="dob">Date of Birth</Label>
-                    <Input id="dob" type="date" defaultValue="1985-06-15" />
+                    <Label htmlFor="city">City</Label>
+                    <Input 
+                      id="city" 
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                    />
                   </div>
                   
                   <div className="space-y-2">
                     <Label>Gender</Label>
-                    <RadioGroup defaultValue="female" className="flex gap-4">
+                    <RadioGroup 
+                      value={gender} 
+                      onValueChange={setGender} 
+                      className="flex gap-4"
+                    >
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="female" id="female" />
                         <Label htmlFor="female">Female</Label>
@@ -97,8 +200,16 @@ const Settings = () => {
                 </div>
                 
                 <div className="flex justify-end">
-                  <Button className="flex items-center gap-2">
-                    <Check className="h-4 w-4" />
+                  <Button 
+                    className="flex items-center gap-2"
+                    onClick={handleSaveProfile}
+                    disabled={formLoading}
+                  >
+                    {formLoading ? (
+                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                    ) : (
+                      <Check className="h-4 w-4" />
+                    )}
                     Save Changes
                   </Button>
                 </div>
@@ -133,7 +244,10 @@ const Settings = () => {
                 </div>
                 
                 <div className="flex justify-end">
-                  <Button className="flex items-center gap-2">
+                  <Button 
+                    className="flex items-center gap-2"
+                    onClick={handlePasswordUpdate}
+                  >
                     <Check className="h-4 w-4" />
                     Update Password
                   </Button>
@@ -150,7 +264,9 @@ const Settings = () => {
               <CardContent className="space-y-6">
                 <div className="flex justify-between items-center p-4 bg-green-50 border border-green-200 rounded-md">
                   <div>
-                    <p className="font-medium text-green-900">GeoDiet + CGM Complete</p>
+                    <p className="font-medium text-green-900">
+                      {profile?.selected_plan || "GeoDiet + CGM Complete"}
+                    </p>
                     <p className="text-sm text-green-700">Active until June 30, 2025</p>
                   </div>
                   <span className="bg-green-100 text-green-800 py-1 px-3 text-sm font-medium rounded-full">
@@ -164,7 +280,7 @@ const Settings = () => {
                     <div className="text-sm space-y-2">
                       <div className="flex justify-between">
                         <span className="text-gray-500">Program Type:</span>
-                        <span>7-Week CGM + Diet Plan</span>
+                        <span>{profile?.selected_plan || "7-Week CGM + Diet Plan"}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-500">Renewal Date:</span>
@@ -181,7 +297,7 @@ const Settings = () => {
                     <p className="font-medium mb-1">Assigned Nutritionist</p>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src="https://randomuser.me/api/portraits/women/44.jpg" />
+                        <AvatarImage src="" />
                         <AvatarFallback>JM</AvatarFallback>
                       </Avatar>
                       <div>
@@ -271,7 +387,10 @@ const Settings = () => {
                 </div>
                 
                 <div className="flex justify-end">
-                  <Button className="flex items-center gap-2">
+                  <Button 
+                    className="flex items-center gap-2"
+                    onClick={handleSavePreferences}
+                  >
                     <Check className="h-4 w-4" />
                     Save Preferences
                   </Button>

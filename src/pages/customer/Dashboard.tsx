@@ -7,16 +7,21 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 const CustomerDashboard = () => {
   const { userDetails } = useAuth();
+  const { profile } = useUserProfile();
   const [activeTab, setActiveTab] = useState("progress");
+  
+  const userName = profile?.full_name || userDetails?.full_name || "User";
+  const firstNameOnly = userName.split(' ')[0];
 
   return (
     <CustomerLayout>
       <header className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Welcome, {userDetails?.full_name || "User"}!</h1>
+          <h1 className="text-3xl font-bold">Welcome, {firstNameOnly}!</h1>
           <p className="text-gray-500">Here's your health journey at a glance</p>
         </div>
         <Button className="bg-gradient-to-r from-[#3A2D70] to-[#7072B7] rounded-full">
@@ -27,7 +32,7 @@ const CustomerDashboard = () => {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard 
           title="Current Weight" 
-          value="172 lbs"
+          value={`${profile?.weight || 172} ${profile?.health_data?.weight_unit || 'lbs'}`}
           description="-3 lbs from last week" 
         />
         <StatCard 

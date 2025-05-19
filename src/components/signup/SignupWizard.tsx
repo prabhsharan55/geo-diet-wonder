@@ -9,6 +9,7 @@ import UserDetailsForm from "./UserDetailsForm";
 import PlanSelection from "./PlanSelection";
 import { Card, CardContent } from "@/components/ui/card";
 import { Check } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 type UserData = {
   fullName: string;
@@ -55,7 +56,7 @@ const SignupWizard = () => {
       setUserData(prev => ({ ...prev, selectedPlan: plan }));
       
       // Register the user with Supabase
-      await signUp(
+      const { data, error } = await signUp(
         userData.email,
         userData.password,
         userData.fullName,
@@ -67,7 +68,29 @@ const SignupWizard = () => {
         }
       );
       
+      if (error) throw error;
+      
       toast.success("Registration successful! Welcome to GeoDiet!");
+      
+      // Store additional profile data
+      if (data?.user) {
+        // Store profile data
+        const { error: profileError } = await supabase.from('user_profiles').insert({
+          user_id: data.user.id,
+          full_name: userData.fullName,
+          mobile: userData.mobile,
+          city: userData.city,
+          health_data: userData.healthData,
+          selected_plan: plan,
+          gender: userData.healthData.gender || 'Not specified',
+          weight: parseFloat(userData.healthData.weight || '0'),
+          height: parseFloat(userData.healthData.height || '0'),
+        });
+
+        if (profileError) {
+          console.error('Error saving profile data:', profileError);
+        }
+      }
       
       // Force navigate and reload to ensure auth state is properly updated
       window.location.href = '/customer';
