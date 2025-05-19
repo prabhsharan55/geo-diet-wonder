@@ -1,6 +1,5 @@
 
-import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import HeroSectionButtons from "./HeroSectionButtons";
 
 const HeroSection = () => {
   return (
@@ -17,18 +16,7 @@ const HeroSection = () => {
               Personalized nutrition and lifestyle recommendations based on your unique metabolic response.
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Link to="/auth">
-              <Button size="lg" className="bg-gradient-to-r from-[#160041] to-[#8D97DE]">
-                Get Started
-              </Button>
-            </Link>
-            <Link to="/our-story">
-              <Button size="lg" variant="outline">
-                Learn More
-              </Button>
-            </Link>
-          </div>
+          <HeroSectionButtons />
         </div>
       </div>
     </section>
