@@ -64,7 +64,7 @@ import PartnerLocator from "./pages/admin/partner-locator";
 import Email from "./pages/admin/email";
 import Terms from "./pages/admin/legal/terms";
 import Policy from "./pages/admin/legal/policy";
-import Settings as AdminSettings from "./pages/admin/settings";
+import { default as AdminSettings } from "./pages/admin/settings";
 
 const queryClient = new QueryClient();
 
