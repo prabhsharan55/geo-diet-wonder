@@ -68,7 +68,9 @@ const SignupWizard = () => {
       );
       
       toast.success("Registration successful! Welcome to GeoDiet!");
-      navigate("/customer");
+      
+      // Force navigate and reload to ensure auth state is properly updated
+      window.location.href = '/customer';
     } catch (error: any) {
       toast.error(error.message || "Failed to complete registration");
     }

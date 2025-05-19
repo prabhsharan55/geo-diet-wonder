@@ -159,11 +159,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           .single();
         
         if (userData?.role === 'admin') {
-          navigate('/admin');
+          window.location.href = '/admin';
         } else if (userData?.role === 'partner') {
-          navigate('/partner');
+          window.location.href = '/partner';
         } else {
-          navigate('/customer');
+          window.location.href = '/customer';
         }
       }
     } catch (error: any) {
@@ -235,8 +235,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         toast.success("Registration successful! Welcome to GeoDiet!");
         
-        // Automatically sign in
-        // This is handled by onAuthStateChange already
+        // Force a page reload to ensure auth state is properly updated
+        window.location.href = '/customer';
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to create account");
