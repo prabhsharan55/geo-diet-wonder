@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -105,11 +106,11 @@ const MainNavigation = () => {
               className="rounded-full px-4 sm:px-8 h-[40px] md:h-[50px] hidden sm:flex"
               asChild
             >
-              <Link to="/dashboard">SIGN IN</Link>
+              <Link to="/customer">SIGN IN</Link>
             </Button>
             
-            <Button className="rounded-full px-4 sm:px-6 h-[40px] md:h-[50px] bg-[#1A0546] hidden sm:flex">
-              JOIN AS PARTNER
+            <Button className="rounded-full px-4 sm:px-6 h-[40px] md:h-[50px] bg-[#1A0546] hidden sm:flex" asChild>
+              <Link to="/partner">JOIN AS PARTNER</Link>
             </Button>
             
             <Button 
@@ -173,14 +174,16 @@ const MainNavigation = () => {
             <Link to="/contact" className="text-[#2C2C2C] text-lg py-3 border-b border-gray-100">Contact</Link>
             
             <div className="flex flex-col gap-3 mt-4">
-              <Link to="/dashboard" className="w-full">
+              <Link to="/customer" className="w-full">
                 <Button variant="outline" className="rounded-full w-full">
                   SIGN IN
                 </Button>
               </Link>
-              <Button className="rounded-full w-full bg-[#1A0546]">
-                JOIN AS PARTNER
-              </Button>
+              <Link to="/partner" className="w-full">
+                <Button className="rounded-full w-full bg-[#1A0546]">
+                  JOIN AS PARTNER
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

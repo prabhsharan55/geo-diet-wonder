@@ -37,6 +37,11 @@ import CustomerSettings from "./pages/customer/Settings";
 import CustomerAskCoach from "./pages/customer/AskCoach";
 import CustomerSupport from "./pages/customer/Support";
 
+// Partner Dashboard pages
+import PartnerDashboard from "./pages/partner/Dashboard";
+import ClientManagement from "./pages/partner/ClientManagement";
+import AccessRequests from "./pages/partner/AccessRequests";
+
 // Admin pages
 import AdminLogin from "./pages/admin/Login";
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -97,6 +102,17 @@ const App = () => (
           <Route path="/customer/videos" element={<CustomerVideos />} />
           <Route path="/customer/settings" element={<CustomerSettings />} />
           <Route path="/customer/support" element={<CustomerSupport />} />
+          
+          {/* Partner Dashboard routes */}
+          <Route path="/partner" element={<PartnerDashboard />} />
+          <Route path="/partner/clients" element={<ClientManagement />} />
+          <Route path="/partner/requests" element={<AccessRequests />} />
+          <Route path="/partner/reports" element={<PartnerDashboard />} />
+          <Route path="/partner/plans" element={<PartnerDashboard />} />
+          <Route path="/partner/content" element={<PartnerDashboard />} />
+          <Route path="/partner/announcements" element={<PartnerDashboard />} />
+          <Route path="/partner/settings" element={<PartnerDashboard />} />
+          <Route path="/partner/support" element={<PartnerDashboard />} />
           
           {/* Admin routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
