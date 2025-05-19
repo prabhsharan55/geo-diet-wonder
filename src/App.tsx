@@ -15,6 +15,7 @@ import OurStory from "./pages/OurStory";
 import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
 import ProtectedRoute from "./components/ProtectedRoute";
+import SignupPage from "./pages/SignupPage";
 
 // Shop submenu pages
 import ShopCGM from "./pages/shop/ShopCGM";
@@ -89,6 +90,7 @@ const App = () => (
             {/* Public routes */}
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/signup" element={<SignupPage />} /> {/* Add new signup route */}
             <Route path="/shop" element={<Shop />} />
             <Route path="/shop/cgm" element={<ShopCGM />} />
             <Route path="/shop/workouts" element={<ShopWorkouts />} />

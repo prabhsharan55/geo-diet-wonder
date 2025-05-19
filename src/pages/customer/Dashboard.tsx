@@ -1,143 +1,129 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Activity, Calendar, BarChart2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useState } from "react";
 import CustomerLayout from "@/components/customer/CustomerLayout";
-import { ChartContainer } from "@/components/ui/chart";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatCard } from "@/components/ui/stat-card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowRight } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
-const Dashboard = () => {
-  // Dummy data for CGM trend chart
-  const glucoseData = [
-    { time: "6AM", glucose: 90 },
-    { time: "9AM", glucose: 140 },
-    { time: "12PM", glucose: 110 },
-    { time: "3PM", glucose: 125 },
-    { time: "6PM", glucose: 145 },
-    { time: "9PM", glucose: 95 },
-  ];
+const CustomerDashboard = () => {
+  const { userDetails } = useAuth();
+  const [activeTab, setActiveTab] = useState("progress");
 
   return (
     <CustomerLayout>
-      <div className="space-y-6">
+      <header className="mb-8 flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold">Welcome back, Sarah!</h2>
-          <p className="text-gray-500 mt-1">Let's check your progress for today.</p>
+          <h1 className="text-3xl font-bold">Welcome, {userDetails?.full_name || "User"}!</h1>
+          <p className="text-gray-500">Here's your health journey at a glance</p>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Program Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-600 font-semibold">Active</p>
-                  <p className="text-sm text-gray-500">Week 3 of 7</p>
-                </div>
-                <div className="h-16 w-16 rounded-full bg-[#F4D374] flex items-center justify-center text-lg font-bold">
-                  43%
-                </div>
-              </div>
-              <Link to="/customer/program">
-                <Button className="w-full mt-4">View Program</Button>
-              </Link>
-            </CardContent>
-          </Card>
+        <Button className="bg-gradient-to-r from-[#3A2D70] to-[#7072B7] rounded-full">
+          View Analytics <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </header>
+      
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard 
+          title="Current Weight" 
+          value="172 lbs"
+          description="-3 lbs from last week" 
+        />
+        <StatCard 
+          title="Workouts Completed" 
+          value="12"
+          description="+2 from last week" 
+        />
+        <StatCard 
+          title="Calories Tracked" 
+          value="19,203"
+          description="93% of weekly target" 
+        />
+        <StatCard 
+          title="CGM Readings" 
+          value="210"
+          description="98% compliance" 
+        />
+      </div>
+      
+      <div className="mt-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-6">
+            <TabsTrigger value="progress">Progress</TabsTrigger>
+            <TabsTrigger value="nutrition">Nutrition</TabsTrigger>
+            <TabsTrigger value="activity">Activity</TabsTrigger>
+            <TabsTrigger value="appointments">Appointments</TabsTrigger>
+          </TabsList>
           
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">CGM Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-600 font-semibold">Connected</p>
-                  <p className="text-sm text-gray-500">Last reading: 10 min ago</p>
+          <TabsContent value="progress">
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Progress</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px] bg-gray-100 rounded-md flex items-center justify-center">
+                  <p className="text-gray-500">Progress chart will be displayed here</p>
                 </div>
-                <div className="h-16 w-16 rounded-full bg-[#BED1AB] flex items-center justify-center text-lg font-bold">
-                  95
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="nutrition">
+            <Card>
+              <CardHeader>
+                <CardTitle>Nutrition Report</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px] bg-gray-100 rounded-md flex items-center justify-center">
+                  <p className="text-gray-500">Nutrition data will be displayed here</p>
                 </div>
-              </div>
-              <Link to="/customer/cgm">
-                <Button className="w-full mt-4">View CGM Data</Button>
-              </Link>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </TabsContent>
           
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Link to="/customer/coach">
-                <Button variant="outline" className="w-full flex justify-between items-center">
-                  Log Today's Meal <Activity className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Link to="/customer/progress">
-                <Button variant="outline" className="w-full flex justify-between items-center">
-                  Update Weight <BarChart2 className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Link to="/customer/videos">
-                <Button variant="outline" className="w-full flex justify-between items-center">
-                  Watch Daily Video <Calendar className="h-4 w-4" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Today's Glucose Trend</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={glucoseData}
-                  margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="time" />
-                  <YAxis domain={[60, 180]} />
-                  <Tooltip />
-                  <Line 
-                    type="monotone" 
-                    dataKey="glucose" 
-                    stroke="#8D97DE" 
-                    strokeWidth={2} 
-                    dot={{ r: 4 }} 
-                    activeDot={{ r: 6 }} 
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="bg-gradient-to-r from-[#BED1AB]/20 to-[#A6B8B9]/20">
-            <CardContent className="p-6">
-              <h3 className="text-xl font-bold mb-2">Today's Tip</h3>
-              <p className="text-gray-700">Try to go for a 10-minute walk after each meal to help regulate your glucose levels naturally.</p>
-            </CardContent>
-          </Card>
+          <TabsContent value="activity">
+            <Card>
+              <CardHeader>
+                <CardTitle>Activity Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px] bg-gray-100 rounded-md flex items-center justify-center">
+                  <p className="text-gray-500">Activity data will be displayed here</p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
           
-          <Card className="bg-gradient-to-r from-[#8D97DE]/20 to-[#F4D374]/20">
-            <CardContent className="p-6">
-              <h3 className="text-xl font-bold mb-2">Weekly Goal</h3>
-              <p className="text-gray-700">Keep your post-meal glucose spikes under 140 mg/dL by balancing protein, fiber and healthy fats.</p>
-            </CardContent>
-          </Card>
-        </div>
+          <TabsContent value="appointments">
+            <Card>
+              <CardHeader>
+                <CardTitle>Upcoming Appointments</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center p-4 bg-gray-100 rounded-md">
+                    <div>
+                      <h3 className="font-medium">Nutritionist Consultation</h3>
+                      <p className="text-sm text-gray-500">May 22, 2025 - 2:30 PM</p>
+                    </div>
+                    <Button variant="outline">Reschedule</Button>
+                  </div>
+                  <div className="flex justify-between items-center p-4 bg-gray-100 rounded-md">
+                    <div>
+                      <h3 className="font-medium">CGM Review Session</h3>
+                      <p className="text-sm text-gray-500">May 29, 2025 - 10:00 AM</p>
+                    </div>
+                    <Button variant="outline">Reschedule</Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </CustomerLayout>
   );
 };
 
-export default Dashboard;
+export default CustomerDashboard;

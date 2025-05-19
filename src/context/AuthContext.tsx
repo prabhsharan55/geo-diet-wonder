@@ -13,7 +13,7 @@ type AuthContextType = {
   isPartner: boolean;
   isCustomer: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, metadata?: Record<string, any>) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
 };
@@ -173,27 +173,70 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, metadata?: Record<string, any>) => {
     setLoading(true);
     try {
       // Clean up existing state
       cleanupAuthState();
       
+      // Prepare the user metadata
+      const userData = {
+        full_name: fullName,
+        ...metadata
+      };
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: {
-            full_name: fullName,
-          },
+          data: userData
         },
       });
       
       if (error) throw error;
       
       if (data.user) {
-        toast.success("Account created successfully! Please check your email to confirm your account.");
-        navigate('/auth');
+        // Store additional user details in the users table
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert([
+            { 
+              id: data.user.id,
+              email: data.user.email,
+              full_name: fullName,
+              role: 'customer',
+              // Save additional metadata that we want to query
+              mobile: metadata?.mobile,
+              city: metadata?.city
+            }
+          ]);
+        
+        if (insertError) {
+          console.error("Error storing user details:", insertError);
+          throw new Error("Failed to complete registration");
+        }
+        
+        // Create a new customer record
+        const { error: customerError } = await supabase
+          .from('customers')
+          .insert([
+            {
+              user_id: data.user.id,
+              email: data.user.email,
+              // Save the selected plan info
+              selected_plan: metadata?.selectedPlan
+            }
+          ]);
+        
+        if (customerError) {
+          console.error("Error creating customer record:", customerError);
+          throw new Error("Failed to complete registration");
+        }
+        
+        toast.success("Registration successful! Welcome to GeoDiet!");
+        
+        // Automatically sign in
+        // This is handled by onAuthStateChange already
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to create account");
