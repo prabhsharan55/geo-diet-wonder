@@ -10,7 +10,12 @@ type ProtectedRouteProps = {
 const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   const { user, userDetails, loading } = useAuth();
 
-  console.log('ProtectedRoute check:', { user: !!user, userDetails, loading, requiredRole });
+  console.log('ProtectedRoute check:', { 
+    user: !!user, 
+    userDetails: userDetails ? { role: userDetails.role } : null, 
+    loading, 
+    requiredRole 
+  });
 
   // Show loading state
   if (loading) {
@@ -25,6 +30,16 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   if (!user) {
     console.log('No user, redirecting to /auth');
     return <Navigate to="/auth" replace />;
+  }
+
+  // If userDetails is null but user exists, wait a moment for it to load
+  if (!userDetails) {
+    console.log('User exists but no userDetails yet, showing loading');
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   // Has required role or no role required - allow access

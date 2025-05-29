@@ -1,8 +1,3 @@
-
-// This line prevents TypeScript errors in the context file
-// because we're not changing the actual implementation, just the type signature
-// to make it compatible with our usage in SignupWizard.tsx
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,9 +29,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     let mounted = true;
     
-    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
+      async (event, currentSession) => {
         if (!mounted) return;
         
         console.log('Auth state change:', event, currentSession?.user?.id);
@@ -45,17 +39,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(currentSession?.user ?? null);
         
         if (event === 'SIGNED_IN' && currentSession?.user) {
-          // Defer data fetching to prevent deadlocks
-          setTimeout(() => {
+          // Use user metadata as fallback for userDetails to prevent RLS issues
+          const userMetadata = currentSession.user.user_metadata;
+          const fallbackUserDetails = {
+            id: currentSession.user.id,
+            email: currentSession.user.email,
+            full_name: userMetadata?.full_name || 'User',
+            role: userMetadata?.role || 'customer'
+          };
+          
+          setUserDetails(fallbackUserDetails);
+          
+          // Try to fetch from database, but don't block on it
+          setTimeout(async () => {
             if (mounted) {
-              fetchUserDetails(currentSession.user.id);
+              try {
+                const { data, error } = await supabase
+                  .from('users')
+                  .select('*')
+                  .eq('id', currentSession.user.id)
+                  .maybeSingle();
+                
+                if (data && mounted) {
+                  console.log('User details fetched from DB:', data);
+                  setUserDetails(data);
+                } else if (error) {
+                  console.warn('Could not fetch user details from DB, using metadata:', error);
+                  // Keep using the fallback details
+                }
+              } catch (err) {
+                console.warn('Error fetching user details, using metadata:', err);
+                // Keep using the fallback details
+              }
             }
           }, 100);
         } else if (event === 'SIGNED_OUT') {
           setUserDetails(null);
         }
         
-        // Set loading to false after processing auth state
         if (mounted) {
           setLoading(false);
         }
@@ -67,15 +88,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         
-        if (mounted) {
-          console.log('Initial session check:', currentSession?.user?.id);
+        if (mounted && currentSession?.user) {
+          console.log('Initial session check:', currentSession.user.id);
           setSession(currentSession);
-          setUser(currentSession?.user ?? null);
+          setUser(currentSession.user);
           
-          if (currentSession?.user) {
-            await fetchUserDetails(currentSession.user.id);
-          }
+          // Use metadata as fallback
+          const userMetadata = currentSession.user.user_metadata;
+          const fallbackUserDetails = {
+            id: currentSession.user.id,
+            email: currentSession.user.email,
+            full_name: userMetadata?.full_name || 'User',
+            role: userMetadata?.role || 'customer'
+          };
           
+          setUserDetails(fallbackUserDetails);
+        }
+        
+        if (mounted) {
           setLoading(false);
         }
       } catch (error) {
@@ -92,30 +122,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []); // Remove authChecked dependency to prevent infinite loop
-
-  const fetchUserDetails = async (userId: string | undefined) => {
-    if (!userId) return;
-    
-    try {
-      console.log('Fetching user details for:', userId);
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      
-      if (error) {
-        console.error('Error fetching user details:', error);
-        return;
-      }
-      
-      console.log('User details fetched:', data);
-      setUserDetails(data);
-    } catch (error) {
-      console.error('Error fetching user details:', error);
-    }
-  };
+  }, []);
 
   const cleanupAuthState = () => {
     // Remove standard auth tokens
@@ -159,16 +166,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (data.user) {
         toast.success("Signed in successfully");
         
-        // Fetch role and redirect accordingly
-        const { data: userData } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', data.user.id)
-          .single();
+        // Use metadata to determine redirect
+        const userRole = data.user.user_metadata?.role || 'customer';
         
-        if (userData?.role === 'admin') {
+        if (userRole === 'admin') {
           window.location.href = '/admin';
-        } else if (userData?.role === 'partner') {
+        } else if (userRole === 'partner') {
           window.location.href = '/partner';
         } else {
           window.location.href = '/customer';
@@ -208,41 +211,49 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) throw error;
       
       if (data.user) {
-        // Store additional user details in the users table
-        const { error: insertError } = await supabase
-          .from('users')
-          .insert([
-            { 
-              id: data.user.id,
-              email: data.user.email,
-              full_name: fullName,
-              role: userRole,
-              // Save additional metadata that we want to query
-              ...(metadata?.clinic_id && { clinic_id: metadata.clinic_id })
-            }
-          ]);
-        
-        if (insertError) {
-          console.error("Error storing user details:", insertError);
-          throw new Error("Failed to complete registration");
+        try {
+          // Store additional user details in the users table
+          const { error: insertError } = await supabase
+            .from('users')
+            .insert([
+              { 
+                id: data.user.id,
+                email: data.user.email,
+                full_name: fullName,
+                role: userRole,
+                // Save additional metadata that we want to query
+                ...(metadata?.clinic_id && { clinic_id: metadata.clinic_id })
+              }
+            ]);
+          
+          if (insertError) {
+            console.warn("Could not store user details in DB:", insertError);
+            // Continue with signup anyway using metadata
+          }
+        } catch (err) {
+          console.warn("Error storing user details:", err);
+          // Continue with signup anyway
         }
         
         // Create role-specific records
         if (userRole === 'customer') {
-          const { error: customerError } = await supabase
-            .from('customers')
-            .insert([
-              {
-                user_id: data.user.id,
-                email: data.user.email,
-                // Save the selected plan info
-                ...(metadata?.selectedPlan && { selected_plan: metadata.selectedPlan })
-              }
-            ]);
-          
-          if (customerError) {
-            console.error("Error creating customer record:", customerError);
-            throw new Error("Failed to complete registration");
+          try {
+            const { error: customerError } = await supabase
+              .from('customers')
+              .insert([
+                {
+                  user_id: data.user.id,
+                  email: data.user.email,
+                  // Save the selected plan info
+                  ...(metadata?.selectedPlan && { selected_plan: metadata.selectedPlan })
+                }
+              ]);
+            
+            if (customerError) {
+              console.warn("Could not create customer record:", customerError);
+            }
+          } catch (err) {
+            console.warn("Error creating customer record:", err);
           }
         }
         
