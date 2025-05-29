@@ -183,9 +183,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Clean up existing state
       cleanupAuthState();
       
+      // Determine role based on metadata or default to customer
+      const userRole = metadata?.role || 'customer';
+      
       // Prepare the user metadata
       const userData = {
         full_name: fullName,
+        role: userRole,
         ...metadata
       };
       
@@ -208,10 +212,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               id: data.user.id,
               email: data.user.email,
               full_name: fullName,
-              role: 'customer',
+              role: userRole,
               // Save additional metadata that we want to query
-              mobile: metadata?.mobile,
-              city: metadata?.city
+              ...(metadata?.clinic_id && { clinic_id: metadata.clinic_id })
             }
           ]);
         
@@ -220,27 +223,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           throw new Error("Failed to complete registration");
         }
         
-        // Create a new customer record
-        const { error: customerError } = await supabase
-          .from('customers')
-          .insert([
-            {
-              user_id: data.user.id,
-              email: data.user.email,
-              // Save the selected plan info
-              selected_plan: metadata?.selectedPlan
-            }
-          ]);
-        
-        if (customerError) {
-          console.error("Error creating customer record:", customerError);
-          throw new Error("Failed to complete registration");
+        // Create role-specific records
+        if (userRole === 'customer') {
+          const { error: customerError } = await supabase
+            .from('customers')
+            .insert([
+              {
+                user_id: data.user.id,
+                email: data.user.email,
+                // Save the selected plan info
+                ...(metadata?.selectedPlan && { selected_plan: metadata.selectedPlan })
+              }
+            ]);
+          
+          if (customerError) {
+            console.error("Error creating customer record:", customerError);
+            throw new Error("Failed to complete registration");
+          }
         }
         
         toast.success("Registration successful! Welcome to GeoDiet!");
         
-        // Force a page reload to ensure auth state is properly updated
-        window.location.href = '/customer';
+        // Redirect based on role
+        if (userRole === 'admin') {
+          window.location.href = '/admin';
+        } else if (userRole === 'partner') {
+          window.location.href = '/partner';
+        } else {
+          window.location.href = '/customer';
+        }
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to create account");
