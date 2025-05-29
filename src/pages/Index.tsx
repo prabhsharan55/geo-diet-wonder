@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
@@ -214,7 +215,7 @@ const Index = () => {
               Track, Workouts, Balanced diets, Live sessions and many more.
             </p>
             <Button 
-              onClick={() => window.location.href = "/signup?type=customer"}
+              onClick={() => window.location.href = "/customer"}
               className="bg-gradient-to-r from-[#3A2D70] to-[#7072B7] rounded-full text-lg w-fit uppercase"
             >
               Get Started for Free
@@ -289,7 +290,7 @@ const Index = () => {
             </div>
 
             <Button 
-              onClick={() => window.location.href = "/signup?type=partner"}
+              onClick={() => window.location.href = "/partner"}
               className="mt-12 bg-gradient-to-r from-[#3A2D70] to-[#7072B7] rounded-full w-fit uppercase"
             >
               Become a partner
@@ -308,11 +309,11 @@ const Index = () => {
             Access the admin panel to manage the platform
           </p>
           <Button 
-            onClick={() => window.location.href = "/auth?admin=true"}
+            onClick={() => window.location.href = "/admin"}
             variant="outline"
             className="border-2 border-gray-400 text-gray-700 hover:bg-gray-100"
           >
-            Admin Login
+            Admin Dashboard
           </Button>
         </div>
       </section>

@@ -2,26 +2,12 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
 
 const HeroSectionButtons = () => {
   const navigate = useNavigate();
-  const { user, userDetails } = useAuth();
-  
+
   const handleGetStarted = () => {
-    if (user) {
-      // Redirect based on actual user role
-      if (userDetails?.role === 'admin') {
-        navigate("/admin");
-      } else if (userDetails?.role === 'partner') {
-        navigate("/partner");
-      } else {
-        navigate("/customer");
-      }
-    } else {
-      // Navigate to signup with customer intent
-      navigate("/signup?type=customer");
-    }
+    navigate("/customer");
   };
 
   return (

@@ -14,7 +14,6 @@ import Journal from "./pages/Journal";
 import OurStory from "./pages/OurStory";
 import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
-import ProtectedRoute from "./components/ProtectedRoute";
 import SignupPage from "./pages/SignupPage";
 
 // Shop submenu pages
@@ -73,8 +72,8 @@ import { default as AdminSettings } from "./pages/admin/settings";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false, // Prevent excessive refetching
-      retry: 1, // Limit retries to prevent loops
+      refetchOnWindowFocus: false,
+      retry: 1,
     },
   },
 });
@@ -90,7 +89,7 @@ const App = () => (
             {/* Public routes */}
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/signup" element={<SignupPage />} /> {/* Add new signup route */}
+            <Route path="/signup" element={<SignupPage />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/shop/cgm" element={<ShopCGM />} />
             <Route path="/shop/workouts" element={<ShopWorkouts />} />
@@ -104,189 +103,49 @@ const App = () => (
             <Route path="/our-story" element={<OurStory />} />
             <Route path="/contact" element={<Contact />} />
             
-            {/* Protected dashboard route - redirects based on role */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
+            {/* Dashboard route - redirects based on role */}
+            <Route path="/dashboard" element={<Dashboard />} />
             
-            {/* Customer dashboard routes */}
-            <Route path="/customer" element={
-              <ProtectedRoute requiredRole="customer">
-                <CustomerDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/customer/program" element={
-              <ProtectedRoute requiredRole="customer">
-                <CustomerProgram />
-              </ProtectedRoute>
-            } />
-            <Route path="/customer/cgm" element={
-              <ProtectedRoute requiredRole="customer">
-                <CustomerCGMTracker />
-              </ProtectedRoute>
-            } />
-            <Route path="/customer/coach" element={
-              <ProtectedRoute requiredRole="customer">
-                <CustomerGeoDietCoach />
-              </ProtectedRoute>
-            } />
-            <Route path="/customer/progress" element={
-              <ProtectedRoute requiredRole="customer">
-                <CustomerProgress />
-              </ProtectedRoute>
-            } />
-            <Route path="/customer/ask-coach" element={
-              <ProtectedRoute requiredRole="customer">
-                <CustomerAskCoach />
-              </ProtectedRoute>
-            } />
-            <Route path="/customer/videos" element={
-              <ProtectedRoute requiredRole="customer">
-                <CustomerVideos />
-              </ProtectedRoute>
-            } />
-            <Route path="/customer/settings" element={
-              <ProtectedRoute requiredRole="customer">
-                <CustomerSettings />
-              </ProtectedRoute>
-            } />
-            <Route path="/customer/support" element={
-              <ProtectedRoute requiredRole="customer">
-                <CustomerSupport />
-              </ProtectedRoute>
-            } />
+            {/* Customer dashboard routes - now public access */}
+            <Route path="/customer" element={<CustomerDashboard />} />
+            <Route path="/customer/program" element={<CustomerProgram />} />
+            <Route path="/customer/cgm" element={<CustomerCGMTracker />} />
+            <Route path="/customer/coach" element={<CustomerGeoDietCoach />} />
+            <Route path="/customer/progress" element={<CustomerProgress />} />
+            <Route path="/customer/ask-coach" element={<CustomerAskCoach />} />
+            <Route path="/customer/videos" element={<CustomerVideos />} />
+            <Route path="/customer/settings" element={<CustomerSettings />} />
+            <Route path="/customer/support" element={<CustomerSupport />} />
             
-            {/* Partner dashboard routes */}
-            <Route path="/partner" element={
-              <ProtectedRoute requiredRole="partner">
-                <PartnerDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/partner/clients" element={
-              <ProtectedRoute requiredRole="partner">
-                <ClientManagement />
-              </ProtectedRoute>
-            } />
-            <Route path="/partner/requests" element={
-              <ProtectedRoute requiredRole="partner">
-                <AccessRequests />
-              </ProtectedRoute>
-            } />
-            <Route path="/partner/reports" element={
-              <ProtectedRoute requiredRole="partner">
-                <PartnerDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/partner/plans" element={
-              <ProtectedRoute requiredRole="partner">
-                <PlansManagement />
-              </ProtectedRoute>
-            } />
-            <Route path="/partner/content" element={
-              <ProtectedRoute requiredRole="partner">
-                <ContentManagement />
-              </ProtectedRoute>
-            } />
-            <Route path="/partner/announcements" element={
-              <ProtectedRoute requiredRole="partner">
-                <Announcements />
-              </ProtectedRoute>
-            } />
-            <Route path="/partner/settings" element={
-              <ProtectedRoute requiredRole="partner">
-                <Settings />
-              </ProtectedRoute>
-            } />
-            <Route path="/partner/support" element={
-              <ProtectedRoute requiredRole="partner">
-                <Support />
-              </ProtectedRoute>
-            } />
+            {/* Partner dashboard routes - now public access */}
+            <Route path="/partner" element={<PartnerDashboard />} />
+            <Route path="/partner/clients" element={<ClientManagement />} />
+            <Route path="/partner/requests" element={<AccessRequests />} />
+            <Route path="/partner/reports" element={<PartnerDashboard />} />
+            <Route path="/partner/plans" element={<PlansManagement />} />
+            <Route path="/partner/content" element={<ContentManagement />} />
+            <Route path="/partner/announcements" element={<Announcements />} />
+            <Route path="/partner/settings" element={<Settings />} />
+            <Route path="/partner/support" element={<Support />} />
             
-            {/* Admin routes */}
-            <Route path="/admin/login" element={<Navigate to="/auth" replace />} />
-            <Route path="/admin" element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/partners" element={
-              <ProtectedRoute requiredRole="admin">
-                <Partners />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/partners/add" element={
-              <ProtectedRoute requiredRole="admin">
-                <AddPartner />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/partners/map" element={
-              <ProtectedRoute requiredRole="admin">
-                <PartnersMap />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/customers" element={
-              <ProtectedRoute requiredRole="admin">
-                <Customers />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/customers/reports" element={
-              <ProtectedRoute requiredRole="admin">
-                <CustomerReports />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/packages" element={
-              <ProtectedRoute requiredRole="admin">
-                <Packages />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/packages/add" element={
-              <ProtectedRoute requiredRole="admin">
-                <AddPackage />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/content/videos" element={
-              <ProtectedRoute requiredRole="admin">
-                <Videos />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/content/blog" element={
-              <ProtectedRoute requiredRole="admin">
-                <Blog />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/analytics" element={
-              <ProtectedRoute requiredRole="admin">
-                <Analytics />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/partner-locator" element={
-              <ProtectedRoute requiredRole="admin">
-                <PartnerLocator />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/email" element={
-              <ProtectedRoute requiredRole="admin">
-                <Email />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/legal/terms" element={
-              <ProtectedRoute requiredRole="admin">
-                <Terms />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/legal/policy" element={
-              <ProtectedRoute requiredRole="admin">
-                <Policy />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin/settings" element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminSettings />
-              </ProtectedRoute>
-            } />
+            {/* Admin routes - now public access */}
+            <Route path="/admin/login" element={<Navigate to="/admin" replace />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/partners" element={<Partners />} />
+            <Route path="/admin/partners/add" element={<AddPartner />} />
+            <Route path="/admin/partners/map" element={<PartnersMap />} />
+            <Route path="/admin/customers" element={<Customers />} />
+            <Route path="/admin/customers/reports" element={<CustomerReports />} />
+            <Route path="/admin/packages" element={<Packages />} />
+            <Route path="/admin/packages/add" element={<AddPackage />} />
+            <Route path="/admin/content/videos" element={<Videos />} />
+            <Route path="/admin/content/blog" element={<Blog />} />
+            <Route path="/admin/analytics" element={<Analytics />} />
+            <Route path="/admin/partner-locator" element={<PartnerLocator />} />
+            <Route path="/admin/email" element={<Email />} />
+            <Route path="/admin/legal/terms" element={<Terms />} />
+            <Route path="/admin/legal/policy" element={<Policy />} />
+            <Route path="/admin/settings" element={<AdminSettings />} />
             
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
