@@ -29,19 +29,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userDetails, setUserDetails] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [authChecked, setAuthChecked] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Prevent multiple initialization attempts
-    if (authChecked) return;
-    
     let mounted = true;
     
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
         if (!mounted) return;
+        
+        console.log('Auth state change:', event, currentSession?.user?.id);
         
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
@@ -52,9 +50,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (mounted) {
               fetchUserDetails(currentSession.user.id);
             }
-          }, 0);
+          }, 100);
         } else if (event === 'SIGNED_OUT') {
           setUserDetails(null);
+        }
+        
+        // Set loading to false after processing auth state
+        if (mounted) {
+          setLoading(false);
         }
       }
     );
@@ -65,6 +68,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         
         if (mounted) {
+          console.log('Initial session check:', currentSession?.user?.id);
           setSession(currentSession);
           setUser(currentSession?.user ?? null);
           
@@ -73,13 +77,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
           
           setLoading(false);
-          setAuthChecked(true);
         }
       } catch (error) {
         console.error("Error initializing auth:", error);
         if (mounted) {
           setLoading(false);
-          setAuthChecked(true);
         }
       }
     };
@@ -90,12 +92,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [authChecked]);
+  }, []); // Remove authChecked dependency to prevent infinite loop
 
   const fetchUserDetails = async (userId: string | undefined) => {
     if (!userId) return;
     
     try {
+      console.log('Fetching user details for:', userId);
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -107,6 +110,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
       
+      console.log('User details fetched:', data);
       setUserDetails(data);
     } catch (error) {
       console.error('Error fetching user details:', error);
