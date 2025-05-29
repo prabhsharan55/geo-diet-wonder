@@ -213,7 +213,10 @@ const Index = () => {
             <p className="text-xl text-[#363230] mb-10">
               Track, Workouts, Balanced diets, Live sessions and many more.
             </p>
-            <Button className="bg-gradient-to-r from-[#3A2D70] to-[#7072B7] rounded-full text-lg w-fit uppercase">
+            <Button 
+              onClick={() => window.location.href = "/signup?type=customer"}
+              className="bg-gradient-to-r from-[#3A2D70] to-[#7072B7] rounded-full text-lg w-fit uppercase"
+            >
               Get Started for Free
             </Button>
           </div>
@@ -285,10 +288,32 @@ const Index = () => {
               </div>
             </div>
 
-            <Button className="mt-12 bg-gradient-to-r from-[#3A2D70] to-[#7072B7] rounded-full w-fit uppercase">
+            <Button 
+              onClick={() => window.location.href = "/signup?type=partner"}
+              className="mt-12 bg-gradient-to-r from-[#3A2D70] to-[#7072B7] rounded-full w-fit uppercase"
+            >
               Become a partner
             </Button>
           </div>
+        </div>
+      </section>
+
+      {/* Admin Access Section */}
+      <section className="py-16 px-4 md:px-8 lg:px-40 bg-gray-50">
+        <div className="text-center">
+          <h2 className="text-3xl md:text-4xl font-lyon font-medium mb-6">
+            System Administration
+          </h2>
+          <p className="text-lg text-gray-600 mb-8">
+            Access the admin panel to manage the platform
+          </p>
+          <Button 
+            onClick={() => window.location.href = "/auth?admin=true"}
+            variant="outline"
+            className="border-2 border-gray-400 text-gray-700 hover:bg-gray-100"
+          >
+            Admin Login
+          </Button>
         </div>
       </section>
 

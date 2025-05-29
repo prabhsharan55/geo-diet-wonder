@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,8 +12,8 @@ type AuthContextType = {
   isAdmin: boolean;
   isPartner: boolean;
   isCustomer: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string, metadata?: Record<string, any>) => Promise<{data?: {user: User} | null, error?: Error | null} | void>;
+  signIn: (email: string, password: string, redirectTo?: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, metadata?: Record<string, any>, redirectTo?: string) => Promise<{data?: {user: User} | null, error?: Error | null} | void>;
   signOut: () => Promise<void>;
   loading: boolean;
 };
@@ -143,7 +144,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, redirectTo?: string) => {
     setLoading(true);
     try {
       // Clean up existing state
@@ -166,15 +167,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (data.user) {
         toast.success("Signed in successfully");
         
-        // Use metadata to determine redirect
-        const userRole = data.user.user_metadata?.role || 'customer';
-        
-        if (userRole === 'admin') {
-          window.location.href = '/admin';
-        } else if (userRole === 'partner') {
-          window.location.href = '/partner';
+        // Use custom redirect path if provided, otherwise use role-based redirect
+        if (redirectTo) {
+          window.location.href = redirectTo;
         } else {
-          window.location.href = '/customer';
+          // Use metadata to determine redirect
+          const userRole = data.user.user_metadata?.role || 'customer';
+          
+          if (userRole === 'admin') {
+            window.location.href = '/admin';
+          } else if (userRole === 'partner') {
+            window.location.href = '/partner';
+          } else {
+            window.location.href = '/customer';
+          }
         }
       }
     } catch (error: any) {
@@ -184,7 +190,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string, metadata?: Record<string, any>) => {
+  const signUp = async (email: string, password: string, fullName: string, metadata?: Record<string, any>, redirectTo?: string) => {
     setLoading(true);
     try {
       // Clean up existing state
@@ -259,13 +265,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         toast.success("Registration successful! Welcome to GeoDiet!");
         
-        // Redirect based on role
-        if (userRole === 'admin') {
-          window.location.href = '/admin';
-        } else if (userRole === 'partner') {
-          window.location.href = '/partner';
+        // Use custom redirect path if provided, otherwise use role-based redirect
+        if (redirectTo) {
+          window.location.href = redirectTo;
         } else {
-          window.location.href = '/customer';
+          // Redirect based on role
+          if (userRole === 'admin') {
+            window.location.href = '/admin';
+          } else if (userRole === 'partner') {
+            window.location.href = '/partner';
+          } else {
+            window.location.href = '/customer';
+          }
         }
       }
     } catch (error: any) {

@@ -6,13 +6,21 @@ import { useAuth } from "@/context/AuthContext";
 
 const HeroSectionButtons = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, userDetails } = useAuth();
   
   const handleGetStarted = () => {
     if (user) {
-      navigate("/customer");
+      // Redirect based on actual user role
+      if (userDetails?.role === 'admin') {
+        navigate("/admin");
+      } else if (userDetails?.role === 'partner') {
+        navigate("/partner");
+      } else {
+        navigate("/customer");
+      }
     } else {
-      navigate("/signup");
+      // Navigate to signup with customer intent
+      navigate("/signup?type=customer");
     }
   };
 

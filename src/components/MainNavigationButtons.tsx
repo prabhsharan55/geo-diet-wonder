@@ -19,7 +19,17 @@ const MainNavigationButtons = () => {
   const navigate = useNavigate();
   
   const handleGetStarted = () => {
-    navigate("/signup");
+    navigate("/signup?type=customer");
+  };
+
+  const handleDashboardClick = () => {
+    if (userDetails?.role === 'admin') {
+      navigate("/admin");
+    } else if (userDetails?.role === 'partner') {
+      navigate("/partner");
+    } else {
+      navigate("/customer");
+    }
   };
 
   // Function to get user initials for avatar
@@ -68,7 +78,7 @@ const MainNavigationButtons = () => {
               <p className="text-xs text-muted-foreground">{userDetails?.email}</p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate("/customer")}>
+            <DropdownMenuItem onClick={handleDashboardClick}>
               <User className="mr-2 h-4 w-4" />
               Dashboard
             </DropdownMenuItem>
