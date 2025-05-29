@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,7 +24,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userDetails, setUserDetails] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
     let mounted = true;
@@ -167,11 +165,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (data.user) {
         toast.success("Signed in successfully");
         
-        // Use custom redirect path if provided, otherwise use role-based redirect
+        // Use the provided redirect path, don't override it
         if (redirectTo) {
           window.location.href = redirectTo;
         } else {
-          // Use metadata to determine redirect
+          // Use metadata to determine redirect only if no specific redirect was provided
           const userRole = data.user.user_metadata?.role || 'customer';
           
           if (userRole === 'admin') {
@@ -265,11 +263,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         toast.success("Registration successful! Welcome to GeoDiet!");
         
-        // Use custom redirect path if provided, otherwise use role-based redirect
+        // Use the provided redirect path, don't override it
         if (redirectTo) {
           window.location.href = redirectTo;
         } else {
-          // Redirect based on role
+          // Redirect based on role only if no specific redirect was provided
           if (userRole === 'admin') {
             window.location.href = '/admin';
           } else if (userRole === 'partner') {
@@ -329,7 +327,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
