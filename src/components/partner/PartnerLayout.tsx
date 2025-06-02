@@ -12,7 +12,7 @@ const PartnerLayout = ({ children }: PartnerLayoutProps) => {
   
   return (
     <div className="flex h-screen bg-gray-50">
-      <PartnerSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      <PartnerSidebar />
       <div className="flex-1 flex flex-col overflow-auto">
         <PartnerHeader sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         <main className="flex-1 overflow-auto p-6">

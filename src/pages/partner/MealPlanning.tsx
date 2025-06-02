@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,7 +32,7 @@ const MealPlanning = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch customers for the clinic
+  // Fetch customers for the clinic with proper joins
   const { data: customers } = useQuery({
     queryKey: ['clinic-customers'],
     queryFn: async () => {
@@ -40,7 +41,10 @@ const MealPlanning = () => {
         .select(`
           id,
           email,
-          user_profiles!inner(full_name)
+          users!customers_user_id_fkey(
+            id,
+            full_name
+          )
         `)
         .eq('access_status', 'active');
       
@@ -228,7 +232,7 @@ const MealPlanning = () => {
                   <SelectContent>
                     {customers?.map((customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
-                        {customer.user_profiles?.full_name} ({customer.email})
+                        {customer.users?.full_name} ({customer.email})
                       </SelectItem>
                     ))}
                   </SelectContent>
