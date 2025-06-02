@@ -1,3 +1,4 @@
+
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -45,9 +46,9 @@ import ApplicationStatus from "./pages/partner/ApplicationStatus";
 function App() {
   return (
     <QueryClientProvider client={new QueryClient()}>
-      <AuthProvider>
-        <UserDataProvider>
-          <Router>
+      <Router>
+        <AuthProvider>
+          <UserDataProvider>
             <Routes>
               {/* Public routes */}
               <Route path="/" element={<Index />} />
@@ -236,9 +237,9 @@ function App() {
               {/* Fallback route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </Router>
-        </UserDataProvider>
-      </AuthProvider>
+          </UserDataProvider>
+        </AuthProvider>
+      </Router>
     </QueryClientProvider>
   );
 }

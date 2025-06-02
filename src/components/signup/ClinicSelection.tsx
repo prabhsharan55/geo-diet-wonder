@@ -60,7 +60,7 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
         }
         
         setPartners(partnersWithClinics);
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching partners:', error);
         toast.error('Failed to load partners');
       } finally {

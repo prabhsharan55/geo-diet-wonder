@@ -49,7 +49,7 @@ const PartnerDashboard = () => {
   // Fetch real customer statistics for this partner
   const { data: customerStats } = useQuery({
     queryKey: ['partner-customer-stats', userDetails?.id],
-    queryFn: async () => {
+    queryFn: async (): Promise<{ total: number; active: number; pending: number }> => {
       console.log('Fetching customer stats for partner:', userDetails?.id);
       
       if (!userDetails?.id) {
@@ -69,8 +69,8 @@ const PartnerDashboard = () => {
 
       const stats = {
         total: allCustomers?.length || 0,
-        active: allCustomers?.length || 0, // For now, all linked customers are considered active
-        pending: 0 // No pending status in current schema
+        active: allCustomers?.length || 0,
+        pending: 0
       };
 
       console.log('Calculated stats:', stats);
@@ -82,7 +82,7 @@ const PartnerDashboard = () => {
   // Fetch recent customer activity for this partner
   const { data: recentActivity } = useQuery({
     queryKey: ['partner-recent-activity', userDetails?.id],
-    queryFn: async () => {
+    queryFn: async (): Promise<any[]> => {
       console.log('Fetching recent activity for partner:', userDetails?.id);
       
       if (!userDetails?.id) {
@@ -107,11 +107,11 @@ const PartnerDashboard = () => {
   });
 
   const getActivityText = (customer: any) => {
-    return 'Active access'; // Simplified since we don't have access_status in users table
+    return 'Active access';
   };
 
   const getStatusColor = (status: string) => {
-    return 'bg-green-100 text-green-800'; // All customers are active for now
+    return 'bg-green-100 text-green-800';
   };
 
   const formatDate = (dateString: string) => {
