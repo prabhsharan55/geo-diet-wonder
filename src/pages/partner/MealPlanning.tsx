@@ -32,15 +32,18 @@ const MealPlanning = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch customers for the clinic with proper joins
-  const { data: customers } = useQuery({
+  // Fetch customers for the clinic with proper joins and better error handling
+  const { data: customers, isLoading: customersLoading, error: customersError } = useQuery({
     queryKey: ['clinic-customers'],
     queryFn: async () => {
+      console.log('Fetching customers for meal planning...');
+      
       const { data, error } = await supabase
         .from('customers')
         .select(`
           id,
           email,
+          access_status,
           users!customers_user_id_fkey(
             id,
             full_name
@@ -48,10 +51,19 @@ const MealPlanning = () => {
         `)
         .eq('access_status', 'active');
       
+      console.log('Customers query result:', { data, error });
+      
       if (error) throw error;
       return data || [];
     },
   });
+
+  // Add debugging for the specific customer name issue
+  console.log('All customers data:', customers);
+  console.log('Looking for prabhsharan in customers:', customers?.find(c => 
+    c.email?.toLowerCase().includes('prabhsharan') || 
+    c.users?.full_name?.toLowerCase().includes('prabhsharan')
+  ));
 
   // Get selected customer details
   const selectedCustomerData = customers?.find(customer => customer.id === selectedCustomer);
@@ -219,6 +231,23 @@ const MealPlanning = () => {
           <p className="text-gray-500 mt-1">Create personalized meal plans for your customers</p>
         </div>
 
+        {/* Debug section */}
+        {process.env.NODE_ENV === 'development' && (
+          <Card>
+            <CardContent className="p-4">
+              <h3 className="font-medium mb-2">Debug Info:</h3>
+              <p className="text-sm">Customers loading: {customersLoading ? 'Yes' : 'No'}</p>
+              <p className="text-sm">Customers error: {customersError?.message || 'None'}</p>
+              <p className="text-sm">Total customers found: {customers?.length || 0}</p>
+              <div className="mt-2 max-h-32 overflow-y-auto">
+                <pre className="text-xs bg-gray-100 p-2 rounded">
+                  {JSON.stringify(customers, null, 2)}
+                </pre>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Customer and Date Selection */}
         <Card>
           <CardHeader>
@@ -228,21 +257,32 @@ const MealPlanning = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="customer">Customer</Label>
-                <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a customer" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white z-50 max-h-60 overflow-y-auto">
-                    {customers?.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id} className="flex items-center">
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4" />
-                          <span>{customer.users?.full_name || 'No Name'} ({customer.email})</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {customersLoading ? (
+                  <div className="p-2 text-sm text-gray-500">Loading customers...</div>
+                ) : customersError ? (
+                  <div className="p-2 text-sm text-red-500">Error loading customers: {customersError.message}</div>
+                ) : (
+                  <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select a customer" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white z-50 max-h-60 overflow-y-auto">
+                      {customers?.map((customer) => (
+                        <SelectItem key={customer.id} value={customer.id} className="flex items-center">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4" />
+                            <span>
+                              {customer.users?.full_name || 'No Name'} ({customer.email})
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                {customers?.length === 0 && !customersLoading && (
+                  <div className="p-2 text-sm text-gray-500">No active customers found</div>
+                )}
               </div>
 
               <div>

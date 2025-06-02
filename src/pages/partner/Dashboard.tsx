@@ -12,9 +12,13 @@ const PartnerDashboard = () => {
   const { data: customerStats } = useQuery({
     queryKey: ['partner-customer-stats'],
     queryFn: async () => {
+      console.log('Fetching customer stats...');
+      
       const { data: allCustomers, error: allError } = await supabase
         .from('customers')
         .select('id, access_status, expiry_date');
+
+      console.log('All customers query result:', { allCustomers, allError });
 
       if (allError) throw allError;
 
@@ -30,12 +34,15 @@ const PartnerDashboard = () => {
         return expiryDate >= today && expiryDate <= sevenDaysFromNow;
       }) || [];
 
-      return {
+      const stats = {
         total: allCustomers?.length || 0,
         active: activeCustomers.length,
         frozen: frozenCustomers.length,
         expiring: expiringSoon.length
       };
+
+      console.log('Calculated stats:', stats);
+      return stats;
     },
   });
 
@@ -43,6 +50,8 @@ const PartnerDashboard = () => {
   const { data: recentActivity } = useQuery({
     queryKey: ['partner-recent-activity'],
     queryFn: async () => {
+      console.log('Fetching recent activity...');
+      
       const { data, error } = await supabase
         .from('customers')
         .select(`
@@ -57,6 +66,8 @@ const PartnerDashboard = () => {
         `)
         .order('created_at', { ascending: false })
         .limit(5);
+
+      console.log('Recent activity query result:', { data, error });
 
       if (error) throw error;
       return data || [];
@@ -139,6 +150,21 @@ const PartnerDashboard = () => {
             className="bg-gradient-to-br from-[#FFEFEF] to-white"
           />
         </div>
+
+        {/* Debug section - temporarily show raw data */}
+        {process.env.NODE_ENV === 'development' && (
+          <Card>
+            <CardContent className="p-4">
+              <h3 className="font-medium mb-2">Debug Info:</h3>
+              <pre className="text-xs bg-gray-100 p-2 rounded">
+                Customer Stats: {JSON.stringify(customerStats, null, 2)}
+              </pre>
+              <pre className="text-xs bg-gray-100 p-2 rounded mt-2">
+                Recent Activity Count: {recentActivity?.length || 0}
+              </pre>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Quick Actions */}
         <div>
