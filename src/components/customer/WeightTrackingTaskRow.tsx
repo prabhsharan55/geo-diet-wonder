@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,16 +5,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Weight, Plus, Check, Camera, Clock } from 'lucide-react';
+import { Weight, Plus, Check, Clock, Edit, Trash2 } from 'lucide-react';
 import { WeightLog } from '@/context/UserDataContext';
 
 interface WeightTrackingTaskRowProps {
   weightLogs: WeightLog[];
   weekNumber: number;
   onAddWeightLog: (weightLog: Omit<WeightLog, 'id'>) => void;
+  canEdit?: boolean;
 }
 
-const WeightTrackingTaskRow = ({ weightLogs, weekNumber, onAddWeightLog }: WeightTrackingTaskRowProps) => {
+const WeightTrackingTaskRow = ({ weightLogs, weekNumber, onAddWeightLog, canEdit = false }: WeightTrackingTaskRowProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [weightData, setWeightData] = useState({
     weight: '',
@@ -59,6 +59,16 @@ const WeightTrackingTaskRow = ({ weightLogs, weekNumber, onAddWeightLog }: Weigh
     return `${formattedDate} at ${formattedTime}`;
   };
 
+  const handleEdit = (weightId: string) => {
+    console.log('Edit weight:', weightId);
+    // TODO: Implement edit functionality
+  };
+
+  const handleDelete = (weightId: string) => {
+    console.log('Delete weight:', weightId);
+    // TODO: Implement delete functionality
+  };
+
   return (
     <div className="space-y-3">
       <h3 className="font-semibold text-lg flex items-center gap-2">
@@ -70,64 +80,66 @@ const WeightTrackingTaskRow = ({ weightLogs, weekNumber, onAddWeightLog }: Weigh
       </h3>
       
       <div className="flex gap-3 overflow-x-auto pb-2">
-        {/* Add new weight log */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Card className="min-w-[250px] cursor-pointer hover:shadow-md border-dashed border-2">
-              <CardContent className="p-4 flex flex-col items-center justify-center h-40">
-                <Plus className="h-8 w-8 text-gray-400 mb-2" />
-                <span className="text-sm text-gray-500">Log Weight</span>
-              </CardContent>
-            </Card>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Track Your Weight</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="weight">Weight (lbs)</Label>
-                <Input
-                  id="weight"
-                  type="number"
-                  value={weightData.weight}
-                  onChange={(e) => setWeightData(prev => ({ ...prev, weight: e.target.value }))}
-                  placeholder="Enter your weight"
-                />
+        {/* Add new weight log - only show if canEdit */}
+        {canEdit && (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Card className="min-w-[250px] cursor-pointer hover:shadow-md border-dashed border-2">
+                <CardContent className="p-4 flex flex-col items-center justify-center h-40">
+                  <Plus className="h-8 w-8 text-gray-400 mb-2" />
+                  <span className="text-sm text-gray-500">Log Weight</span>
+                </CardContent>
+              </Card>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Track Your Weight</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="weight">Weight (lbs)</Label>
+                  <Input
+                    id="weight"
+                    type="number"
+                    value={weightData.weight}
+                    onChange={(e) => setWeightData(prev => ({ ...prev, weight: e.target.value }))}
+                    placeholder="Enter your weight"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="notes">Notes (optional)</Label>
+                  <Textarea
+                    id="notes"
+                    value={weightData.notes}
+                    onChange={(e) => setWeightData(prev => ({ ...prev, notes: e.target.value }))}
+                    placeholder="Any notes about your weight..."
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="photo">Photo (optional)</Label>
+                  <Input
+                    id="photo"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                  />
+                  {selectedImage && (
+                    <div className="mt-2">
+                      <img 
+                        src={URL.createObjectURL(selectedImage)} 
+                        alt="Weight tracking preview" 
+                        className="w-full h-32 object-cover rounded-md"
+                      />
+                    </div>
+                  )}
+                </div>
+                <Button onClick={handleSubmit} className="w-full">
+                  Log Weight
+                </Button>
               </div>
-              <div>
-                <Label htmlFor="notes">Notes (optional)</Label>
-                <Textarea
-                  id="notes"
-                  value={weightData.notes}
-                  onChange={(e) => setWeightData(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Any notes about your weight..."
-                />
-              </div>
-              <div>
-                <Label htmlFor="photo">Photo (optional)</Label>
-                <Input
-                  id="photo"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                />
-                {selectedImage && (
-                  <div className="mt-2">
-                    <img 
-                      src={URL.createObjectURL(selectedImage)} 
-                      alt="Weight tracking preview" 
-                      className="w-full h-32 object-cover rounded-md"
-                    />
-                  </div>
-                )}
-              </div>
-              <Button onClick={handleSubmit} className="w-full">
-                Log Weight
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* Existing weight logs */}
         {recentLogs.map((weightLog) => (
@@ -157,9 +169,32 @@ const WeightTrackingTaskRow = ({ weightLogs, weekNumber, onAddWeightLog }: Weigh
                 <p className="text-xs text-gray-600 mb-3 line-clamp-2">{weightLog.notes}</p>
               )}
               
-              <Button size="sm" variant="outline" className="w-full" disabled>
-                Logged
-              </Button>
+              {canEdit ? (
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => handleEdit(weightLog.id)}
+                  >
+                    <Edit className="h-3 w-3 mr-1" />
+                    Edit
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1 text-red-600 hover:text-red-700"
+                    onClick={() => handleDelete(weightLog.id)}
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Delete
+                  </Button>
+                </div>
+              ) : (
+                <Button size="sm" variant="outline" className="w-full" disabled>
+                  Logged
+                </Button>
+              )}
             </CardContent>
           </Card>
         ))}

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,16 +5,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Utensils, Plus, Check, Camera, Clock } from 'lucide-react';
+import { Utensils, Plus, Check, Clock, Edit, Trash2 } from 'lucide-react';
 import { MealLog } from '@/context/UserDataContext';
 
 interface MealLogTaskRowProps {
   mealLogs: MealLog[];
   weekNumber: number;
   onAddMealLog: (mealLog: Omit<MealLog, 'id'>) => void;
+  canEdit?: boolean;
 }
 
-const MealLogTaskRow = ({ mealLogs, weekNumber, onAddMealLog }: MealLogTaskRowProps) => {
+const MealLogTaskRow = ({ mealLogs, weekNumber, onAddMealLog, canEdit = false }: MealLogTaskRowProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [mealData, setMealData] = useState({
     mealType: '',
@@ -59,15 +59,17 @@ const MealLogTaskRow = ({ mealLogs, weekNumber, onAddMealLog }: MealLogTaskRowPr
   const formatDateTime = (date: string, time: string) => {
     const dateObj = new Date(date);
     const formattedDate = dateObj.toLocaleDateString();
-    // Convert 24-hour time to 12-hour format if needed
-    const timeFormatted = time.includes(':') && !time.includes('AM') && !time.includes('PM')
-      ? new Date(`2000-01-01 ${time}`).toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
-          minute: '2-digit',
-          hour12: true 
-        })
-      : time;
-    return `${formattedDate} at ${timeFormatted}`;
+    return `${formattedDate} at ${time}`;
+  };
+
+  const handleEdit = (mealId: string) => {
+    console.log('Edit meal:', mealId);
+    // TODO: Implement edit functionality
+  };
+
+  const handleDelete = (mealId: string) => {
+    console.log('Delete meal:', mealId);
+    // TODO: Implement delete functionality
   };
 
   return (
@@ -81,72 +83,74 @@ const MealLogTaskRow = ({ mealLogs, weekNumber, onAddMealLog }: MealLogTaskRowPr
       </h3>
       
       <div className="flex gap-3 overflow-x-auto pb-2">
-        {/* Add new meal log */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Card className="min-w-[250px] cursor-pointer hover:shadow-md border-dashed border-2">
-              <CardContent className="p-4 flex flex-col items-center justify-center h-40">
-                <Plus className="h-8 w-8 text-gray-400 mb-2" />
-                <span className="text-sm text-gray-500">Add Meal</span>
-              </CardContent>
-            </Card>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Log Your Meal</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="mealType">Meal Type</Label>
-                <Input
-                  id="mealType"
-                  value={mealData.mealType}
-                  onChange={(e) => setMealData(prev => ({ ...prev, mealType: e.target.value }))}
-                  placeholder="e.g., Breakfast, Lunch, Dinner"
-                />
+        {/* Add new meal log - only show if canEdit */}
+        {canEdit && (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Card className="min-w-[250px] cursor-pointer hover:shadow-md border-dashed border-2">
+                <CardContent className="p-4 flex flex-col items-center justify-center h-40">
+                  <Plus className="h-8 w-8 text-gray-400 mb-2" />
+                  <span className="text-sm text-gray-500">Add Meal</span>
+                </CardContent>
+              </Card>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Log Your Meal</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="mealType">Meal Type</Label>
+                  <Input
+                    id="mealType"
+                    value={mealData.mealType}
+                    onChange={(e) => setMealData(prev => ({ ...prev, mealType: e.target.value }))}
+                    placeholder="e.g., Breakfast, Lunch, Dinner"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="description">What did you eat?</Label>
+                  <Textarea
+                    id="description"
+                    value={mealData.description}
+                    onChange={(e) => setMealData(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Describe your meal..."
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="time">Time (optional)</Label>
+                  <Input
+                    id="time"
+                    type="time"
+                    value={mealData.time}
+                    onChange={(e) => setMealData(prev => ({ ...prev, time: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="photo">Photo</Label>
+                  <Input
+                    id="photo"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                  />
+                  {selectedImage && (
+                    <div className="mt-2">
+                      <img 
+                        src={URL.createObjectURL(selectedImage)} 
+                        alt="Meal preview" 
+                        className="w-full h-32 object-cover rounded-md"
+                      />
+                    </div>
+                  )}
+                </div>
+                <Button onClick={handleSubmit} className="w-full">
+                  Log Meal
+                </Button>
               </div>
-              <div>
-                <Label htmlFor="description">What did you eat?</Label>
-                <Textarea
-                  id="description"
-                  value={mealData.description}
-                  onChange={(e) => setMealData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Describe your meal..."
-                />
-              </div>
-              <div>
-                <Label htmlFor="time">Time (optional)</Label>
-                <Input
-                  id="time"
-                  type="time"
-                  value={mealData.time}
-                  onChange={(e) => setMealData(prev => ({ ...prev, time: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="photo">Photo</Label>
-                <Input
-                  id="photo"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                />
-                {selectedImage && (
-                  <div className="mt-2">
-                    <img 
-                      src={URL.createObjectURL(selectedImage)} 
-                      alt="Meal preview" 
-                      className="w-full h-32 object-cover rounded-md"
-                    />
-                  </div>
-                )}
-              </div>
-              <Button onClick={handleSubmit} className="w-full">
-                Log Meal
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* Existing meal logs */}
         {todayLogs.map((meal) => (
@@ -174,9 +178,32 @@ const MealLogTaskRow = ({ mealLogs, weekNumber, onAddMealLog }: MealLogTaskRowPr
               <h4 className="font-medium text-sm mb-1">{meal.mealType}</h4>
               <p className="text-xs text-gray-600 mb-3 line-clamp-2">{meal.description}</p>
               
-              <Button size="sm" variant="outline" className="w-full" disabled>
-                Logged
-              </Button>
+              {canEdit ? (
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => handleEdit(meal.id)}
+                  >
+                    <Edit className="h-3 w-3 mr-1" />
+                    Edit
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1 text-red-600 hover:text-red-700"
+                    onClick={() => handleDelete(meal.id)}
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Delete
+                  </Button>
+                </div>
+              ) : (
+                <Button size="sm" variant="outline" className="w-full" disabled>
+                  Logged
+                </Button>
+              )}
             </CardContent>
           </Card>
         ))}

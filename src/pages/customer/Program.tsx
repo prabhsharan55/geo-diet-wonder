@@ -26,6 +26,7 @@ const Program = () => {
   const currentDate = new Date();
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const currentDayName = dayNames[currentDate.getDay()];
+  const currentDayOfWeek = currentDate.getDay() === 0 ? 7 : currentDate.getDay(); // Convert Sunday (0) to 7
   
   // Check if user just completed a week (simulate checking on page load)
   useEffect(() => {
@@ -69,7 +70,7 @@ const Program = () => {
 
   const overallCompletion = Math.round(((currentWeek - 1) / totalWeeks) * 100);
 
-  // Generate day tabs for the current week
+  // Generate day tabs for any week
   const generateDayTabs = () => {
     const days = [];
     for (let i = 1; i <= 7; i++) {
@@ -90,6 +91,11 @@ const Program = () => {
       day: 'numeric' 
     };
     return currentDate.toLocaleDateString('en-US', options);
+  };
+
+  // Check if it's current day for edit/delete permissions
+  const isCurrentDay = (weekNumber: number, dayNumber: number) => {
+    return weekNumber === currentWeek && dayNumber === currentDayOfWeek;
   };
 
   return (
@@ -114,7 +120,7 @@ const Program = () => {
               <span>Overall Completion</span>
               <span className="font-medium">{overallCompletion}%</span>
             </div>
-            <div className="max-w-sm">
+            <div className="max-w-xs">
               <AnimatedProgressBar 
                 value={overallCompletion} 
                 userName={userData.name}
@@ -127,7 +133,7 @@ const Program = () => {
         
         <Tabs defaultValue={`week-${currentWeek}`} className="w-full">
           <div className="overflow-x-auto">
-            <TabsList className="w-full min-w-max grid grid-flow-col">
+            <TabsList className="w-full min-w-max grid" style={{ gridTemplateColumns: `repeat(${totalWeeks}, minmax(80px, 1fr))` }}>
               {program.weeks.map((week) => {
                 const status = getWeekStatus(week.weekNumber);
                 return (
@@ -171,115 +177,76 @@ const Program = () => {
                   </Card>
                 )}
 
-                {/* Day tabs for current week */}
-                {isCurrentWeek && (
-                  <Tabs defaultValue="day-1" className="w-full">
-                    <TabsList className="w-full grid grid-cols-7">
-                      {generateDayTabs().map((day) => (
-                        <TabsTrigger 
-                          key={`day-${day.day}`} 
-                          value={`day-${day.day}`}
-                          className="text-xs px-2 py-1"
-                          onClick={() => setSelectedDay(day.day)}
-                        >
-                          <span className="truncate">
-                            Day {day.day}
-                            <br />
-                            <span className="text-xs text-gray-500">{day.name}</span>
-                          </span>
-                        </TabsTrigger>
-                      ))}
-                    </TabsList>
-                    
+                {/* Day tabs for all weeks (not just current) */}
+                <Tabs defaultValue="day-1" className="w-full">
+                  <TabsList className="w-full grid grid-cols-7">
                     {generateDayTabs().map((day) => (
-                      <TabsContent key={`day-content-${day.day}`} value={`day-${day.day}`} className="mt-4">
-                        <Card>
-                          <CardHeader>
-                            <CardTitle className="text-lg">
-                              Day {day.day} - {day.name} Tracking
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-6">
-                              <VideoTaskRow 
-                                videos={week.tasks.videos}
-                                weekNumber={week.weekNumber}
-                                onVideoComplete={(videoId) => markVideoWatched(week.weekNumber, videoId)}
-                              />
-                              
-                              <MealLogTaskRow 
-                                mealLogs={week.tasks.mealLogs.filter(log => 
-                                  new Date(log.date).getDay() === (day.day % 7)
-                                )}
-                                weekNumber={week.weekNumber}
-                                onAddMealLog={(mealLog) => addMealLog(week.weekNumber, mealLog)}
-                              />
-                              
-                              <WeightTrackingTaskRow 
-                                weightLogs={week.tasks.weightLogs}
-                                weekNumber={week.weekNumber}
-                                onAddWeightLog={(weightLog) => addWeightLog(week.weekNumber, weightLog)}
-                              />
-                            </div>
-                          </CardContent>
-                        </Card>
-                      </TabsContent>
+                      <TabsTrigger 
+                        key={`day-${day.day}`} 
+                        value={`day-${day.day}`}
+                        className="text-xs px-2 py-1"
+                        onClick={() => setSelectedDay(day.day)}
+                      >
+                        <span className="truncate">
+                          Day {day.day}
+                          <br />
+                          <span className="text-xs text-gray-500">{day.name}</span>
+                        </span>
+                      </TabsTrigger>
                     ))}
-                  </Tabs>
-                )}
-
-                {/* Week overview for non-current weeks */}
-                {!isCurrentWeek && (
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg flex items-center justify-between">
-                        <span>Week {week.weekNumber} Overview</span>
-                        <div className="flex items-center gap-2">
-                          <div className="text-sm font-medium px-3 py-1 rounded-full bg-gray-100">
-                            {completion}% Complete
+                  </TabsList>
+                  
+                  {generateDayTabs().map((day) => (
+                    <TabsContent key={`day-content-${day.day}`} value={`day-${day.day}`} className="mt-4">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-lg">
+                            Day {day.day} - {day.name} Tracking
+                            {isCurrentWeek && day.day === currentDayOfWeek && (
+                              <span className="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Today</span>
+                            )}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-6">
+                            <VideoTaskRow 
+                              videos={week.tasks.videos}
+                              weekNumber={week.weekNumber}
+                              onVideoComplete={(videoId) => markVideoWatched(week.weekNumber, videoId)}
+                            />
+                            
+                            <MealLogTaskRow 
+                              mealLogs={week.tasks.mealLogs.filter(log => 
+                                new Date(log.date).getDay() === (day.day % 7)
+                              )}
+                              weekNumber={week.weekNumber}
+                              onAddMealLog={(mealLog) => addMealLog(week.weekNumber, mealLog)}
+                              canEdit={isCurrentDay(week.weekNumber, day.day)}
+                            />
+                            
+                            <WeightTrackingTaskRow 
+                              weightLogs={week.tasks.weightLogs}
+                              weekNumber={week.weekNumber}
+                              onAddWeightLog={(weightLog) => addWeightLog(week.weekNumber, weightLog)}
+                              canEdit={isCurrentDay(week.weekNumber, day.day)}
+                            />
                           </div>
-                          {status === "current" && canComplete && (
-                            <Button 
-                              onClick={() => handleCompleteWeek(week.weekNumber)}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              Complete Week
-                            </Button>
-                          )}
-                        </div>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="mb-4">
-                        {status === "locked" 
-                          ? `This content will be unlocked when you reach Week ${week.weekNumber}` 
-                          : status === "completed"
-                            ? "You've completed this week! Review the content any time."
-                            : week.focus}
-                      </p>
-                      
-                      {/* Task Grid */}
-                      {status !== "locked" && (
-                        <div className="space-y-6">
-                          <VideoTaskRow 
-                            videos={week.tasks.videos}
-                            weekNumber={week.weekNumber}
-                            onVideoComplete={(videoId) => markVideoWatched(week.weekNumber, videoId)}
-                          />
-                          
-                          <MealLogTaskRow 
-                            mealLogs={week.tasks.mealLogs}
-                            weekNumber={week.weekNumber}
-                            onAddMealLog={(mealLog) => addMealLog(week.weekNumber, mealLog)}
-                          />
-                          
-                          <WeightTrackingTaskRow 
-                            weightLogs={week.tasks.weightLogs}
-                            weekNumber={week.weekNumber}
-                            onAddWeightLog={(weightLog) => addWeightLog(week.weekNumber, weightLog)}
-                          />
-                        </div>
-                      )}
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                  ))}
+                </Tabs>
+
+                {/* Week completion button for current week */}
+                {status === "current" && canComplete && (
+                  <Card>
+                    <CardContent className="p-4 text-center">
+                      <Button 
+                        onClick={() => handleCompleteWeek(week.weekNumber)}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        Complete Week {week.weekNumber}
+                      </Button>
                     </CardContent>
                   </Card>
                 )}
