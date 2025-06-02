@@ -1,4 +1,3 @@
-
 // src/pages/partner/ApplicationStatus.tsx
 
 import { useEffect, useState } from "react";
@@ -26,23 +25,32 @@ const ApplicationStatus = () => {
   useEffect(() => {
     if (!user?.email) return;
 
-    // Wait 1000ms before querying to ensure any recent submissions are processed
+    // Wait 1500ms before querying to ensure any recent submissions are processed
     const timer = setTimeout(() => {
       const fetchStatus = async () => {
         setLoading(true);
         setError(null);
 
-        console.log("Fetching application status for:", user.email);
+        const userEmail = user.email.trim().toLowerCase();
+        console.log("Fetching application status for (normalized):", userEmail);
+        console.log("Original user email:", user.email);
 
+        // Use ILIKE for case-insensitive matching in PostgreSQL
         const { data, error: supabaseError } = await supabase
           .from("partner_applications")
-          .select("status")
-          .eq("email", user.email.trim().toLowerCase())
+          .select("status, email")
+          .ilike("email", userEmail)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        console.log("Supabase returned data:", data, "error:", supabaseError);
+        console.log("Supabase query result:", { data, error: supabaseError });
+        console.log("Query details:", {
+          searchEmail: userEmail,
+          foundEmail: data?.email,
+          foundStatus: data?.status,
+          emailsMatch: data?.email?.toLowerCase() === userEmail
+        });
 
         if (supabaseError) {
           console.error("Error fetching application status:", supabaseError);
@@ -51,7 +59,7 @@ const ApplicationStatus = () => {
           setError("Unable to fetch your application status.");
         } else if (!data) {
           // No row found - this means no application submitted yet
-          console.log("No application row found for:", user.email);
+          console.log("No application row found for:", userEmail);
           setRawStatus("not_found");
         } else {
           setRawStatus(data.status);
@@ -61,7 +69,7 @@ const ApplicationStatus = () => {
       };
 
       fetchStatus();
-    }, 1000);
+    }, 1500);
 
     return () => clearTimeout(timer);
   }, [user?.email]);
@@ -79,6 +87,8 @@ const ApplicationStatus = () => {
     }
     
     const trimmed = rawStatus.trim().toLowerCase();
+    console.log("Normalizing status:", { rawStatus, trimmed });
+    
     if (trimmed === "pending") {
       setValidatedStatus("pending");
     } else if (trimmed === "approved") {
@@ -92,6 +102,7 @@ const ApplicationStatus = () => {
   // If approved, redirect immediately
   useEffect(() => {
     if (validatedStatus === "approved") {
+      console.log("Status is approved, redirecting to partner dashboard");
       navigate("/partner");
     }
   }, [validatedStatus, navigate]);
@@ -131,7 +142,7 @@ const ApplicationStatus = () => {
     }
     return {
       title: "Status Unknown",
-      message: "There's an issue with your application. Please contact support.",
+      message: "There's an issue with your application status. Please contact support.",
       action: null,
     };
   };

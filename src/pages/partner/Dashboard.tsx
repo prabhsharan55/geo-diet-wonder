@@ -1,4 +1,3 @@
-
 // @ts-nocheck
 
 import { BarChart2, Clock, PlusCircle, Upload, Users } from "lucide-react";
@@ -24,12 +23,18 @@ const PartnerDashboard = () => {
       if (!user?.email) return;
       
       try {
+        const userEmail = user.email.trim().toLowerCase();
+        console.log("Dashboard checking application for:", userEmail);
+        
         const result = await supabase
           .from('partner_applications')
-          .select('status')
-          .eq('email', user.email)
-          .single();
+          .select('status, email')
+          .ilike('email', userEmail)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
         
+        console.log("Dashboard application check result:", result);
         setApplication(result.data as any);
       } catch (error) {
         console.error('Error checking application:', error);
@@ -103,7 +108,11 @@ const PartnerDashboard = () => {
     );
   }
 
-  if (!application || application.status !== 'approved') {
+  // Check if application exists and is approved
+  const isApproved = application && application.status?.trim().toLowerCase() === 'approved';
+  
+  if (!application || !isApproved) {
+    console.log("Application not approved, showing ApplicationStatus. Application:", application);
     return <ApplicationStatus />;
   }
 
@@ -201,6 +210,9 @@ const PartnerDashboard = () => {
               <h3 className="font-medium mb-2">Debug Info:</h3>
               <pre className="text-xs bg-gray-100 p-2 rounded">
                 Partner ID: {userDetails?.id || 'Not set'}
+              </pre>
+              <pre className="text-xs bg-gray-100 p-2 rounded mt-2">
+                Application Status: {application?.status || 'Not found'}
               </pre>
               <pre className="text-xs bg-gray-100 p-2 rounded mt-2">
                 Customer Stats: {JSON.stringify(customerStats, null, 2)}
