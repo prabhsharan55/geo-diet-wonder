@@ -5,7 +5,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, CheckCircle, AlertCircle, FileText } from "lucide-react";
+import { Clock, CheckCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -13,140 +13,122 @@ const ApplicationStatus = () => {
   const { userDetails, signOut, user } = useAuth();
   const navigate = useNavigate();
 
-  // Holds the raw status string from the database (or null)
+  // Track the raw status string returned by Supabase (e.g. "pending" or "approved")
   const [rawStatus, setRawStatus] = useState<string | null>(null);
 
-  // Only "pending" | "approved" | "not_found" | null, after we normalize rawStatus
-  const [validatedStatus, setValidatedStatus] = useState<"pending" | "approved" | "not_found" | null>(null);
+  // We’ll normalize rawStatus to one of: "pending" | "approved" | null
+  const [validatedStatus, setValidatedStatus] = useState<"pending" | "approved" | null>(null);
 
+  // True while we’re fetching from Supabase
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  // If Supabase returns an error, capture its message here
+  const [dbError, setDbError] = useState<string | null>(null);
+
+  // Entire Supabase response (data + error), for debugging if needed
+  const [fullResponse, setFullResponse] = useState<any>(null);
 
   useEffect(() => {
-    if (!user?.email) return;
+    // Don’t run until we know the user’s email exists
+    if (!user?.email) {
+      setLoading(false);
+      return;
+    }
 
-    // Wait 1500ms before querying to ensure any recent submissions are processed
-    const timer = setTimeout(() => {
-      const fetchStatus = async () => {
-        setLoading(true);
-        setError(null);
+    // Add a short delay so that right after signup we give Supabase a moment to commit the row
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      setDbError(null);
 
-        const userEmail = user.email.trim().toLowerCase();
-        console.log("Fetching application status for (normalized):", userEmail);
-        console.log("Original user email:", user.email);
+      // Normalize the email to lowercase (Trim whitespace, just in case)
+      const normalizedEmail = user.email.trim().toLowerCase();
 
-        // Use ILIKE for case-insensitive matching in PostgreSQL
-        const { data, error: supabaseError } = await supabase
-          .from("partner_applications")
-          .select("status, email")
-          .ilike("email", userEmail)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+      // Query using ILIKE, which is case‐insensitive (e.g. 'cohif70519@baxima.com' matches 'COHIF70519@BAXIMA.COM')
+      const { data, error } = await supabase
+        .from("partner_applications")
+        .select("status")
+        .ilike("email", normalizedEmail)    // <-- case‐insensitive match
+        .maybeSingle();
 
-        console.log("Supabase query result:", { data, error: supabaseError });
-        console.log("Query details:", {
-          searchEmail: userEmail,
-          foundEmail: data?.email,
-          foundStatus: data?.status,
-          emailsMatch: data?.email?.toLowerCase() === userEmail
-        });
+      console.log("Supabase partner_applications response:", { data, error });
+      setFullResponse({ data, error });
 
-        if (supabaseError) {
-          console.error("Error fetching application status:", supabaseError);
-          toast.error("Could not fetch your application status.");
-          setRawStatus(null);
-          setError("Unable to fetch your application status.");
-        } else if (!data) {
-          // No row found - this means no application submitted yet
-          console.log("No application row found for:", userEmail);
-          setRawStatus("not_found");
-        } else {
-          setRawStatus(data.status);
-        }
+      if (error) {
+        // Something went wrong at the DB level
+        setDbError(error.message);
+        setRawStatus(null);
+      } else if (!data) {
+        // No row found for that email
+        setRawStatus(null);
+      } else {
+        // We got exactly one row; read its status string
+        setRawStatus(data.status);
+      }
 
-        setLoading(false);
-      };
-
-      fetchStatus();
-    }, 1500);
+      setLoading(false);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [user?.email]);
 
-  // Normalize rawStatus → exactly "pending" | "approved" | "not_found" or null
+  // Convert rawStatus → exactly "pending" | "approved" or null
   useEffect(() => {
-    if (rawStatus === null) {
+    if (!rawStatus) {
       setValidatedStatus(null);
       return;
     }
-    
-    if (rawStatus === "not_found") {
-      setValidatedStatus("not_found");
-      return;
-    }
-    
     const trimmed = rawStatus.trim().toLowerCase();
-    console.log("Normalizing status:", { rawStatus, trimmed });
-    
     if (trimmed === "pending") {
       setValidatedStatus("pending");
     } else if (trimmed === "approved") {
       setValidatedStatus("approved");
     } else {
-      console.warn(`Unrecognized status: "${rawStatus}", marking as not_found`);
-      setValidatedStatus("not_found");
+      setValidatedStatus(null);
     }
   }, [rawStatus]);
 
-  // If approved, redirect immediately
+  // Whenever we see validatedStatus === "approved", redirect immediately into the dashboard
   useEffect(() => {
     if (validatedStatus === "approved") {
-      console.log("Status is approved, redirecting to partner dashboard");
-      navigate("/partner");
+      navigate("/partner/dashboard");
     }
   }, [validatedStatus, navigate]);
 
-  const handleSubmitApplication = () => {
-    navigate("/partner-signup");
-  };
-
+  // Choose the correct icon based on validatedStatus
   const getStatusIcon = () => {
-    if (validatedStatus === "approved") return <CheckCircle className="h-12 w-12 text-green-500" />;
-    if (validatedStatus === "pending") return <Clock className="h-12 w-12 text-yellow-500" />;
-    if (validatedStatus === "not_found") return <FileText className="h-12 w-12 text-blue-500" />;
+    if (validatedStatus === "approved") {
+      return <CheckCircle className="h-12 w-12 text-green-500" />;
+    }
+    if (validatedStatus === "pending") {
+      return <Clock className="h-12 w-12 text-yellow-500" />;
+    }
     return <AlertCircle className="h-12 w-12 text-red-500" />;
   };
 
+  // Return the title/message based on validatedStatus
   const getStatusMessage = () => {
     if (validatedStatus === "approved") {
       return {
         title: "Application Approved!",
-        message: "Your partner application has been approved. Redirecting to dashboard…",
+        message: "Your partner application has been approved. Redirecting you now…",
         action: "Go to Dashboard",
       };
     }
     if (validatedStatus === "pending") {
       return {
         title: "Application Under Review",
-        message: "Your application is currently being reviewed by our team. You will be notified once a decision is made.",
+        message: "Your partner application is currently pending review.",
         action: null,
-      };
-    }
-    if (validatedStatus === "not_found") {
-      return {
-        title: "No Application Found",
-        message: "You haven't submitted a partner application yet. Please submit an application to get started.",
-        action: "Submit Application",
       };
     }
     return {
       title: "Status Unknown",
-      message: "There's an issue with your application status. Please contact support.",
+      message: "We couldn’t find a pending application for your email. Please contact support or try again.",
       action: null,
     };
   };
 
+  // Show a spinner while loading
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -155,35 +137,36 @@ const ApplicationStatus = () => {
     );
   }
 
-  if (error) {
+  // If Supabase returned an error, show it here
+  if (dbError) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <CardTitle className="text-2xl">Application Error</CardTitle>
+            <CardTitle className="text-2xl">Database Error</CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-6">
-            <p className="text-gray-600">{error}</p>
-            <div className="space-y-3">
-              <Button className="w-full" onClick={() => window.location.reload()}>
-                Try Again
-              </Button>
-              <Button variant="outline" className="w-full" onClick={signOut}>
-                Sign Out
-              </Button>
-            </div>
+            <p className="text-gray-600">Could not fetch your application status:</p>
+            <pre className="bg-gray-100 p-2 text-xs rounded">{dbError}</pre>
+            <Button className="w-full" onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+            <Button variant="outline" className="w-full" onClick={signOut}>
+              Sign Out
+            </Button>
           </CardContent>
         </Card>
       </div>
     );
   }
 
+  // Otherwise, render the status card (or “Status Unknown”)
   const status = getStatusMessage();
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-start p-4 space-y-6">
+      <Card className="w-full max-w-md mt-16">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">{getStatusIcon()}</div>
           <CardTitle className="text-2xl">{status.title}</CardTitle>
@@ -193,7 +176,7 @@ const ApplicationStatus = () => {
 
           {userDetails && (
             <div className="bg-gray-100 p-4 rounded-lg text-left">
-              <h4 className="font-medium mb-2">Account Details:</h4>
+              <h4 className="font-medium mb-2">Application Details</h4>
               <p className="text-sm text-gray-600">
                 <strong>Name:</strong> {userDetails.full_name}
               </p>
@@ -201,7 +184,10 @@ const ApplicationStatus = () => {
                 <strong>Email:</strong> {userDetails.email}
               </p>
               <p className="text-sm text-gray-600">
-                <strong>Application Status:</strong> {validatedStatus === "not_found" ? "Not Submitted" : validatedStatus ?? "N/A"}
+                <strong>Raw DB Status:</strong> {rawStatus ?? "none found"}
+              </p>
+              <p className="text-sm text-gray-600">
+                <strong>Normalized Status:</strong> {validatedStatus ?? "null"}
               </p>
               <p className="text-sm text-gray-600">
                 <strong>Account Created:</strong>{" "}
@@ -212,12 +198,7 @@ const ApplicationStatus = () => {
 
           <div className="space-y-3">
             {status.action && validatedStatus === "approved" && (
-              <Button className="w-full" onClick={() => navigate("/partner")}>
-                {status.action}
-              </Button>
-            )}
-            {status.action && validatedStatus === "not_found" && (
-              <Button className="w-full" onClick={handleSubmitApplication}>
+              <Button className="w-full" onClick={() => navigate("/partner/dashboard")}>
                 {status.action}
               </Button>
             )}
@@ -227,6 +208,12 @@ const ApplicationStatus = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* DEBUG: Show entire Supabase response for troubleshooting */}
+      <div className="w-full max-w-md bg-white border border-gray-200 p-4 rounded">
+        <h4 className="font-medium mb-2">Debug Info (Supabase Response)</h4>
+        <pre className="bg-gray-100 p-2 text-xs rounded">{JSON.stringify(fullResponse, null, 2)}</pre>
+      </div>
     </div>
   );
 };
