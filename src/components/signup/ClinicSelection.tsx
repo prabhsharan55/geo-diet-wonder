@@ -21,8 +21,8 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
     const loadPartners = async () => {
       setLoading(true);
       try {
-        // Fetch approved partners directly without complex type inference
-        const partnersResult = await supabase
+        // Cast immediately to prevent deep inference
+        const partnersResult: any = await supabase
           .from('users')
           .select('id, full_name, email')
           .eq('role', 'partner')
@@ -35,7 +35,8 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
         
         if (partnersResult.data) {
           for (const partner of partnersResult.data) {
-            const clinicResult = await supabase
+            // Cast immediately to prevent deep inference
+            const clinicResult: any = await supabase
               .from('clinics')
               .select('name, address, region')
               .eq('partner_id', partner.id)
@@ -80,6 +81,7 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
     );
   }
 
+  // Pre-calculate partner options to avoid JSX inference
   const partnerOptions = partners.map((partner: any) => (
     <SelectItem key={partner.id} value={partner.id}>
       <div className="flex items-center space-x-2">

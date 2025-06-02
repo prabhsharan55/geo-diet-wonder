@@ -1,3 +1,4 @@
+
 import { BarChart2, Clock, PlusCircle, Upload, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,7 +22,8 @@ const PartnerDashboard = () => {
       if (!user?.email) return;
       
       try {
-        const result = await supabase
+        // Cast immediately to prevent deep inference
+        const result: any = await supabase
           .from('partner_applications')
           .select('status')
           .eq('email', user.email)
@@ -44,7 +46,8 @@ const PartnerDashboard = () => {
       if (!userDetails?.id) return;
       
       try {
-        const customersResult = await supabase
+        // Cast immediately to prevent deep inference
+        const customersResult: any = await supabase
           .from('users')
           .select('id, role, created_at')
           .eq('role', 'customer')
@@ -71,7 +74,8 @@ const PartnerDashboard = () => {
       if (!userDetails?.id) return;
       
       try {
-        const activityResult = await supabase
+        // Cast immediately to prevent deep inference
+        const activityResult: any = await supabase
           .from('users')
           .select('id, email, full_name, created_at')
           .eq('role', 'customer')
@@ -124,6 +128,7 @@ const PartnerDashboard = () => {
     return date.toLocaleDateString();
   };
 
+  // Pre-calculate activity rows to avoid JSX inference
   const activityRows = recentActivity.map((customer: any) => (
     <tr key={customer.id} className="hover:bg-gray-50">
       <td className="px-6 py-4 whitespace-nowrap">
