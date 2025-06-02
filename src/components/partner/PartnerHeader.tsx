@@ -1,7 +1,14 @@
 
-import { Bell, Menu } from "lucide-react";
+import { Bell, Menu, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/context/AuthContext";
 
 interface PartnerHeaderProps {
   sidebarOpen: boolean;
@@ -9,6 +16,12 @@ interface PartnerHeaderProps {
 }
 
 const PartnerHeader = ({ sidebarOpen, setSidebarOpen }: PartnerHeaderProps) => {
+  const { signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
   return (
     <header className="bg-white border-b border-gray-200 h-16 flex items-center px-6 sticky top-0 z-10">
       <div className="flex items-center md:hidden">
@@ -33,9 +46,19 @@ const PartnerHeader = ({ sidebarOpen, setSidebarOpen }: PartnerHeaderProps) => {
           <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
         </Button>
         
-        <Avatar>
-          <AvatarFallback className="bg-[#F4D374] text-[#160041]">HC</AvatarFallback>
-        </Avatar>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Avatar className="cursor-pointer">
+              <AvatarFallback className="bg-[#F4D374] text-[#160041]">HC</AvatarFallback>
+            </Avatar>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );
