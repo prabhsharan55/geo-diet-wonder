@@ -4,11 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { useRouter } from "next/router";
+import { useNavigate } from "react-router-dom";
 
 const ApplicationStatus = () => {
   const { user } = useAuth();
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const [applicationStatus, setApplicationStatus] = useState<"pending" | "approved" | null>(null);
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
@@ -43,11 +43,10 @@ const ApplicationStatus = () => {
   }, [user?.email]);
 
   useEffect(() => {
-    // Auto redirect if approved
     if (applicationStatus === "approved") {
-      router.push("/partner/dashboard");
+      navigate("/partner/dashboard");
     }
-  }, [applicationStatus]);
+  }, [applicationStatus, navigate]);
 
   if (loading) {
     return (
@@ -72,9 +71,11 @@ const ApplicationStatus = () => {
                 Your application is currently pending review. We will notify you once it's approved.
               </p>
               {submittedAt && (
-                <p className="text-sm text-gray-500">Submitted on: {new Date(submittedAt).toLocaleDateString()}</p>
+                <p className="text-sm text-gray-500">
+                  Submitted on: {new Date(submittedAt).toLocaleDateString()}
+                </p>
               )}
-              <Button variant="outline" onClick={() => router.reload()}>
+              <Button variant="outline" onClick={() => window.location.reload()}>
                 Refresh Status
               </Button>
             </>
@@ -83,7 +84,7 @@ const ApplicationStatus = () => {
           {applicationStatus === null && (
             <>
               <p className="text-red-600">We couldn't find your application or it’s incomplete.</p>
-              <Button variant="outline" onClick={() => router.reload()}>
+              <Button variant="outline" onClick={() => window.location.reload()}>
                 Try Again
               </Button>
             </>
