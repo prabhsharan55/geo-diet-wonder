@@ -8,17 +8,6 @@ import { MapPin, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-interface Partner {
-  id: string;
-  full_name: string;
-  email: string;
-  clinic?: {
-    name: string;
-    address: string;
-    region: string;
-  };
-}
-
 interface ClinicSelectionProps {
   onSelectClinic: (partnerId: string) => void;
 }
@@ -28,50 +17,45 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
   const [selectedPartner, setSelectedPartner] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
-  const fetchApprovedPartners = async (): Promise<any> => {
-    try {
-      // Fetch approved partners - simplified query
-      const partnersResult = await supabase
-        .from('users')
-        .select('id, full_name, email')
-        .eq('role', 'partner')
-        .eq('approval_status', 'approved')
-        .order('full_name');
-
-      if (partnersResult.error) throw partnersResult.error;
-
-      // Fetch clinic data for each partner
-      const partnersWithClinics: any[] = [];
-      
-      if (partnersResult.data) {
-        for (const partner of partnersResult.data) {
-          const clinicResult = await supabase
-            .from('clinics')
-            .select('name, address, region')
-            .eq('partner_id', partner.id)
-            .single();
-
-          const partnerWithClinic: any = {
-            ...partner,
-            clinic: clinicResult.data || undefined
-          };
-          partnersWithClinics.push(partnerWithClinic);
-        }
-      }
-      
-      return partnersWithClinics;
-    } catch (error) {
-      console.error('Error fetching partners:', error);
-      toast.error('Failed to load partners');
-      return [];
-    }
-  };
-
   useEffect(() => {
     const loadPartners = async () => {
-      const result = await fetchApprovedPartners();
-      setPartners(result as any[]);
-      setLoading(false);
+      setLoading(true);
+      try {
+        // Fetch approved partners directly without complex type inference
+        const partnersResult = await supabase
+          .from('users')
+          .select('id, full_name, email')
+          .eq('role', 'partner')
+          .eq('approval_status', 'approved')
+          .order('full_name');
+
+        if (partnersResult.error) throw partnersResult.error;
+
+        const partnersWithClinics: any[] = [];
+        
+        if (partnersResult.data) {
+          for (const partner of partnersResult.data) {
+            const clinicResult = await supabase
+              .from('clinics')
+              .select('name, address, region')
+              .eq('partner_id', partner.id)
+              .single();
+
+            partnersWithClinics.push({
+              ...partner,
+              clinic: clinicResult.data || undefined
+            });
+          }
+        }
+        
+        setPartners(partnersWithClinics);
+      } catch (error) {
+        console.error('Error fetching partners:', error);
+        toast.error('Failed to load partners');
+        setPartners([]);
+      } finally {
+        setLoading(false);
+      }
     };
 
     loadPartners();
@@ -85,7 +69,7 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
     onSelectClinic(selectedPartner);
   };
 
-  const selectedPartnerData = (partners as any[]).find((p: any) => p.id === selectedPartner);
+  const selectedPartnerData = partners.find(p => p.id === selectedPartner);
 
   if (loading) {
     return (
@@ -96,8 +80,7 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
     );
   }
 
-  // Break JSX mapping into separate variable
-  const partnerOptions = (partners as any[]).map((partner: any) => (
+  const partnerOptions = partners.map((partner: any) => (
     <SelectItem key={partner.id} value={partner.id}>
       <div className="flex items-center space-x-2">
         <Building2 className="h-4 w-4" />

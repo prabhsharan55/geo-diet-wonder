@@ -4,35 +4,92 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PartnerLayout from "@/components/partner/PartnerLayout";
-import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import ApplicationStatus from "./ApplicationStatus";
+import { useState, useEffect } from "react";
 
 const PartnerDashboard = () => {
   const { userDetails, user } = useAuth();
-  
-  // Check if user has an approved application
-  const getApplicationStatus = async (): Promise<any> => {
-    if (!user?.email) return null;
-    
-    const result = await supabase
-      .from('partner_applications')
-      .select('status')
-      .eq('email', user.email)
-      .single();
+  const [application, setApplication] = useState<any>(null);
+  const [applicationLoading, setApplicationLoading] = useState(true);
+  const [customerStats, setCustomerStats] = useState<any>({ total: 0, active: 0, pending: 0 });
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
-    if (result.error) return null;
-    return result.data;
-  };
+  useEffect(() => {
+    const checkApplication = async () => {
+      if (!user?.email) return;
+      
+      try {
+        const result = await supabase
+          .from('partner_applications')
+          .select('status')
+          .eq('email', user.email)
+          .single();
 
-  const { data: application, isLoading: applicationLoading } = useQuery({
-    queryKey: ['partner-application-check', user?.email],
-    queryFn: getApplicationStatus,
-    enabled: !!user?.email,
-  });
+        setApplication(result.data);
+      } catch (error) {
+        console.error('Error checking application:', error);
+        setApplication(null);
+      } finally {
+        setApplicationLoading(false);
+      }
+    };
 
-  // If application is not approved, show application status instead
+    checkApplication();
+  }, [user?.email]);
+
+  useEffect(() => {
+    const fetchCustomerStats = async () => {
+      if (!userDetails?.id) return;
+      
+      try {
+        const customersResult = await supabase
+          .from('users')
+          .select('id, role, created_at')
+          .eq('role', 'customer')
+          .eq('linked_partner_id', userDetails.id);
+
+        if (customersResult.data) {
+          const stats = {
+            total: customersResult.data.length,
+            active: customersResult.data.length,
+            pending: 0
+          };
+          setCustomerStats(stats);
+        }
+      } catch (error) {
+        console.error('Error fetching customer stats:', error);
+      }
+    };
+
+    fetchCustomerStats();
+  }, [userDetails?.id]);
+
+  useEffect(() => {
+    const fetchRecentActivity = async () => {
+      if (!userDetails?.id) return;
+      
+      try {
+        const activityResult = await supabase
+          .from('users')
+          .select('id, email, full_name, created_at')
+          .eq('role', 'customer')
+          .eq('linked_partner_id', userDetails.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (activityResult.data) {
+          setRecentActivity(activityResult.data);
+        }
+      } catch (error) {
+        console.error('Error fetching recent activity:', error);
+      }
+    };
+
+    fetchRecentActivity();
+  }, [userDetails?.id]);
+
   if (applicationLoading) {
     return (
       <PartnerLayout>
@@ -46,74 +103,6 @@ const PartnerDashboard = () => {
   if (!application || application.status !== 'approved') {
     return <ApplicationStatus />;
   }
-
-  // Fetch real customer statistics for this partner
-  const getCustomerStats = async (): Promise<any> => {
-    console.log('Fetching customer stats for partner:', userDetails?.id);
-    
-    if (!userDetails?.id) {
-      console.log('No partner id found');
-      return { total: 0, active: 0, pending: 0 };
-    }
-    
-    const customersResult = await supabase
-      .from('users')
-      .select('id, role, created_at')
-      .eq('role', 'customer')
-      .eq('linked_partner_id', userDetails.id);
-
-    console.log('All customers query result:', customersResult);
-
-    if (customersResult.error) throw customersResult.error;
-
-    const stats = {
-      total: customersResult.data?.length || 0,
-      active: customersResult.data?.length || 0,
-      pending: 0
-    };
-
-    console.log('Calculated stats:', stats);
-    return stats;
-  };
-
-  const { data: customerStatsData } = useQuery({
-    queryKey: ['partner-customer-stats', userDetails?.id],
-    queryFn: getCustomerStats,
-    enabled: !!userDetails?.id,
-  });
-
-  // Fetch recent customer activity for this partner
-  const getRecentActivity = async (): Promise<any[]> => {
-    console.log('Fetching recent activity for partner:', userDetails?.id);
-    
-    if (!userDetails?.id) {
-      console.log('No partner id found');
-      return [];
-    }
-    
-    const activityResult = await supabase
-      .from('users')
-      .select('id, email, full_name, created_at')
-      .eq('role', 'customer')
-      .eq('linked_partner_id', userDetails.id)
-      .order('created_at', { ascending: false })
-      .limit(5);
-
-    console.log('Recent activity query result:', activityResult);
-
-    if (activityResult.error) throw activityResult.error;
-    return activityResult.data || [];
-  };
-
-  const { data: recentActivityData } = useQuery({
-    queryKey: ['partner-recent-activity', userDetails?.id],
-    queryFn: getRecentActivity,
-    enabled: !!userDetails?.id,
-  });
-
-  // Break into separate variables to avoid deep inference
-  const customerStats = (customerStatsData as any) || { total: 0, active: 0, pending: 0 };
-  const recentActivity = (recentActivityData as any[]) || [];
 
   const getActivityText = (customer: any): string => {
     return 'Active access';
@@ -135,7 +124,6 @@ const PartnerDashboard = () => {
     return date.toLocaleDateString();
   };
 
-  // Break activity rows into separate variable
   const activityRows = recentActivity.map((customer: any) => (
     <tr key={customer.id} className="hover:bg-gray-50">
       <td className="px-6 py-4 whitespace-nowrap">
