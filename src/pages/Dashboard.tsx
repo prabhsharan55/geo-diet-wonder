@@ -6,7 +6,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowRight, Menu } from "lucide-react";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { useUserData } from "@/hooks/useUserData";
+import { useUserData } from "@/context/UserDataContext";
 
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
