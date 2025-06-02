@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +25,9 @@ const ApplicationStatus = () => {
       setError(null);
 
       console.log("Fetching application status for:", user.email);
+
+      // Add a small delay to ensure data is available after redirect from signup
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Get exactly 1 row (the newest) so .maybeSingle() won't error if duplicates exist
       const { data, error: supabaseError } = await supabase
