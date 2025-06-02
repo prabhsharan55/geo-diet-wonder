@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +13,6 @@ const ApplicationStatus = () => {
   const navigate = useNavigate();
 
   const [applicationStatus, setApplicationStatus] = useState<"pending" | "approved" | null>(null);
-  const [submittedAt, setSubmittedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,18 +20,27 @@ const ApplicationStatus = () => {
 
     const fetchStatus = async () => {
       setLoading(true);
+      console.log("Fetching application status for:", user.email);
+      
       const { data, error } = await supabase
         .from("partner_applications")
-        .select("status, submitted_at")
+        .select("status")
         .eq("email", user.email)
-        .single();
+        .maybeSingle();
+
+      console.log("APPLICATION FETCHED:", { data, error });
 
       if (error) {
+        console.error("Error fetching application status:", error);
         toast.error("Could not fetch your application status.");
         setApplicationStatus(null);
+      } else if (!data) {
+        // If no application record exists but user is a partner, treat as approved
+        console.log("No application record found, user is partner - treating as approved");
+        setApplicationStatus("approved");
       } else {
-        setApplicationStatus(data?.status ?? null);
-        setSubmittedAt(data?.submitted_at ?? null);
+        console.log("Application status found:", data.status);
+        setApplicationStatus(data.status);
       }
 
       setLoading(false);
@@ -69,7 +78,7 @@ const ApplicationStatus = () => {
     }
     return {
       title: "Status Unknown",
-      message: "There’s an issue with your application. Please contact support.",
+      message: "There's an issue with your application. Please contact support.",
       action: null,
     };
   };
@@ -93,17 +102,12 @@ const ApplicationStatus = () => {
         </CardHeader>
         <CardContent className="text-center space-y-4">
           <p className="text-gray-600">{status.message}</p>
-          {submittedAt && (
-            <p className="text-sm text-gray-500">
-              Submitted on: {new Date(submittedAt).toLocaleDateString()}
-            </p>
-          )}
           {userDetails && (
             <div className="bg-gray-100 p-4 rounded text-left">
               <p><strong>Name:</strong> {userDetails.full_name}</p>
               <p><strong>Email:</strong> {userDetails.email}</p>
               <p><strong>Status:</strong> {applicationStatus}</p>
-              <p><strong>Submitted:</strong> {new Date(userDetails.created_at).toLocaleDateString()}</p>
+              <p><strong>Account Created:</strong> {new Date(userDetails.created_at).toLocaleDateString()}</p>
             </div>
           )}
           <div className="space-y-2">
