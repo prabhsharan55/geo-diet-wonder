@@ -1,4 +1,3 @@
-
 import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,17 +25,20 @@ const ApplicationStatus = () => {
         .from('partner_applications')
         .select('status')
         .eq('email', user.email)
-        .single();
+        .maybeSingle();
 
-      console.log("APPLICATION FETCHED:", result.data);
+      console.log("APPLICATION FETCHED:", result);
 
       if (result.error) {
+        console.error('Error fetching application:', result.error);
         setError("Error fetching your application. Please contact support.");
         return;
       }
 
+      // If no application record exists, but user is a partner, treat as approved
       if (!result.data) {
-        setError("We couldn't find your application. Please contact support.");
+        console.log("No application record found, but user is a partner - treating as approved");
+        setApplicationStatus('approved');
         return;
       }
 
