@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,13 +39,7 @@ const PartnerSignup = () => {
     try {
       console.log("Starting partner signup process for:", formData.email);
 
-      // Step 1: Check if user already exists
-      const { data: existingUser } = await supabase.auth.admin.getUserByEmail(formData.email);
-      if (existingUser.user) {
-        throw new Error("An account with this email already exists. Please sign in instead.");
-      }
-
-      // Step 2: Create the partner application first
+      // Step 1: Create the partner application first
       console.log("Creating partner application...");
       const { data: applicationData, error: applicationError } = await supabase
         .from('partner_applications')
@@ -64,12 +57,16 @@ const PartnerSignup = () => {
 
       if (applicationError) {
         console.error("Partner application creation failed:", applicationError);
+        // Check if it's a duplicate email error
+        if (applicationError.code === '23505') {
+          throw new Error("An application with this email already exists. Please sign in instead or use a different email.");
+        }
         throw new Error(`Failed to create partner application: ${applicationError.message}`);
       }
 
       console.log("Partner application created successfully:", applicationData);
 
-      // Step 3: Create the user account with proper configuration
+      // Step 2: Create the user account with proper configuration
       console.log("Creating user account...");
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email.trim().toLowerCase(),
@@ -94,6 +91,11 @@ const PartnerSignup = () => {
           .delete()
           .eq('id', applicationData.id);
         
+        // Handle specific auth errors
+        if (authError.message.includes('User already registered')) {
+          throw new Error("An account with this email already exists. Please sign in instead.");
+        }
+        
         throw new Error(`Account creation failed: ${authError.message}`);
       }
 
@@ -111,7 +113,7 @@ const PartnerSignup = () => {
 
       console.log("User created successfully:", authData.user);
 
-      // Step 4: Update the user role to partner (backup in case trigger doesn't work)
+      // Step 3: Update the user role to partner (backup in case trigger doesn't work)
       const { error: userUpdateError } = await supabase
         .from('users')
         .update({ role: 'partner' })
