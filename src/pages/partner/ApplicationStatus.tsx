@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,33 +13,34 @@ const ApplicationStatus = () => {
 
   const [applicationStatus, setApplicationStatus] = useState<"pending" | "approved" | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.email) return;
 
     const fetchStatus = async () => {
       setLoading(true);
-      console.log("Fetching application status for:", user.email);
-      
+      setError(null);
+
       const { data, error } = await supabase
         .from("partner_applications")
         .select("status")
         .eq("email", user.email)
         .maybeSingle();
 
-      console.log("APPLICATION FETCHED:", { data, error });
-
       if (error) {
         console.error("Error fetching application status:", error);
         toast.error("Could not fetch your application status.");
+        setError("Unable to fetch your application status.");
         setApplicationStatus(null);
       } else if (!data) {
-        // If no application record exists but user is a partner, treat as approved
-        console.log("No application record found, user is partner - treating as approved");
-        setApplicationStatus("approved");
+        setApplicationStatus(null); // No application found
       } else {
-        console.log("Application status found:", data.status);
-        setApplicationStatus(data.status);
+        if (data.status === "pending" || data.status === "approved") {
+          setApplicationStatus(data.status);
+        } else {
+          setApplicationStatus(null); // Unrecognized status
+        }
       }
 
       setLoading(false);
@@ -78,7 +78,7 @@ const ApplicationStatus = () => {
     }
     return {
       title: "Status Unknown",
-      message: "There's an issue with your application. Please contact support.",
+      message: "There’s an issue with your application. Please contact support.",
       action: null,
     };
   };
@@ -103,10 +103,10 @@ const ApplicationStatus = () => {
         <CardContent className="text-center space-y-4">
           <p className="text-gray-600">{status.message}</p>
           {userDetails && (
-            <div className="bg-gray-100 p-4 rounded text-left">
+            <div className="bg-gray-100 p-4 rounded text-left text-sm text-gray-700 space-y-1">
               <p><strong>Name:</strong> {userDetails.full_name}</p>
               <p><strong>Email:</strong> {userDetails.email}</p>
-              <p><strong>Status:</strong> {applicationStatus}</p>
+              <p><strong>Status:</strong> {applicationStatus || "N/A"}</p>
               <p><strong>Account Created:</strong> {new Date(userDetails.created_at).toLocaleDateString()}</p>
             </div>
           )}
