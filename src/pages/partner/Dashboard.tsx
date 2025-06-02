@@ -1,4 +1,3 @@
-
 import { BarChart2, Clock, PlusCircle, Upload, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,13 +12,6 @@ const PartnerDashboard = () => {
   const { data: customerStats } = useQuery({
     queryKey: ['partner-customer-stats'],
     queryFn: async () => {
-      const { data: totalCustomers, error: totalError } = await supabase
-        .from('customers')
-        .select('id, access_status')
-        .eq('access_status', 'active');
-
-      if (totalError) throw totalError;
-
       const { data: allCustomers, error: allError } = await supabase
         .from('customers')
         .select('id, access_status, expiry_date');
@@ -27,7 +19,7 @@ const PartnerDashboard = () => {
       if (allError) throw allError;
 
       const activeCustomers = allCustomers?.filter(c => c.access_status === 'active') || [];
-      const pendingCustomers = allCustomers?.filter(c => c.access_status === 'pending') || [];
+      const frozenCustomers = allCustomers?.filter(c => c.access_status === 'frozen') || [];
       
       // Calculate expiring soon (within 7 days)
       const today = new Date();
@@ -41,7 +33,7 @@ const PartnerDashboard = () => {
       return {
         total: allCustomers?.length || 0,
         active: activeCustomers.length,
-        pending: pendingCustomers.length,
+        frozen: frozenCustomers.length,
         expiring: expiringSoon.length
       };
     },
@@ -75,12 +67,10 @@ const PartnerDashboard = () => {
     switch (customer.access_status) {
       case 'active':
         return 'Active access';
-      case 'pending':
-        return 'Pending approval';
-      case 'expired':
-        return 'Access expired';
       case 'frozen':
         return 'Access frozen';
+      case 'expired':
+        return 'Access expired';
       default:
         return 'Unknown status';
     }
@@ -90,12 +80,10 @@ const PartnerDashboard = () => {
     switch (status) {
       case 'active':
         return 'bg-green-100 text-green-800';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'expired':
-        return 'bg-red-100 text-red-800';
       case 'frozen':
         return 'bg-blue-100 text-blue-800';
+      case 'expired':
+        return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -139,9 +127,9 @@ const PartnerDashboard = () => {
             className="bg-gradient-to-br from-[#E6E8FF] to-white"
           />
           <StatCard 
-            title="Pending Approvals" 
-            value={customerStats?.pending?.toString() || "0"} 
-            description="Requires attention" 
+            title="Frozen Access" 
+            value={customerStats?.frozen?.toString() || "0"} 
+            description="Temporarily suspended" 
             className="bg-gradient-to-br from-[#FFF9E6] to-white"
           />
           <StatCard 
