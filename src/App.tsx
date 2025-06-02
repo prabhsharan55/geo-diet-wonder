@@ -1,3 +1,4 @@
+
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -7,15 +8,15 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import PartnerSignup from "./pages/PartnerSignup";
 import Shop from "./pages/Shop";
-import ShopCGM from "./pages/ShopCGM";
-import ShopWorkouts from "./pages/ShopWorkouts";
-import ShopDiet from "./pages/ShopDiet";
+import ShopCGM from "./pages/shop/ShopCGM";
+import ShopWorkouts from "./pages/shop/ShopWorkouts";
+import ShopDiet from "./pages/shop/ShopDiet";
 import Nutritionists from "./pages/Nutritionists";
-import NutritionistsFind from "./pages/NutritionistsFind";
-import NutritionistsBecome from "./pages/NutritionistsBecome";
-import NutritionistsAbout from "./pages/NutritionistsAbout";
+import NutritionistsFind from "./pages/nutritionists/NutritionistsFind";
+import NutritionistsBecome from "./pages/nutritionists/NutritionistsBecome";
+import NutritionistsAbout from "./pages/nutritionists/NutritionistsAbout";
 import Journal from "./pages/Journal";
-import ArticleDetail from "./pages/ArticleDetail";
+import ArticleDetail from "./pages/journal/ArticleDetail";
 import OurStory from "./pages/OurStory";
 import Contact from "./pages/Contact";
 import SignupPage from "./pages/SignupPage";
