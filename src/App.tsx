@@ -38,7 +38,6 @@ import Announcements from "./pages/partner/Announcements";
 import PartnerSupport from "./pages/partner/Support";
 import PartnerSettings from "./pages/partner/Settings";
 import AdminDashboard from "./pages/admin/Dashboard";
-import AdminLogin from "./pages/admin/Login";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ApplicationStatus from "./pages/partner/ApplicationStatus";
@@ -224,8 +223,7 @@ function App() {
                 }
               />
 
-              {/* Admin Routes */}
-              <Route path="/admin/login" element={<AdminLogin />} />
+              {/* Admin Routes - Unified auth through /auth?admin=true */}
               <Route
                 path="/admin"
                 element={
