@@ -1,3 +1,5 @@
+// src/pages/partner/ApplicationStatus.tsx
+
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,84 +13,77 @@ const ApplicationStatus = () => {
   const { userDetails, signOut, user } = useAuth();
   const navigate = useNavigate();
 
-  // Separate raw status from database and validated status for UI
+  // Holds the raw status string from the database (or null)
   const [rawStatus, setRawStatus] = useState<string | null>(null);
-  const [validatedStatus, setValidatedStatus] = useState<"pending" | "approved" | "unknown">("unknown");
+
+  // Only "pending" | "approved" | null, after we normalize rawStatus
+  const [validatedStatus, setValidatedStatus] = useState<"pending" | "approved" | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.email) return;
 
-    const fetchStatus = async () => {
-      setLoading(true);
-      setError(null);
+    // Wait 500ms before querying, so Supabase has time to insert the new row
+    const timer = setTimeout(() => {
+      const fetchStatus = async () => {
+        setLoading(true);
+        setError(null);
 
-      console.log("Fetching application status for:", user.email);
+        const { data, error: supabaseError } = await supabase
+          .from("partner_applications")
+          .select("status")
+          .eq("email", user.email.trim().toLowerCase())
+          .order("id", { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-      // Add a small delay to ensure data is available after redirect from signup
-      await new Promise(resolve => setTimeout(resolve, 500));
+        console.log("Supabase returned data:", data, "error:", supabaseError);
 
-      // Get exactly 1 row (the newest) so .maybeSingle() won't error if duplicates exist
-      const { data, error: supabaseError } = await supabase
-        .from("partner_applications")
-        .select("status")
-        .eq("email", user.email)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        if (supabaseError) {
+          console.error("Error fetching application status:", supabaseError);
+          toast.error("Could not fetch your application status.");
+          setRawStatus(null);
+          setError("Unable to fetch your application status.");
+        } else if (!data) {
+          // No row found yet
+          console.log("No application row found for:", user.email);
+          setRawStatus(null);
+        } else {
+          setRawStatus(data.status);
+        }
 
-      console.log("Supabase fetchStatus response:", { data, supabaseError });
+        setLoading(false);
+      };
 
-      if (supabaseError) {
-        console.error("Error fetching application status:", supabaseError);
-        toast.error("Could not fetch your application status.");
-        setError("Unable to fetch your application status.");
-        setRawStatus(null);
-      } else if (!data) {
-        // No matching row at all - this means no application was submitted
-        console.log("No application row found for:", user.email);
-        console.log("User role:", userDetails?.role);
-        // Don't automatically approve - this should be treated as unknown/no application
-        setRawStatus(null);
-      } else {
-        // We got exactly one row
-        console.log("Found application with status:", data.status);
-        setRawStatus(data.status);
-      }
+      fetchStatus();
+    }, 500);
 
-      setLoading(false);
-    };
+    return () => clearTimeout(timer);
+  }, [user?.email]);
 
-    fetchStatus();
-  }, [user?.email, userDetails?.role]);
-
-  // Validate and normalize the raw status whenever it changes
+  // Normalize rawStatus → exactly "pending" | "approved" or null
   useEffect(() => {
     if (rawStatus === null) {
-      setValidatedStatus("unknown");
+      setValidatedStatus(null);
       return;
     }
-
-    // Trim whitespace, convert to lowercase for comparison
     const trimmed = rawStatus.trim().toLowerCase();
-    console.log("Validating status:", rawStatus, "->", trimmed);
-    
     if (trimmed === "pending") {
       setValidatedStatus("pending");
     } else if (trimmed === "approved") {
       setValidatedStatus("approved");
     } else {
-      console.warn(`Unrecognized status value from DB: "${rawStatus}" → marking as unknown.`);
-      setValidatedStatus("unknown");
+      console.warn(`Unrecognized status: "${rawStatus}", marking as null`);
+      setValidatedStatus(null);
     }
   }, [rawStatus]);
 
-  // Auto-redirect as soon as status becomes "approved"
+  // If approved, redirect immediately
   useEffect(() => {
     if (validatedStatus === "approved") {
-      console.log("Status is approved, redirecting to dashboard");
-      navigate("/partner");
+      navigate("/partner/dashboard");
     }
   }, [validatedStatus, navigate]);
 
@@ -109,16 +104,13 @@ const ApplicationStatus = () => {
     if (validatedStatus === "pending") {
       return {
         title: "Application Under Review",
-        message: "Your application is currently being reviewed. We'll notify you once it's processed.",
+        message: "Your application is currently being reviewed.",
         action: null,
       };
     }
-    // validatedStatus === "unknown"
     return {
-      title: "No Application Found",
-      message: rawStatus === null 
-        ? "No partner application found. Please submit an application to access the partner dashboard."
-        : "There's an issue with your application status. Please contact support.",
+      title: "Status Unknown",
+      message: "There’s an issue with your application. Please contact support.",
       action: null,
     };
   };
@@ -177,10 +169,7 @@ const ApplicationStatus = () => {
                 <strong>Email:</strong> {userDetails.email}
               </p>
               <p className="text-sm text-gray-600">
-                <strong>Status:</strong> {validatedStatus}
-              </p>
-              <p className="text-sm text-gray-600">
-                <strong>Raw Status:</strong> {rawStatus || "N/A"}
+                <strong>Status:</strong> {validatedStatus ?? "N/A"}
               </p>
               <p className="text-sm text-gray-600">
                 <strong>Account Created:</strong>{" "}
@@ -191,13 +180,8 @@ const ApplicationStatus = () => {
 
           <div className="space-y-3">
             {status.action && validatedStatus === "approved" && (
-              <Button className="w-full" onClick={() => navigate("/partner")}>
+              <Button className="w-full" onClick={() => navigate("/partner/dashboard")}>
                 {status.action}
-              </Button>
-            )}
-            {rawStatus === null && (
-              <Button className="w-full" onClick={() => navigate("/partner-signup")}>
-                Submit Application
               </Button>
             )}
             <Button variant="outline" className="w-full" onClick={signOut}>
