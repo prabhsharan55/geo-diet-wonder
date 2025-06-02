@@ -24,12 +24,12 @@ interface ClinicSelectionProps {
 }
 
 const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
-  const [partners, setPartners] = useState<Partner[]>([]);
+  const [partners, setPartners] = useState<any[]>([]);
   const [selectedPartner, setSelectedPartner] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchApprovedPartners = async () => {
+    const fetchApprovedPartners = async (): Promise<any> => {
       try {
         // Fetch approved partners - simplified query
         const { data: partnersData, error: partnersError } = await supabase
@@ -42,17 +42,17 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
         if (partnersError) throw partnersError;
 
         // Fetch clinic data for each partner
-        const partnersWithClinics: Partner[] = [];
+        const partnersWithClinics: any[] = [];
         
         if (partnersData) {
-          for (const partner of partnersData) {
+          for (const partner of partnersData as any[]) {
             const { data: clinicData } = await supabase
               .from('clinics')
               .select('name, address, region')
               .eq('partner_id', partner.id)
               .single();
 
-            const partnerWithClinic: Partner = {
+            const partnerWithClinic = {
               ...partner,
               clinic: clinicData || undefined
             };
@@ -80,7 +80,7 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
     onSelectClinic(selectedPartner);
   };
 
-  const selectedPartnerData = partners.find(p => p.id === selectedPartner);
+  const selectedPartnerData = partners.find((p: any) => p.id === selectedPartner);
 
   if (loading) {
     return (
@@ -90,6 +90,16 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
       </div>
     );
   }
+
+  // Break JSX mapping into separate variable
+  const partnerOptions = partners.map((partner: any) => (
+    <SelectItem key={partner.id} value={partner.id}>
+      <div className="flex items-center space-x-2">
+        <Building2 className="h-4 w-4" />
+        <span>{partner.clinic?.name || partner.full_name}</span>
+      </div>
+    </SelectItem>
+  ));
 
   return (
     <div className="space-y-6">
@@ -106,14 +116,7 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
               <SelectValue placeholder="Choose a partner..." />
             </SelectTrigger>
             <SelectContent>
-              {partners.map((partner) => (
-                <SelectItem key={partner.id} value={partner.id}>
-                  <div className="flex items-center space-x-2">
-                    <Building2 className="h-4 w-4" />
-                    <span>{partner.clinic?.name || partner.full_name}</span>
-                  </div>
-                </SelectItem>
-              ))}
+              {partnerOptions}
             </SelectContent>
           </Select>
         </div>

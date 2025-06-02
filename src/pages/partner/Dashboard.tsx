@@ -10,26 +10,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import ApplicationStatus from "./ApplicationStatus";
 
-interface CustomerStats {
-  total: number;
-  active: number;
-  pending: number;
-}
-
-interface CustomerActivity {
-  id: string;
-  email: string;
-  full_name: string;
-  created_at: string;
-}
-
 const PartnerDashboard = () => {
   const { userDetails, user } = useAuth();
   
   // Check if user has an approved application
-  const { data: application, isLoading: applicationLoading } = useQuery({
+  const { data: application, isLoading: applicationLoading } = useQuery<any>({
     queryKey: ['partner-application-check', user?.email],
-    queryFn: async () => {
+    queryFn: async (): Promise<any> => {
       if (!user?.email) return null;
       
       const { data, error } = await supabase
@@ -60,9 +47,9 @@ const PartnerDashboard = () => {
   }
 
   // Fetch real customer statistics for this partner
-  const { data: customerStats } = useQuery<CustomerStats>({
+  const { data: customerStatsData } = useQuery<any>({
     queryKey: ['partner-customer-stats', userDetails?.id],
-    queryFn: async (): Promise<CustomerStats> => {
+    queryFn: async (): Promise<any> => {
       console.log('Fetching customer stats for partner:', userDetails?.id);
       
       if (!userDetails?.id) {
@@ -80,7 +67,7 @@ const PartnerDashboard = () => {
 
       if (allError) throw allError;
 
-      const stats: CustomerStats = {
+      const stats = {
         total: allCustomers?.length || 0,
         active: allCustomers?.length || 0,
         pending: 0
@@ -93,9 +80,9 @@ const PartnerDashboard = () => {
   });
 
   // Fetch recent customer activity for this partner
-  const { data: recentActivity } = useQuery<CustomerActivity[]>({
+  const { data: recentActivityData } = useQuery<any>({
     queryKey: ['partner-recent-activity', userDetails?.id],
-    queryFn: async (): Promise<CustomerActivity[]> => {
+    queryFn: async (): Promise<any> => {
       console.log('Fetching recent activity for partner:', userDetails?.id);
       
       if (!userDetails?.id) {
@@ -114,12 +101,16 @@ const PartnerDashboard = () => {
       console.log('Recent activity query result:', { data, error });
 
       if (error) throw error;
-      return data as CustomerActivity[] || [];
+      return data || [];
     },
     enabled: !!userDetails?.id,
   });
 
-  const getActivityText = (customer: CustomerActivity): string => {
+  // Break into separate variables to avoid deep inference
+  const customerStats = customerStatsData || { total: 0, active: 0, pending: 0 };
+  const recentActivity = (recentActivityData || []) as any[];
+
+  const getActivityText = (customer: any): string => {
     return 'Active access';
   };
 
@@ -138,6 +129,34 @@ const PartnerDashboard = () => {
     if (diffInDays < 7) return `${diffInDays} days ago`;
     return date.toLocaleDateString();
   };
+
+  // Break activity rows into separate variable
+  const activityRows = recentActivity.map((customer: any) => (
+    <tr key={customer.id} className="hover:bg-gray-50">
+      <td className="px-6 py-4 whitespace-nowrap">
+        <div className="flex items-center">
+          <div className="h-8 w-8 rounded-full bg-[#BED1AB] flex items-center justify-center text-[#160041]">
+            {(customer.full_name || customer.email).charAt(0).toUpperCase()}
+          </div>
+          <div className="ml-3">
+            <div>{customer.full_name || 'No Name'}</div>
+            <div className="text-xs text-gray-500">{customer.email}</div>
+          </div>
+        </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        {getActivityText(customer)}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+        {formatDate(customer.created_at)}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor('active')}`}>
+          active
+        </span>
+      </td>
+    </tr>
+  ));
 
   return (
     <PartnerLayout>
@@ -254,32 +273,7 @@ const PartnerDashboard = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {recentActivity.map((customer: CustomerActivity) => (
-                        <tr key={customer.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="h-8 w-8 rounded-full bg-[#BED1AB] flex items-center justify-center text-[#160041]">
-                                {(customer.full_name || customer.email).charAt(0).toUpperCase()}
-                              </div>
-                              <div className="ml-3">
-                                <div>{customer.full_name || 'No Name'}</div>
-                                <div className="text-xs text-gray-500">{customer.email}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {getActivityText(customer)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {formatDate(customer.created_at)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor('active')}`}>
-                              active
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
+                      {activityRows}
                     </tbody>
                   </table>
                 ) : (
