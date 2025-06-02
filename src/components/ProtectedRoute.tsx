@@ -17,7 +17,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     requiredRole 
   });
 
-  // Show loading state
+  // Show loading state while checking auth
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -32,10 +32,15 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     return <Navigate to="/auth" replace />;
   }
 
-  // If user exists but userDetails is null, redirect to signup
+  // If user exists but userDetails is null, wait a bit more or redirect to auth
+  // This prevents the infinite loop by not immediately redirecting to signup
   if (!userDetails) {
-    console.log('User exists but no userDetails, redirecting to signup');
-    return <Navigate to="/signup" replace />;
+    console.log('User exists but no userDetails, showing loading...');
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   // Has required role or no role required - allow access

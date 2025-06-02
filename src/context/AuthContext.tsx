@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,6 +60,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     window.location.href = '/auth';
   };
 
+  const fetchUserDetails = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+      
+      if (data) {
+        console.log('User details fetched from DB:', data);
+        setUserDetails(data);
+        return data;
+      } else if (!data && !error) {
+        console.log('User authenticated but no database record found');
+        return null;
+      } else if (error) {
+        console.warn('Could not fetch user details from DB:', error);
+        return null;
+      }
+    } catch (err) {
+      console.warn('Error fetching user details:', err);
+      return null;
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
     
@@ -72,35 +98,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(currentSession?.user ?? null);
         
         if (event === 'SIGNED_IN' && currentSession?.user) {
-          // Check if user exists in database
+          // Fetch user details with a small delay to allow database operations to complete
           setTimeout(async () => {
             if (mounted) {
-              try {
-                const { data, error } = await supabase
-                  .from('users')
-                  .select('*')
-                  .eq('id', currentSession.user.id)
-                  .maybeSingle();
-                
-                if (data && mounted) {
-                  console.log('User details fetched from DB:', data);
-                  setUserDetails(data);
-                } else if (!data && !error) {
-                  console.log('User authenticated but no database record found - force signing out');
-                  await forceSignOutAndRedirect();
-                  return;
-                } else if (error) {
-                  console.warn('Could not fetch user details from DB:', error);
-                  await forceSignOutAndRedirect();
-                  return;
-                }
-              } catch (err) {
-                console.warn('Error fetching user details:', err);
+              const details = await fetchUserDetails(currentSession.user.id);
+              if (!details) {
                 await forceSignOutAndRedirect();
                 return;
               }
             }
-          }, 100);
+          }, 500); // Increased delay to allow for database operations
         } else if (event === 'SIGNED_OUT') {
           setUserDetails(null);
         }
@@ -122,25 +129,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(currentSession.user);
           
           // Check if user exists in database
-          try {
-            const { data, error } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', currentSession.user.id)
-              .maybeSingle();
-            
-            if (data) {
-              setUserDetails(data);
-            } else if (!data && !error) {
-              console.log('User authenticated but no database record found - force signing out');
-              await forceSignOutAndRedirect();
-              return;
-            } else {
-              await forceSignOutAndRedirect();
-              return;
-            }
-          } catch (err) {
-            console.warn('Error checking user details:', err);
+          const details = await fetchUserDetails(currentSession.user.id);
+          if (!details) {
             await forceSignOutAndRedirect();
             return;
           }
@@ -192,14 +182,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       if (data.user) {
+        // Fetch user details immediately after sign in
+        const details = await fetchUserDetails(data.user.id);
+        
+        if (!details) {
+          throw new Error('User account not found. Please contact support.');
+        }
+        
         toast.success("Signed in successfully");
         
         // Use the provided redirect path, don't override it
         if (redirectTo) {
           window.location.href = redirectTo;
         } else {
-          // Use metadata to determine redirect only if no specific redirect was provided
-          const userRole = data.user.user_metadata?.role || 'customer';
+          // Use database role to determine redirect
+          const userRole = details.role || 'customer';
           
           if (userRole === 'admin') {
             window.location.href = '/admin';
@@ -237,35 +234,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         email,
         password,
         options: {
-          data: userData
+          data: userData,
+          emailRedirectTo: `${window.location.origin}/auth`
         },
       });
       
       if (error) throw error;
       
       if (data.user) {
-        try {
-          // Store additional user details in the users table
-          const { error: insertError } = await supabase
-            .from('users')
-            .insert([
-              { 
-                id: data.user.id,
-                email: data.user.email,
-                full_name: fullName,
-                role: userRole,
-                // Save additional metadata that we want to query
-                ...(metadata?.clinic_id && { clinic_id: metadata.clinic_id })
-              }
-            ]);
-          
-          if (insertError) {
-            console.warn("Could not store user details in DB:", insertError);
-            // Continue with signup anyway using metadata
-          }
-        } catch (err) {
-          console.warn("Error storing user details:", err);
-          // Continue with signup anyway
+        // Store additional user details in the users table
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert([
+            { 
+              id: data.user.id,
+              email: data.user.email,
+              full_name: fullName,
+              role: userRole,
+              // Save additional metadata that we want to query
+              ...(metadata?.clinic_id && { clinic_id: metadata.clinic_id })
+            }
+          ]);
+        
+        if (insertError) {
+          console.error("Could not store user details in DB:", insertError);
+          throw new Error("Failed to create user profile. Please try again.");
         }
         
         // Create role-specific records
@@ -288,6 +281,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           } catch (err) {
             console.warn("Error creating customer record:", err);
           }
+        }
+        
+        // For partners, we need email confirmation, so don't redirect immediately
+        if (userRole === 'partner') {
+          toast.success("Registration successful! Please check your email to confirm your account before signing in.");
+          return { data, error: null };
+        }
+        
+        // For customers, set userDetails immediately if no email confirmation required
+        if (userRole === 'customer') {
+          const userDetailsData = {
+            id: data.user.id,
+            email: data.user.email,
+            full_name: fullName,
+            role: userRole,
+            ...(metadata?.clinic_id && { clinic_id: metadata.clinic_id })
+          };
+          setUserDetails(userDetailsData);
         }
         
         toast.success("Registration successful! Welcome to GeoDiet!");
