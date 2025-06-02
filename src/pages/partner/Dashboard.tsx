@@ -7,10 +7,44 @@ import PartnerLayout from "@/components/partner/PartnerLayout";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import ApplicationStatus from "./ApplicationStatus";
 
 const PartnerDashboard = () => {
-  const { userDetails } = useAuth();
+  const { userDetails, user } = useAuth();
   
+  // Check if user has an approved application
+  const { data: application, isLoading: applicationLoading } = useQuery({
+    queryKey: ['partner-application-check', user?.email],
+    queryFn: async () => {
+      if (!user?.email) return null;
+      
+      const { data, error } = await supabase
+        .from('partner_applications')
+        .select('status')
+        .eq('email', user.email)
+        .single();
+
+      if (error) return null;
+      return data;
+    },
+    enabled: !!user?.email,
+  });
+
+  // If application is not approved, show application status instead
+  if (applicationLoading) {
+    return (
+      <PartnerLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      </PartnerLayout>
+    );
+  }
+
+  if (!application || application.status !== 'approved') {
+    return <ApplicationStatus />;
+  }
+
   // Fetch real customer statistics for this partner's clinic
   const { data: customerStats } = useQuery({
     queryKey: ['partner-customer-stats', userDetails?.clinic_id],

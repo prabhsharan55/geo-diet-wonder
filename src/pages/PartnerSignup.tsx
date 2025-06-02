@@ -4,12 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import MainNavigation from "@/components/MainNavigation";
 import Footer from "@/components/Footer";
 import { Building2, Mail, Phone, MapPin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const PartnerSignup = () => {
   const [formData, setFormData] = useState({
@@ -19,10 +19,11 @@ const PartnerSignup = () => {
     phone: "",
     address: "",
     region: "",
-    zipCode: ""
+    zipCode: "",
+    password: ""
   });
   const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -34,7 +35,8 @@ const PartnerSignup = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase
+      // First, create the partner application
+      const { error: applicationError } = await supabase
         .from('partner_applications')
         .insert({
           clinic_name: formData.clinicName,
@@ -46,51 +48,44 @@ const PartnerSignup = () => {
           zip_code: formData.zipCode
         });
 
-      if (error) throw error;
+      if (applicationError) throw applicationError;
 
-      setSubmitted(true);
-      toast.success("Application submitted successfully! We'll review it within 2-3 business days.");
+      // Create the user account
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.ownerName,
+          }
+        }
+      });
+
+      if (authError) throw authError;
+
+      // Update the user role to partner
+      if (authData.user) {
+        const { error: userError } = await supabase
+          .from('users')
+          .update({ role: 'partner' })
+          .eq('id', authData.user.id);
+
+        if (userError) throw userError;
+      }
+
+      toast.success("Application submitted successfully! Redirecting to dashboard...");
+      
+      // Redirect to partner dashboard
+      setTimeout(() => {
+        navigate('/partner');
+      }, 1500);
+      
     } catch (error: any) {
       toast.error(error.message || "Failed to submit application");
     } finally {
       setLoading(false);
     }
   };
-
-  if (submitted) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <MainNavigation />
-        <div className="container mx-auto py-12">
-          <div className="max-w-2xl mx-auto text-center">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="mb-6">
-                  <Building2 className="h-16 w-16 mx-auto text-green-600 mb-4" />
-                  <h2 className="text-2xl font-bold mb-2">Application Submitted!</h2>
-                  <p className="text-gray-600">
-                    Thank you for your interest in becoming a GeoDiet partner. 
-                    We've received your application and will review it within 2-3 business days.
-                  </p>
-                </div>
-                <div className="space-y-2 text-sm text-gray-500">
-                  <p>You'll receive an email notification once your application is reviewed.</p>
-                  <p>If approved, you'll be able to access the partner dashboard and start managing clients.</p>
-                </div>
-                <Button 
-                  onClick={() => window.location.href = '/'}
-                  className="mt-6"
-                >
-                  Return to Home
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -156,6 +151,20 @@ const PartnerSignup = () => {
                   </div>
                   
                   <div className="space-y-2">
+                    <Label htmlFor="password">Password *</Label>
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      placeholder="Create a secure password"
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -214,9 +223,9 @@ const PartnerSignup = () => {
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <h3 className="font-medium text-blue-900 mb-2">What happens next?</h3>
                   <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• We'll create your account and redirect you to your dashboard</li>
                     <li>• We'll review your application within 2-3 business days</li>
-                    <li>• If approved, you'll receive login credentials and setup instructions</li>
-                    <li>• You can then start adding clients and managing their health programs</li>
+                    <li>• Once approved, you can start adding clients and managing their health programs</li>
                   </ul>
                 </div>
                 
@@ -225,7 +234,7 @@ const PartnerSignup = () => {
                   disabled={loading}
                   className="w-full"
                 >
-                  {loading ? "Submitting..." : "Submit Application"}
+                  {loading ? "Creating Account..." : "Submit Application & Create Account"}
                 </Button>
               </form>
             </CardContent>
