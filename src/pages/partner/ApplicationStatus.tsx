@@ -3,14 +3,63 @@ import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const ApplicationStatus = () => {
-  const { userDetails, signOut } = useAuth();
+  const { userDetails, signOut, user } = useAuth();
+  const [applicationStatus, setApplicationStatus] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.email) return;
+    fetchApplication();
+  }, [user?.email]);
+
+  const fetchApplication = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const result = await supabase
+        .from('partner_applications')
+        .select('status')
+        .eq('email', user.email)
+        .single();
+
+      console.log("APPLICATION FETCHED:", result.data);
+
+      if (result.error) {
+        setError("Error fetching your application. Please contact support.");
+        return;
+      }
+
+      if (!result.data) {
+        setError("We couldn't find your application. Please contact support.");
+        return;
+      }
+
+      const status = result.data.status;
+
+      if (!status) {
+        setError("Your application is missing a status. Please wait or contact us.");
+        return;
+      }
+
+      setApplicationStatus(status);
+    } catch (err) {
+      console.error('Error fetching application:', err);
+      setError("Error fetching your application. Please contact support.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusIcon = () => {
-    if (userDetails?.approval_status === 'approved') {
+    if (applicationStatus === 'approved') {
       return <CheckCircle className="h-12 w-12 text-green-500" />;
-    } else if (userDetails?.approval_status === 'pending') {
+    } else if (applicationStatus === 'pending') {
       return <Clock className="h-12 w-12 text-yellow-500" />;
     } else {
       return <AlertCircle className="h-12 w-12 text-red-500" />;
@@ -18,13 +67,13 @@ const ApplicationStatus = () => {
   };
 
   const getStatusMessage = () => {
-    if (userDetails?.approval_status === 'approved') {
+    if (applicationStatus === 'approved') {
       return {
         title: "Application Approved!",
         message: "Your partner application has been approved. You can now access the partner dashboard.",
         action: "Go to Dashboard"
       };
-    } else if (userDetails?.approval_status === 'pending') {
+    } else if (applicationStatus === 'pending') {
       return {
         title: "Application Under Review",
         message: "Your partner application is currently being reviewed by our admin team. We'll notify you once it's processed.",
@@ -38,6 +87,54 @@ const ApplicationStatus = () => {
       };
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
+            <p>Loading your application status...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <AlertCircle className="h-12 w-12 text-red-500" />
+            </div>
+            <CardTitle className="text-2xl">Application Error</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-6">
+            <p className="text-gray-600">{error}</p>
+            
+            <div className="space-y-3">
+              <Button 
+                className="w-full"
+                onClick={fetchApplication}
+              >
+                Try Again
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={signOut}
+              >
+                Sign Out
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const status = getStatusMessage();
 
@@ -63,7 +160,7 @@ const ApplicationStatus = () => {
                 <strong>Email:</strong> {userDetails.email}
               </p>
               <p className="text-sm text-gray-600">
-                <strong>Status:</strong> {userDetails.approval_status}
+                <strong>Status:</strong> {applicationStatus || 'Loading...'}
               </p>
               <p className="text-sm text-gray-600">
                 <strong>Submitted:</strong> {new Date(userDetails.created_at).toLocaleDateString()}
@@ -72,7 +169,7 @@ const ApplicationStatus = () => {
           )}
 
           <div className="space-y-3">
-            {status.action && userDetails?.approval_status === 'approved' && (
+            {status.action && applicationStatus === 'approved' && (
               <Button 
                 className="w-full"
                 onClick={() => window.location.href = '/partner'}
