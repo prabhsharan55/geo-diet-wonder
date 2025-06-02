@@ -1,7 +1,6 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -13,28 +12,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Bell, LogOut, Settings, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useUserProfile } from "@/hooks/useUserProfile";
+import { useUserData } from "@/context/UserDataContext";
 
 const CustomerHeaderUser = () => {
-  const { userDetails, signOut } = useAuth();
-  const { profile } = useUserProfile();
+  const { userData } = useUserData();
   const navigate = useNavigate();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   // Function to get user initials for avatar
   const getUserInitials = () => {
-    if (profile?.full_name) {
-      return profile.full_name
-        .split(" ")
-        .map((name: string) => name[0])
-        .join("")
-        .toUpperCase()
-        .substring(0, 2);
-    }
+    if (!userData?.name) return "U";
     
-    if (!userDetails?.full_name) return "U";
-    
-    return userDetails.full_name
+    return userData.name
       .split(" ")
       .map((name: string) => name[0])
       .join("")
@@ -43,11 +32,12 @@ const CustomerHeaderUser = () => {
   };
 
   const handleSignOut = async () => {
-    await signOut();
+    // Navigate to home page when signing out
+    navigate("/");
   };
 
-  const displayName = profile?.full_name || userDetails?.full_name || "User";
-  const email = userDetails?.email || "";
+  const displayName = userData?.name || "User";
+  const email = "user@example.com"; // Since we removed auth, using placeholder
 
   return (
     <div className="flex items-center gap-2">

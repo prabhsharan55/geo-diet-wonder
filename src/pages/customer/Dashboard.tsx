@@ -9,7 +9,6 @@ import { useUserData } from "@/context/UserDataContext";
 import ProgressChart from "@/components/charts/ProgressChart";
 import NutritionChart from "@/components/charts/NutritionChart";
 import ActivityChart from "@/components/charts/ActivityChart";
-import DataInputForm from "@/components/dashboard/DataInputForm";
 
 const CustomerDashboard = () => {
   const { userData } = useUserData();
@@ -27,8 +26,6 @@ const CustomerDashboard = () => {
           View Analytics <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </header>
-
-      <DataInputForm />
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <StatCard 
@@ -108,7 +105,7 @@ const CustomerDashboard = () => {
                   ))}
                   {userData.appointments.length === 0 && (
                     <div className="text-center py-8 text-gray-500">
-                      No appointments scheduled. Use the form above to add appointments.
+                      No appointments scheduled. Use the form in Progress & Reports to add appointments.
                     </div>
                   )}
                 </div>

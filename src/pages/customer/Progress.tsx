@@ -1,10 +1,10 @@
-
 import CustomerLayout from "@/components/customer/CustomerLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Download, Upload } from "lucide-react";
+import DataInputForm from "@/components/dashboard/DataInputForm";
 
 const Progress = () => {
   // Dummy data for weight chart
@@ -72,6 +72,8 @@ const Progress = () => {
             Export Report
           </Button>
         </div>
+        
+        <DataInputForm />
         
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           <Card className="bg-gradient-to-br from-[#8D97DE]/10 to-white">
