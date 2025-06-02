@@ -1,3 +1,5 @@
+// src/pages/partner/ApplicationStatus.tsx
+
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,7 +13,9 @@ const ApplicationStatus = () => {
   const { userDetails, signOut, user } = useAuth();
   const navigate = useNavigate();
 
-  const [applicationStatus, setApplicationStatus] = useState<"pending" | "approved" | null>(null);
+  // 1) Change to string|null so we can accept anything, then normalize.
+  const [rawStatus, setRawStatus] = useState<string | null>(null);
+  const [validatedStatus, setValidatedStatus] = useState<"pending" | "approved" | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,25 +26,31 @@ const ApplicationStatus = () => {
       setLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
+      // 2) Grab exactly 1 row (the newest) so .maybeSingle() won't error if duplicates exist
+      const { data, error: supabaseError } = await supabase
         .from("partner_applications")
         .select("status")
         .eq("email", user.email)
+        .order("id", { ascending: false })   // or a timestamp column if you have one
+        .limit(1)
         .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching application status:", error);
+      console.log("Supabase fetchStatus response:", { data, supabaseError });
+
+      if (supabaseError) {
+        console.error("Error fetching application status:", supabaseError);
         toast.error("Could not fetch your application status.");
         setError("Unable to fetch your application status.");
-        setApplicationStatus(null);
+        setRawStatus(null);
+        setValidatedStatus(null);
       } else if (!data) {
-        setApplicationStatus(null); // No application found
+        // No matching row at all
+        console.log("No application row found for:", user.email);
+        setRawStatus(null);
+        setValidatedStatus(null);
       } else {
-        if (data.status === "pending" || data.status === "approved") {
-          setApplicationStatus(data.status);
-        } else {
-          setApplicationStatus(null); // Unrecognized status
-        }
+        // We got exactly one row, but data.status might be any string
+        setRawStatus(data.status);
       }
 
       setLoading(false);
@@ -49,33 +59,54 @@ const ApplicationStatus = () => {
     fetchStatus();
   }, [user?.email]);
 
+  // 3) Whenever rawStatus changes, normalize & validate into "pending" | "approved"
   useEffect(() => {
-    if (applicationStatus === "approved") {
+    if (rawStatus === null) {
+      setValidatedStatus(null);
+      return;
+    }
+
+    // Trim whitespace, convert to lowercase
+    const trimmed = rawStatus.trim().toLowerCase();
+    if (trimmed === "pending") {
+      setValidatedStatus("pending");
+    } else if (trimmed === "approved") {
+      setValidatedStatus("approved");
+    } else {
+      console.warn(`Unrecognized status value from DB: "${rawStatus}" → marking as unknown.`);
+      setValidatedStatus(null);
+    }
+  }, [rawStatus]);
+
+  // 4) Auto-redirect as soon as status becomes "approved"
+  useEffect(() => {
+    if (validatedStatus === "approved") {
       navigate("/partner/dashboard");
     }
-  }, [applicationStatus, navigate]);
+  }, [validatedStatus, navigate]);
 
   const getStatusIcon = () => {
-    if (applicationStatus === "approved") return <CheckCircle className="h-12 w-12 text-green-500" />;
-    if (applicationStatus === "pending") return <Clock className="h-12 w-12 text-yellow-500" />;
+    if (validatedStatus === "approved") return <CheckCircle className="h-12 w-12 text-green-500" />;
+    if (validatedStatus === "pending") return <Clock className="h-12 w-12 text-yellow-500" />;
     return <AlertCircle className="h-12 w-12 text-red-500" />;
   };
 
   const getStatusMessage = () => {
-    if (applicationStatus === "approved") {
+    if (validatedStatus === "approved") {
       return {
         title: "Application Approved!",
-        message: "Your partner application has been approved.",
+        message: "Your partner application has been approved. Redirecting to dashboard…",
         action: "Go to Dashboard",
       };
     }
-    if (applicationStatus === "pending") {
+    if (validatedStatus === "pending") {
       return {
         title: "Application Under Review",
-        message: "Your application is currently being reviewed.",
+        message: "Your application is currently being reviewed. We’ll notify you once it’s processed.",
         action: null,
       };
     }
+    // Either rawStatus was null, or it wasn’t “pending”/“approved”
     return {
       title: "Status Unknown",
       message: "There’s an issue with your application. Please contact support.",
@@ -91,27 +122,63 @@ const ApplicationStatus = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <CardTitle className="text-2xl">Application Error</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-6">
+            <p className="text-gray-600">{error}</p>
+            <div className="space-y-3">
+              <Button className="w-full" onClick={() => window.location.reload()}>
+                Try Again
+              </Button>
+              <Button variant="outline" className="w-full" onClick={signOut}>
+                Sign Out
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const status = getStatusMessage();
 
   return (
-    <div className="max-w-md mx-auto mt-16">
-      <Card className="shadow-lg border border-gray-200">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">{getStatusIcon()}</div>
-          <CardTitle className="text-xl">{status.title}</CardTitle>
+          <CardTitle className="text-2xl">{status.title}</CardTitle>
         </CardHeader>
-        <CardContent className="text-center space-y-4">
+        <CardContent className="text-center space-y-6">
           <p className="text-gray-600">{status.message}</p>
+
           {userDetails && (
-            <div className="bg-gray-100 p-4 rounded text-left text-sm text-gray-700 space-y-1">
-              <p><strong>Name:</strong> {userDetails.full_name}</p>
-              <p><strong>Email:</strong> {userDetails.email}</p>
-              <p><strong>Status:</strong> {applicationStatus || "N/A"}</p>
-              <p><strong>Account Created:</strong> {new Date(userDetails.created_at).toLocaleDateString()}</p>
+            <div className="bg-gray-100 p-4 rounded-lg text-left">
+              <h4 className="font-medium mb-2">Application Details:</h4>
+              <p className="text-sm text-gray-600">
+                <strong>Name:</strong> {userDetails.full_name}
+              </p>
+              <p className="text-sm text-gray-600">
+                <strong>Email:</strong> {userDetails.email}
+              </p>
+              <p className="text-sm text-gray-600">
+                <strong>Status:</strong> {validatedStatus ?? "N/A"}
+              </p>
+              <p className="text-sm text-gray-600">
+                <strong>Account Created:</strong>{" "}
+                {new Date(userDetails.created_at).toLocaleDateString()}
+              </p>
             </div>
           )}
-          <div className="space-y-2">
-            {status.action && (
+
+          <div className="space-y-3">
+            {status.action && validatedStatus === "approved" && (
               <Button className="w-full" onClick={() => navigate("/partner/dashboard")}>
                 {status.action}
               </Button>
