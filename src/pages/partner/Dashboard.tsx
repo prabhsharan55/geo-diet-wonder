@@ -1,5 +1,5 @@
-// @ts-nocheck
 
+// @ts-nocheck
 
 import { BarChart2, Clock, PlusCircle, Upload, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -127,7 +127,7 @@ const PartnerDashboard = () => {
     return date.toLocaleDateString();
   };
 
-  // Pre-render activity rows
+  // Pre-render activity rows to prevent TypeScript deep inference
   const activityRows = recentActivity.map((customer: any) => (
     <tr key={customer.id} className="hover:bg-gray-50">
       <td className="px-6 py-4 whitespace-nowrap">
