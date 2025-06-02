@@ -5,15 +5,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+type UserDetails = {
+  id: string;
+  email: string;
+  full_name: string;
+  role: 'admin' | 'partner' | 'customer';
+  approval_status?: 'pending' | 'approved';
+  linked_partner_id?: string;
+  created_at: string;
+};
+
 type AuthContextType = {
   session: Session | null;
   user: User | null;
-  userDetails: any | null;
-  isAdmin: boolean;
-  isPartner: boolean;
-  isCustomer: boolean;
-  signIn: (email: string, password: string, redirectTo?: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string, metadata?: Record<string, any>, redirectTo?: string) => Promise<{data?: {user: User} | null, error?: Error | null} | void>;
+  userDetails: UserDetails | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, role: 'admin' | 'partner' | 'customer', linkedPartnerId?: string) => Promise<void>;
   signOut: () => Promise<void>;
   loading: boolean;
 };
@@ -23,21 +30,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [userDetails, setUserDetails] = useState<any | null>(null);
+  const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const cleanupAuthState = () => {
-    // Remove standard auth tokens
-    localStorage.removeItem('supabase.auth.token');
-    
-    // Remove all Supabase auth keys from localStorage
     Object.keys(localStorage).forEach((key) => {
       if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
         localStorage.removeItem(key);
       }
     });
-    
-    // Remove from sessionStorage if in use
     Object.keys(sessionStorage || {}).forEach((key) => {
       if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
         sessionStorage.removeItem(key);
@@ -45,43 +47,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     });
   };
 
-  const forceSignOutAndRedirect = async () => {
-    console.log('Force signing out user with no database record');
-    cleanupAuthState();
-    try {
-      await supabase.auth.signOut({ scope: 'global' });
-    } catch (err) {
-      console.warn('Error during force sign out:', err);
-    }
-    setSession(null);
-    setUser(null);
-    setUserDetails(null);
-    toast.error("Your account data was not found. Please sign up again.");
-    window.location.href = '/auth';
-  };
-
-  const fetchUserDetails = async (userId: string) => {
+  const fetchUserDetails = async (userId: string): Promise<UserDetails | null> => {
     try {
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('id', userId)
-        .maybeSingle();
+        .single();
       
-      if (data) {
-        console.log('User details fetched from DB:', data);
-        setUserDetails(data);
-        return data;
-      } else if (!data && !error) {
-        console.log('User authenticated but no database record found');
-        return null;
-      } else if (error) {
-        console.warn('Could not fetch user details from DB:', error);
+      if (error) {
+        console.error('Error fetching user details:', error);
         return null;
       }
+      
+      return data as UserDetails;
     } catch (err) {
-      console.warn('Error fetching user details:', err);
+      console.error('Error fetching user details:', err);
       return null;
+    }
+  };
+
+  const redirectBasedOnRole = (userDetails: UserDetails) => {
+    const { role, approval_status } = userDetails;
+    
+    if (role === 'admin') {
+      navigate('/admin');
+    } else if (role === 'partner') {
+      if (approval_status === 'pending') {
+        navigate('/partner/application-status');
+      } else {
+        navigate('/partner');
+      }
+    } else if (role === 'customer') {
+      navigate('/customer');
     }
   };
 
@@ -98,18 +96,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(currentSession?.user ?? null);
         
         if (event === 'SIGNED_IN' && currentSession?.user) {
-          // Fetch user details with a small delay to allow database operations to complete
           setTimeout(async () => {
             if (mounted) {
               const details = await fetchUserDetails(currentSession.user.id);
-              if (!details) {
-                await forceSignOutAndRedirect();
-                return;
+              if (details) {
+                setUserDetails(details);
+                redirectBasedOnRole(details);
+              } else {
+                console.error('No user details found');
+                await signOut();
               }
             }
-          }, 500); // Increased delay to allow for database operations
+          }, 100);
         } else if (event === 'SIGNED_OUT') {
           setUserDetails(null);
+          navigate('/');
         }
         
         if (mounted) {
@@ -118,20 +119,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
-    // Check for existing session
     const initializeAuth = async () => {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         
         if (mounted && currentSession?.user) {
-          console.log('Initial session check:', currentSession.user.id);
           setSession(currentSession);
           setUser(currentSession.user);
           
-          // Check if user exists in database
           const details = await fetchUserDetails(currentSession.user.id);
-          if (!details) {
-            await forceSignOutAndRedirect();
+          if (details) {
+            setUserDetails(details);
+          } else {
+            await signOut();
             return;
           }
         }
@@ -153,15 +153,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
-  const signIn = async (email: string, password: string, redirectTo?: string) => {
+  const signIn = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // Clean up existing state
       cleanupAuthState();
       
-      // Attempt global sign out
       try {
         await supabase.auth.signOut({ scope: 'global' });
       } catch (err) {
@@ -174,7 +172,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
       
       if (error) {
-        // Provide more helpful error messages
         if (error.message === 'Email not confirmed') {
           throw new Error('Please check your email and click the confirmation link before signing in.');
         }
@@ -182,52 +179,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       if (data.user) {
-        // Fetch user details immediately after sign in
         const details = await fetchUserDetails(data.user.id);
         
         if (!details) {
           throw new Error('User account not found. Please contact support.');
         }
         
+        setUserDetails(details);
         toast.success("Signed in successfully");
-        
-        // Use the provided redirect path, don't override it
-        if (redirectTo) {
-          window.location.href = redirectTo;
-        } else {
-          // Use database role to determine redirect
-          const userRole = details.role || 'customer';
-          
-          if (userRole === 'admin') {
-            window.location.href = '/admin';
-          } else if (userRole === 'partner') {
-            window.location.href = '/partner';
-          } else {
-            window.location.href = '/customer';
-          }
-        }
+        redirectBasedOnRole(details);
       }
     } catch (error: any) {
+      console.error('Sign in error:', error);
       toast.error(error.message || "Failed to sign in");
     } finally {
       setLoading(false);
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string, metadata?: Record<string, any>, redirectTo?: string) => {
+  const signUp = async (email: string, password: string, fullName: string, role: 'admin' | 'partner' | 'customer', linkedPartnerId?: string) => {
     setLoading(true);
     try {
-      // Clean up existing state
       cleanupAuthState();
       
-      // Determine role based on metadata or default to customer
-      const userRole = metadata?.role || 'customer';
-      
-      // Prepare the user metadata
       const userData = {
         full_name: fullName,
-        role: userRole,
-        ...metadata
+        role: role,
+        ...(linkedPartnerId && { linked_partner_id: linkedPartnerId })
       };
       
       const { data, error } = await supabase.auth.signUp({
@@ -242,82 +220,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) throw error;
       
       if (data.user) {
-        // Store additional user details in the users table
-        const { error: insertError } = await supabase
-          .from('users')
-          .insert([
-            { 
-              id: data.user.id,
-              email: data.user.email,
-              full_name: fullName,
-              role: userRole,
-              // Save additional metadata that we want to query
-              ...(metadata?.clinic_id && { clinic_id: metadata.clinic_id })
-            }
-          ]);
+        toast.success("Registration successful! Please check your email to confirm your account.");
         
-        if (insertError) {
-          console.error("Could not store user details in DB:", insertError);
-          throw new Error("Failed to create user profile. Please try again.");
-        }
-        
-        // Create role-specific records
-        if (userRole === 'customer') {
-          try {
-            const { error: customerError } = await supabase
-              .from('customers')
-              .insert([
-                {
-                  user_id: data.user.id,
-                  email: data.user.email,
-                  // Save the selected plan info
-                  ...(metadata?.selectedPlan && { selected_plan: metadata.selectedPlan })
-                }
-              ]);
-            
-            if (customerError) {
-              console.warn("Could not create customer record:", customerError);
-            }
-          } catch (err) {
-            console.warn("Error creating customer record:", err);
-          }
-        }
-        
-        // For partners, we need email confirmation, so don't redirect immediately
-        if (userRole === 'partner') {
-          toast.success("Registration successful! Please check your email to confirm your account before signing in.");
-          return { data, error: null };
-        }
-        
-        // For customers, set userDetails immediately if no email confirmation required
-        if (userRole === 'customer') {
-          const userDetailsData = {
-            id: data.user.id,
-            email: data.user.email,
-            full_name: fullName,
-            role: userRole,
-            ...(metadata?.clinic_id && { clinic_id: metadata.clinic_id })
-          };
-          setUserDetails(userDetailsData);
-        }
-        
-        toast.success("Registration successful! Welcome to GeoDiet!");
-        
-        // Use the provided redirect path, don't override it
-        if (redirectTo) {
-          window.location.href = redirectTo;
+        // For partners, redirect to pending page after email confirmation
+        if (role === 'partner') {
+          navigate('/auth');
         } else {
-          // Redirect based on role only if no specific redirect was provided
-          if (userRole === 'admin') {
-            window.location.href = '/admin';
-          } else if (userRole === 'partner') {
-            window.location.href = '/partner';
-          } else {
-            window.location.href = '/customer';
+          // For customers, they can proceed immediately
+          const details = await fetchUserDetails(data.user.id);
+          if (details) {
+            setUserDetails(details);
+            redirectBasedOnRole(details);
           }
         }
       }
     } catch (error: any) {
+      console.error('Sign up error:', error);
       toast.error(error.message || "Failed to create account");
     } finally {
       setLoading(false);
@@ -327,34 +245,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     setLoading(true);
     try {
-      // Clean up auth state
       cleanupAuthState();
-      
-      // Attempt global sign out
       await supabase.auth.signOut({ scope: 'global' });
-      
+      setSession(null);
+      setUser(null);
+      setUserDetails(null);
       toast.success("Signed out successfully");
-      
-      // Force page reload for a clean state
-      window.location.href = '/';
+      navigate('/');
     } catch (error: any) {
+      console.error('Sign out error:', error);
       toast.error(error.message || "Failed to sign out");
     } finally {
       setLoading(false);
     }
   };
 
-  const isAdmin = userDetails?.role === 'admin';
-  const isPartner = userDetails?.role === 'partner';
-  const isCustomer = userDetails?.role === 'customer';
-
   const value = {
     session,
     user,
     userDetails,
-    isAdmin,
-    isPartner,
-    isCustomer,
     signIn,
     signUp,
     signOut,

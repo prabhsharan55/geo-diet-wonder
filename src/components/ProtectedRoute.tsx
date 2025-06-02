@@ -5,16 +5,18 @@ import { useAuth } from "@/context/AuthContext";
 type ProtectedRouteProps = {
   children: React.ReactNode;
   requiredRole?: "admin" | "partner" | "customer";
+  requireApproval?: boolean;
 };
 
-const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children, requiredRole, requireApproval = false }: ProtectedRouteProps) => {
   const { user, userDetails, loading } = useAuth();
 
   console.log('ProtectedRoute check:', { 
     user: !!user, 
-    userDetails: userDetails ? { role: userDetails.role } : null, 
+    userDetails: userDetails ? { role: userDetails.role, approval_status: userDetails.approval_status } : null, 
     loading, 
-    requiredRole 
+    requiredRole,
+    requireApproval
   });
 
   // Show loading state while checking auth
@@ -32,8 +34,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     return <Navigate to="/auth" replace />;
   }
 
-  // If user exists but userDetails is null, wait a bit more or redirect to auth
-  // This prevents the infinite loop by not immediately redirecting to signup
+  // If user exists but userDetails is null, wait a bit more
   if (!userDetails) {
     console.log('User exists but no userDetails, showing loading...');
     return (
@@ -43,23 +44,32 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
     );
   }
 
-  // Has required role or no role required - allow access
-  if (!requiredRole || userDetails?.role === requiredRole) {
-    console.log('Access granted');
-    return <>{children}</>;
+  // Check role requirement
+  if (requiredRole && userDetails?.role !== requiredRole) {
+    console.log('Wrong role, redirecting based on actual role:', userDetails?.role);
+    if (userDetails?.role === 'admin') {
+      return <Navigate to="/admin" replace />;
+    } else if (userDetails?.role === 'partner') {
+      if (userDetails.approval_status === 'pending') {
+        return <Navigate to="/partner/application-status" replace />;
+      } else {
+        return <Navigate to="/partner" replace />;
+      }
+    } else if (userDetails?.role === 'customer') {
+      return <Navigate to="/customer" replace />;
+    } else {
+      return <Navigate to="/auth" replace />;
+    }
   }
 
-  // Wrong role - redirect based on actual role
-  console.log('Wrong role, redirecting based on actual role:', userDetails?.role);
-  if (userDetails?.role === 'admin') {
-    return <Navigate to="/admin" replace />;
-  } else if (userDetails?.role === 'partner') {
-    return <Navigate to="/partner" replace />;
-  } else if (userDetails?.role === 'customer') {
-    return <Navigate to="/customer" replace />;
-  } else {
-    return <Navigate to="/auth" replace />;
+  // Check approval requirement for partners
+  if (requireApproval && userDetails?.role === 'partner' && userDetails?.approval_status !== 'approved') {
+    return <Navigate to="/partner/application-status" replace />;
   }
+
+  // Access granted
+  console.log('Access granted');
+  return <>{children}</>;
 };
 
 export default ProtectedRoute;

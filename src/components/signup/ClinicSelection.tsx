@@ -4,65 +4,79 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { MapPin, Users, Building2 } from "lucide-react";
+import { MapPin, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type Clinic = {
+type Partner = {
   id: string;
-  name: string;
-  address: string;
-  region: string;
-  owner_email: string;
+  full_name: string;
+  email: string;
+  clinic?: {
+    name: string;
+    address: string;
+    region: string;
+  };
 };
 
 type ClinicSelectionProps = {
-  onSelectClinic: (clinicId: string) => void;
+  onSelectClinic: (partnerId: string) => void;
 };
 
 const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
-  const [clinics, setClinics] = useState<Clinic[]>([]);
-  const [selectedClinic, setSelectedClinic] = useState<string>("");
+  const [partners, setPartners] = useState<Partner[]>([]);
+  const [selectedPartner, setSelectedPartner] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchClinics = async () => {
+    const fetchApprovedPartners = async () => {
       try {
-        // Only fetch clinics that correspond to approved partner applications
+        // Fetch approved partners with their clinic information
         const { data, error } = await supabase
-          .from('clinics')
-          .select('*')
-          .order('name');
+          .from('users')
+          .select(`
+            id,
+            full_name,
+            email,
+            clinics (
+              name,
+              address,
+              region
+            )
+          `)
+          .eq('role', 'partner')
+          .eq('approval_status', 'approved')
+          .order('full_name');
 
         if (error) throw error;
         
-        setClinics(data || []);
+        setPartners(data || []);
       } catch (error) {
-        console.error('Error fetching clinics:', error);
-        toast.error('Failed to load clinics');
+        console.error('Error fetching partners:', error);
+        toast.error('Failed to load partners');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchClinics();
+    fetchApprovedPartners();
   }, []);
 
   const handleContinue = () => {
-    if (!selectedClinic) {
-      toast.error('Please select a clinic');
+    if (!selectedPartner) {
+      toast.error('Please select a partner');
       return;
     }
-    onSelectClinic(selectedClinic);
+    onSelectClinic(selectedPartner);
   };
 
-  const selectedClinicData = clinics.find(c => c.id === selectedClinic);
+  const selectedPartnerData = partners.find(p => p.id === selectedPartner);
 
   if (loading) {
     return (
       <div className="text-center py-8">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Loading clinics...</p>
+        <p className="mt-4 text-gray-600">Loading partners...</p>
       </div>
     );
   }
@@ -70,23 +84,23 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold mb-2">Choose Your Clinic</h2>
-        <p className="text-gray-600">Select the clinic or partner you want to work with</p>
+        <h2 className="text-2xl font-bold mb-2">Choose Your Partner</h2>
+        <p className="text-gray-600">Select the healthcare partner you want to work with</p>
       </div>
 
       <div className="space-y-4">
         <div>
-          <Label htmlFor="clinic-select">Select Clinic/Partner</Label>
-          <Select value={selectedClinic} onValueChange={setSelectedClinic}>
+          <Label htmlFor="partner-select">Select Healthcare Partner</Label>
+          <Select value={selectedPartner} onValueChange={setSelectedPartner}>
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Choose a clinic..." />
+              <SelectValue placeholder="Choose a partner..." />
             </SelectTrigger>
             <SelectContent>
-              {clinics.map((clinic) => (
-                <SelectItem key={clinic.id} value={clinic.id}>
+              {partners.map((partner) => (
+                <SelectItem key={partner.id} value={partner.id}>
                   <div className="flex items-center space-x-2">
                     <Building2 className="h-4 w-4" />
-                    <span>{clinic.name}</span>
+                    <span>{partner.clinic?.name || partner.full_name}</span>
                   </div>
                 </SelectItem>
               ))}
@@ -94,39 +108,43 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
           </Select>
         </div>
 
-        {selectedClinicData && (
+        {selectedPartnerData && (
           <Card className="bg-blue-50 border-blue-200">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center space-x-2">
                 <Building2 className="h-5 w-5 text-blue-600" />
-                <span>{selectedClinicData.name}</span>
+                <span>{selectedPartnerData.clinic?.name || selectedPartnerData.full_name}</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2 text-sm">
-                <div className="flex items-center space-x-2 text-gray-600">
-                  <MapPin className="h-4 w-4" />
-                  <span>{selectedClinicData.address}</span>
-                </div>
+                {selectedPartnerData.clinic?.address && (
+                  <div className="flex items-center space-x-2 text-gray-600">
+                    <MapPin className="h-4 w-4" />
+                    <span>{selectedPartnerData.clinic.address}</span>
+                  </div>
+                )}
+                {selectedPartnerData.clinic?.region && (
+                  <div className="text-gray-600">
+                    <strong>Region:</strong> {selectedPartnerData.clinic.region}
+                  </div>
+                )}
                 <div className="text-gray-600">
-                  <strong>Region:</strong> {selectedClinicData.region}
-                </div>
-                <div className="text-gray-600">
-                  <strong>Contact:</strong> {selectedClinicData.owner_email}
+                  <strong>Contact:</strong> {selectedPartnerData.email}
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {clinics.length === 0 && (
+        {partners.length === 0 && (
           <Card className="bg-yellow-50 border-yellow-200">
             <CardContent className="pt-6">
               <div className="text-center">
                 <Building2 className="h-12 w-12 mx-auto text-yellow-600 mb-2" />
-                <h3 className="font-medium text-yellow-800">No Clinics Available Yet</h3>
+                <h3 className="font-medium text-yellow-800">No Partners Available</h3>
                 <p className="text-sm text-yellow-600 mt-1 mb-4">
-                  No approved partner clinics are currently available for signup.
+                  No approved healthcare partners are currently available for signup.
                 </p>
                 <div className="space-y-2">
                   <p className="text-sm text-yellow-700">
@@ -150,10 +168,10 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
       <div className="flex justify-center">
         <Button 
           onClick={handleContinue}
-          disabled={!selectedClinic || clinics.length === 0}
+          disabled={!selectedPartner || partners.length === 0}
           className="w-full max-w-sm"
         >
-          Continue with Selected Clinic
+          Continue with Selected Partner
         </Button>
       </div>
     </div>
