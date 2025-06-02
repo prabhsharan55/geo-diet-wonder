@@ -16,48 +16,18 @@ const PartnerDashboard = () => {
   const [customerStats, setCustomerStats] = useState<any>({ total: 0, active: 0, pending: 0 });
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
-  // Extract async function outside useEffect
-  const checkApplicationStatus = async (): Promise<any> => {
-    const result = await supabase
-      .from('partner_applications')
-      .select('status')
-      .eq('email', user?.email || '')
-      .single();
-    
-    return result.data;
-  };
-
-  // Extract async function outside useEffect
-  const fetchCustomerData = async (): Promise<any> => {
-    const customersResult = await supabase
-      .from('users')
-      .select('id, role, created_at')
-      .eq('role', 'customer')
-      .eq('linked_partner_id', userDetails?.id || '');
-
-    return customersResult.data;
-  };
-
-  // Extract async function outside useEffect
-  const fetchActivityData = async (): Promise<any[]> => {
-    const activityResult = await supabase
-      .from('users')
-      .select('id, email, full_name, created_at')
-      .eq('role', 'customer')
-      .eq('linked_partner_id', userDetails?.id || '')
-      .order('created_at', { ascending: false })
-      .limit(5);
-
-    return activityResult.data || [];
-  };
-
   useEffect(() => {
     const checkApplication = async () => {
       if (!user?.email) return;
       
       try {
-        const result = await checkApplicationStatus();
-        setApplication(result);
+        const result = await supabase
+          .from('partner_applications')
+          .select('status')
+          .eq('email', user.email)
+          .single();
+        
+        setApplication(result.data as any);
       } catch (error) {
         console.error('Error checking application:', error);
         setApplication(null);
@@ -74,7 +44,14 @@ const PartnerDashboard = () => {
       if (!userDetails?.id) return;
       
       try {
-        const customers = await fetchCustomerData();
+        const customersResult = await supabase
+          .from('users')
+          .select('id, role, created_at')
+          .eq('role', 'customer')
+          .eq('linked_partner_id', userDetails.id);
+
+        const customers = (customersResult.data || []) as any[];
+        
         if (customers) {
           const stats = {
             total: customers.length,
@@ -96,8 +73,15 @@ const PartnerDashboard = () => {
       if (!userDetails?.id) return;
       
       try {
-        const activity = await fetchActivityData();
-        setRecentActivity(activity);
+        const activityResult = await supabase
+          .from('users')
+          .select('id, email, full_name, created_at')
+          .eq('role', 'customer')
+          .eq('linked_partner_id', userDetails.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        setRecentActivity((activityResult.data || []) as any[]);
       } catch (error) {
         console.error('Error fetching recent activity:', error);
       }
@@ -140,7 +124,7 @@ const PartnerDashboard = () => {
     return date.toLocaleDateString();
   };
 
-  // Extract JSX mapping outside of return
+  // Pre-render activity rows
   const activityRows = recentActivity.map((customer: any) => (
     <tr key={customer.id} className="hover:bg-gray-50">
       <td className="px-6 py-4 whitespace-nowrap">

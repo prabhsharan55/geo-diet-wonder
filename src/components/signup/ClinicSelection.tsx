@@ -1,6 +1,5 @@
+
 // @ts-nocheck
-
-
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -20,44 +19,38 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
   const [selectedPartner, setSelectedPartner] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
-  // Extract async function outside useEffect
-  const fetchPartnersData = async (): Promise<any[]> => {
-    const partnersResult = await supabase
-      .from('users')
-      .select('id, full_name, email')
-      .eq('role', 'partner')
-      .eq('approval_status', 'approved')
-      .order('full_name');
-
-    if (partnersResult.error) throw partnersResult.error;
-
-    const partnersWithClinics: any[] = [];
-    
-    if (partnersResult.data) {
-      for (const partner of partnersResult.data) {
-        const clinicResult = await supabase
-          .from('clinics')
-          .select('name, address, region')
-          .eq('partner_id', partner.id)
-          .single();
-
-        partnersWithClinics.push({
-          ...partner,
-          clinic: clinicResult.data || undefined
-        });
-      }
-    }
-    
-    return partnersWithClinics;
-  };
-
   useEffect(() => {
     const loadPartners = async () => {
       setLoading(true);
       try {
-        const result = await fetchPartnersData();
-        setPartners(result);
-      } catch (error) {
+        // Get partners - cast result to any immediately
+        const partnersResult = await supabase
+          .from('users')
+          .select('id, full_name, email')
+          .eq('role', 'partner')
+          .eq('approval_status', 'approved')
+          .order('full_name');
+
+        if (partnersResult.error) throw partnersResult.error;
+
+        const partnersData = (partnersResult.data || []) as any[];
+        const partnersWithClinics: any[] = [];
+        
+        for (const partner of partnersData) {
+          const clinicResult = await supabase
+            .from('clinics')
+            .select('name, address, region')
+            .eq('partner_id', partner.id)
+            .single();
+
+          partnersWithClinics.push({
+            ...partner,
+            clinic: clinicResult.data || undefined
+          });
+        }
+        
+        setPartners(partnersWithClinics);
+      } catch (error: any) {
         console.error('Error fetching partners:', error);
         toast.error('Failed to load partners');
         setPartners([]);
@@ -77,7 +70,7 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
     onSelectClinic(selectedPartner);
   };
 
-  const selectedPartnerData = partners.find(p => p.id === selectedPartner);
+  const selectedPartnerData = partners.find((p: any) => p.id === selectedPartner);
 
   if (loading) {
     return (
@@ -88,7 +81,7 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
     );
   }
 
-  // Extract JSX mapping outside of return
+  // Pre-render partner options
   const partnerOptions = partners.map((partner: any) => (
     <SelectItem key={partner.id} value={partner.id}>
       <div className="flex items-center space-x-2">
