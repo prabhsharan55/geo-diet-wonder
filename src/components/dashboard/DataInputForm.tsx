@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -88,7 +87,8 @@ const DataInputForm = () => {
     addAppointment({
       title: appointmentData.title,
       date: appointmentData.date,
-      time: appointmentData.time
+      time: appointmentData.time,
+      status: 'booked'
     });
     setAppointmentData({ title: '', date: '', time: '' });
     toast.success('Appointment added!');
