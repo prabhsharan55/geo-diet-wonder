@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +15,7 @@ import OurStory from "./pages/OurStory";
 import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
 import SignupPage from "./pages/SignupPage";
+import PartnerSignup from "./pages/PartnerSignup";
 
 // Shop submenu pages
 import ShopCGM from "./pages/shop/ShopCGM";
@@ -93,18 +93,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/signup" element={<SignupPage />} />
-              <Route path="/shop" element={<Shop />} />
-              <Route path="/shop/cgm" element={<ShopCGM />} />
-              <Route path="/shop/workouts" element={<ShopWorkouts />} />
-              <Route path="/shop/diet" element={<ShopDiet />} />
-              <Route path="/nutritionists" element={<Nutritionists />} />
-              <Route path="/nutritionists/find" element={<NutritionistsFind />} />
-              <Route path="/nutritionists/become" element={<NutritionistsBecome />} />
-              <Route path="/nutritionists/about" element={<NutritionistsAbout />} />
-              <Route path="/journal" element={<Journal />} />
-              <Route path="/journal/:id" element={<ArticleDetail />} />
-              <Route path="/our-story" element={<OurStory />} />
-              <Route path="/contact" element={<Contact />} />
+              <Route path="/partner-signup" element={<PartnerSignup />} />
               
               {/* Dashboard route - redirects based on role */}
               <Route path="/dashboard" element={<Dashboard />} />

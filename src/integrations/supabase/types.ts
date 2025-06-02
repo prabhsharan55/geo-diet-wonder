@@ -150,6 +150,54 @@ export type Database = {
           },
         ]
       }
+      partner_applications: {
+        Row: {
+          address: string
+          clinic_name: string
+          created_at: string
+          email: string
+          id: string
+          notes: string | null
+          owner_name: string
+          phone: string | null
+          region: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          zip_code: string | null
+        }
+        Insert: {
+          address: string
+          clinic_name: string
+          created_at?: string
+          email: string
+          id?: string
+          notes?: string | null
+          owner_name: string
+          phone?: string | null
+          region: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string
+          clinic_name?: string
+          created_at?: string
+          email?: string
+          id?: string
+          notes?: string | null
+          owner_name?: string
+          phone?: string | null
+          region?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          zip_code?: string | null
+        }
+        Relationships: []
+      }
       progress_reports: {
         Row: {
           created_at: string

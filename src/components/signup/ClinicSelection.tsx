@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { MapPin, Users } from "lucide-react";
+import { MapPin, Users, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -28,6 +28,7 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
   useEffect(() => {
     const fetchClinics = async () => {
       try {
+        // Only fetch clinics that correspond to approved partner applications
         const { data, error } = await supabase
           .from('clinics')
           .select('*')
@@ -84,7 +85,7 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
               {clinics.map((clinic) => (
                 <SelectItem key={clinic.id} value={clinic.id}>
                   <div className="flex items-center space-x-2">
-                    <Users className="h-4 w-4" />
+                    <Building2 className="h-4 w-4" />
                     <span>{clinic.name}</span>
                   </div>
                 </SelectItem>
@@ -97,7 +98,7 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
           <Card className="bg-blue-50 border-blue-200">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center space-x-2">
-                <Users className="h-5 w-5 text-blue-600" />
+                <Building2 className="h-5 w-5 text-blue-600" />
                 <span>{selectedClinicData.name}</span>
               </CardTitle>
             </CardHeader>
@@ -122,11 +123,24 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
           <Card className="bg-yellow-50 border-yellow-200">
             <CardContent className="pt-6">
               <div className="text-center">
-                <Users className="h-12 w-12 mx-auto text-yellow-600 mb-2" />
-                <h3 className="font-medium text-yellow-800">No Clinics Available</h3>
-                <p className="text-sm text-yellow-600 mt-1">
-                  No clinics are currently available. Please contact support.
+                <Building2 className="h-12 w-12 mx-auto text-yellow-600 mb-2" />
+                <h3 className="font-medium text-yellow-800">No Clinics Available Yet</h3>
+                <p className="text-sm text-yellow-600 mt-1 mb-4">
+                  No approved partner clinics are currently available for signup.
                 </p>
+                <div className="space-y-2">
+                  <p className="text-sm text-yellow-700">
+                    Are you a healthcare professional interested in becoming a partner?
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => window.location.href = '/partner-signup'}
+                    className="border-yellow-400 text-yellow-800 hover:bg-yellow-100"
+                  >
+                    Apply to Become a Partner
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

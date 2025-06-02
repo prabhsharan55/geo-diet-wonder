@@ -9,6 +9,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import AdminSidebar from "@/components/admin/AdminSidebar";
+import PartnerApplications from "@/components/admin/PartnerApplications";
 
 const AdminDashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -49,13 +50,18 @@ const AdminDashboard = () => {
         </div>
         
         <div className="mt-8">
-          <Tabs defaultValue="analytics">
+          <Tabs defaultValue="applications">
             <TabsList className="mb-6">
+              <TabsTrigger value="applications">Partner Applications</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="partners">Partners</TabsTrigger>
               <TabsTrigger value="customers">Customers</TabsTrigger>
               <TabsTrigger value="content">Content</TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="applications">
+              <PartnerApplications />
+            </TabsContent>
             
             <TabsContent value="analytics">
               <Card>
