@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, ReactNode } from 'react';
 
 export type AppointmentStatus = 'booked' | 'pending' | 'rescheduled';
@@ -17,6 +16,59 @@ export type Appointment = {
   };
 };
 
+export type VideoAccess = 'open' | 'daily' | 'locked';
+
+export type Video = {
+  id: string;
+  title: string;
+  duration: string;
+  watched: boolean;
+  accessType: VideoAccess;
+  dayRequired?: number; // for daily videos
+  url: string;
+};
+
+export type MealLog = {
+  id: string;
+  date: string;
+  mealType: string;
+  photo?: string;
+  description: string;
+  time: string;
+  completed: boolean;
+};
+
+export type WeightLog = {
+  id: string;
+  date: string;
+  weight: number;
+  photo?: string;
+  notes: string;
+  completed: boolean;
+};
+
+export type WeekTask = {
+  videos: Video[];
+  mealLogs: MealLog[];
+  weightLogs: WeightLog[];
+};
+
+export type ProgramWeek = {
+  weekNumber: number;
+  status: 'completed' | 'current' | 'locked';
+  completion: number;
+  focus: string;
+  tasks: WeekTask;
+  recommendedVideos: Video[];
+};
+
+export type UserProgram = {
+  planName: string;
+  totalWeeks: number;
+  currentWeek: number;
+  weeks: ProgramWeek[];
+};
+
 export type UserData = {
   name: string;
   currentWeight: number;
@@ -26,6 +78,7 @@ export type UserData = {
   nutritionData: Array<{ date: string; protein: number; carbs: number; fats: number }>;
   activityData: Array<{ date: string; steps: number; minutes: number }>;
   appointments: Appointment[];
+  program: UserProgram;
 };
 
 type UserDataContextType = {
@@ -37,6 +90,10 @@ type UserDataContextType = {
   addAppointment: (appointment: Omit<Appointment, 'id'>) => void;
   requestReschedule: (appointmentId: string, requestedDate: string, requestedTime: string, reason: string) => void;
   approveReschedule: (appointmentId: string) => void;
+  markVideoWatched: (weekNumber: number, videoId: string) => void;
+  addMealLog: (weekNumber: number, mealLog: Omit<MealLog, 'id'>) => void;
+  addWeightLog: (weekNumber: number, weightLog: Omit<WeightLog, 'id'>) => void;
+  completeWeek: (weekNumber: number) => void;
 };
 
 const UserDataContext = createContext<UserDataContextType | undefined>(undefined);
@@ -66,7 +123,68 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     appointments: [
       { id: '1', title: 'Nutritionist Consultation', date: 'May 22, 2025', time: '2:30 PM', status: 'booked' },
       { id: '2', title: 'Progress Review Session', date: 'May 29, 2025', time: '10:00 AM', status: 'booked' },
-    ]
+    ],
+    program: {
+      planName: 'GeoDiet Premium Program',
+      totalWeeks: 12,
+      currentWeek: 3,
+      weeks: [
+        {
+          weekNumber: 1,
+          status: 'completed',
+          completion: 100,
+          focus: 'Understanding your glucose responses to different foods and begin identifying your personal food triggers.',
+          tasks: {
+            videos: [
+              { id: 'v1', title: 'Welcome to GeoDiet', duration: '5 min', watched: true, accessType: 'open', url: '#' },
+              { id: 'v2', title: 'CGM Basics', duration: '8 min', watched: true, accessType: 'open', url: '#' }
+            ],
+            mealLogs: [],
+            weightLogs: []
+          },
+          recommendedVideos: []
+        },
+        {
+          weekNumber: 2,
+          status: 'completed',
+          completion: 100,
+          focus: 'Learn to interpret your CGM data and identify patterns in your glucose responses.',
+          tasks: {
+            videos: [
+              { id: 'v3', title: 'Reading Your Data', duration: '6 min', watched: true, accessType: 'open', url: '#' },
+              { id: 'v4', title: 'Pattern Recognition', duration: '7 min', watched: true, accessType: 'daily', dayRequired: 3, url: '#' }
+            ],
+            mealLogs: [],
+            weightLogs: []
+          },
+          recommendedVideos: []
+        },
+        {
+          weekNumber: 3,
+          status: 'current',
+          completion: 65,
+          focus: 'Start making targeted dietary adjustments based on your glucose response patterns.',
+          tasks: {
+            videos: [
+              { id: 'v5', title: 'Dietary Adjustments', duration: '10 min', watched: true, accessType: 'open', url: '#' },
+              { id: 'v6', title: 'Meal Timing', duration: '8 min', watched: false, accessType: 'daily', dayRequired: 5, url: '#' },
+              { id: 'v7', title: 'Exercise Impact', duration: '6 min', watched: false, accessType: 'open', url: '#' }
+            ],
+            mealLogs: [
+              { id: 'm1', date: '2025-06-01', mealType: 'Breakfast', description: 'Oatmeal with berries', time: '08:00', completed: true },
+              { id: 'm2', date: '2025-06-01', mealType: 'Lunch', description: 'Grilled chicken salad', time: '12:30', completed: true }
+            ],
+            weightLogs: [
+              { id: 'w1', date: '2025-06-01', weight: 172, notes: 'Morning weight', completed: true }
+            ]
+          },
+          recommendedVideos: [
+            { id: 'rv1', title: 'Understanding Your CGM Data', duration: '5 min', watched: false, accessType: 'open', url: '#' },
+            { id: 'rv2', title: 'Food & Glucose Response', duration: '7 min', watched: false, accessType: 'open', url: '#' }
+          ]
+        }
+      ]
+    }
   });
 
   const updateUserData = (data: Partial<UserData>) => {
@@ -142,6 +260,88 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     }));
   };
 
+  const markVideoWatched = (weekNumber: number, videoId: string) => {
+    setUserData(prev => ({
+      ...prev,
+      program: {
+        ...prev.program,
+        weeks: prev.program.weeks.map(week => 
+          week.weekNumber === weekNumber 
+            ? {
+                ...week,
+                tasks: {
+                  ...week.tasks,
+                  videos: week.tasks.videos.map(video =>
+                    video.id === videoId ? { ...video, watched: true } : video
+                  )
+                }
+              }
+            : week
+        )
+      }
+    }));
+  };
+
+  const addMealLog = (weekNumber: number, mealLog: Omit<MealLog, 'id'>) => {
+    const newMealLog = { ...mealLog, id: Date.now().toString() };
+    setUserData(prev => ({
+      ...prev,
+      program: {
+        ...prev.program,
+        weeks: prev.program.weeks.map(week => 
+          week.weekNumber === weekNumber 
+            ? {
+                ...week,
+                tasks: {
+                  ...week.tasks,
+                  mealLogs: [...week.tasks.mealLogs, newMealLog]
+                }
+              }
+            : week
+        )
+      }
+    }));
+  };
+
+  const addWeightLog = (weekNumber: number, weightLog: Omit<WeightLog, 'id'>) => {
+    const newWeightLog = { ...weightLog, id: Date.now().toString() };
+    setUserData(prev => ({
+      ...prev,
+      program: {
+        ...prev.program,
+        weeks: prev.program.weeks.map(week => 
+          week.weekNumber === weekNumber 
+            ? {
+                ...week,
+                tasks: {
+                  ...week.tasks,
+                  weightLogs: [...week.tasks.weightLogs, newWeightLog]
+                }
+              }
+            : week
+        )
+      }
+    }));
+  };
+
+  const completeWeek = (weekNumber: number) => {
+    setUserData(prev => ({
+      ...prev,
+      program: {
+        ...prev.program,
+        currentWeek: weekNumber + 1,
+        weeks: prev.program.weeks.map(week => {
+          if (week.weekNumber === weekNumber) {
+            return { ...week, status: 'completed' as const, completion: 100 };
+          } else if (week.weekNumber === weekNumber + 1) {
+            return { ...week, status: 'current' as const };
+          }
+          return week;
+        })
+      }
+    }));
+  };
+
   return (
     <UserDataContext.Provider value={{
       userData,
@@ -151,7 +351,11 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       addActivityEntry,
       addAppointment,
       requestReschedule,
-      approveReschedule
+      approveReschedule,
+      markVideoWatched,
+      addMealLog,
+      addWeightLog,
+      completeWeek
     }}>
       {children}
     </UserDataContext.Provider>

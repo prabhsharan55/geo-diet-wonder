@@ -6,10 +6,12 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowRight, Menu } from "lucide-react";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useUserData } from "@/hooks/useUserData";
 
 const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { profile, loading } = useUserProfile();
+  const { userData } = useUserData();
   const [weightChange, setWeightChange] = useState("-3 lbs");
   const [workoutsCompleted, setWorkoutsCompleted] = useState("12");
   const [caloriesTracked, setCaloriesTracked] = useState("19,203");
@@ -28,8 +30,8 @@ const Dashboard = () => {
     }
   }, [profile]);
 
-  const displayName = profile?.full_name?.split(' ')[0] || 'User';
-  const currentWeight = profile?.weight ? `${profile.weight} kg` : '172 lbs';
+  const displayName = profile?.full_name?.split(' ')[0] || userData.name.split(' ')[0] || 'User';
+  const currentWeight = profile?.weight ? `${profile.weight} kg` : `${userData.currentWeight} lbs`;
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -79,9 +81,9 @@ const Dashboard = () => {
                 description={weightChange} 
               />
               <StatCard 
-                title="Workouts Completed" 
-                value={workoutsCompleted}
-                description="+2 from last week" 
+                title={`${userData.program.planName}`}
+                value={`Week ${userData.program.currentWeek}/${userData.program.totalWeeks}`}
+                description={`${Math.round(((userData.program.currentWeek - 1) / userData.program.totalWeeks) * 100)}% complete`}
               />
               <StatCard 
                 title="Calories Tracked" 
