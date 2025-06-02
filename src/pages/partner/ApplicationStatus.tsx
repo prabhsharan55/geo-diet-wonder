@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,15 +44,11 @@ const ApplicationStatus = () => {
         setError("Unable to fetch your application status.");
         setRawStatus(null);
       } else if (!data) {
-        // No matching row at all - for partners without application records, treat as approved
+        // No matching row at all - this means no application was submitted
         console.log("No application row found for:", user.email);
         console.log("User role:", userDetails?.role);
-        if (userDetails?.role === "partner") {
-          console.log("Partner without application record - treating as approved");
-          setRawStatus("approved");
-        } else {
-          setRawStatus(null);
-        }
+        // Don't automatically approve - this should be treated as unknown/no application
+        setRawStatus(null);
       } else {
         // We got exactly one row
         console.log("Found application with status:", data.status);
@@ -116,8 +113,10 @@ const ApplicationStatus = () => {
     }
     // validatedStatus === "unknown"
     return {
-      title: "Status Unknown",
-      message: "There's an issue with your application status. Please contact support.",
+      title: "No Application Found",
+      message: rawStatus === null 
+        ? "No partner application found. Please submit an application to access the partner dashboard."
+        : "There's an issue with your application status. Please contact support.",
       action: null,
     };
   };
@@ -192,6 +191,11 @@ const ApplicationStatus = () => {
             {status.action && validatedStatus === "approved" && (
               <Button className="w-full" onClick={() => navigate("/partner")}>
                 {status.action}
+              </Button>
+            )}
+            {rawStatus === null && (
+              <Button className="w-full" onClick={() => navigate("/partner-signup")}>
+                Submit Application
               </Button>
             )}
             <Button variant="outline" className="w-full" onClick={signOut}>
