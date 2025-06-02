@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -5,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Weight, Plus, Check } from 'lucide-react';
+import { Weight, Plus, Check, Camera, Clock } from 'lucide-react';
 import { WeightLog } from '@/context/UserDataContext';
 
 interface WeightTrackingTaskRowProps {
@@ -21,20 +22,34 @@ const WeightTrackingTaskRow = ({ weightLogs, weekNumber, onAddWeightLog }: Weigh
     notes: '',
     photo: ''
   });
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
   const handleSubmit = () => {
+    const now = new Date();
     onAddWeightLog({
-      date: new Date().toISOString().split('T')[0],
+      date: now.toISOString().split('T')[0],
       weight: Number(weightData.weight),
       notes: weightData.notes,
-      photo: weightData.photo,
+      photo: selectedImage ? URL.createObjectURL(selectedImage) : '',
       completed: true
     });
     setWeightData({ weight: '', notes: '', photo: '' });
+    setSelectedImage(null);
     setIsDialogOpen(false);
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedImage(e.target.files[0]);
+    }
+  };
+
   const recentLogs = weightLogs.slice(-7); // Show last 7 entries
+
+  const formatDateTime = (date: string) => {
+    const dateObj = new Date(date);
+    return `${dateObj.toLocaleDateString()} at ${dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+  };
 
   return (
     <div className="space-y-3">
@@ -50,8 +65,8 @@ const WeightTrackingTaskRow = ({ weightLogs, weekNumber, onAddWeightLog }: Weigh
         {/* Add new weight log */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Card className="min-w-[200px] cursor-pointer hover:shadow-md border-dashed border-2">
-              <CardContent className="p-4 flex flex-col items-center justify-center h-32">
+            <Card className="min-w-[250px] cursor-pointer hover:shadow-md border-dashed border-2">
+              <CardContent className="p-4 flex flex-col items-center justify-center h-40">
                 <Plus className="h-8 w-8 text-gray-400 mb-2" />
                 <span className="text-sm text-gray-500">Log Weight</span>
               </CardContent>
@@ -87,8 +102,17 @@ const WeightTrackingTaskRow = ({ weightLogs, weekNumber, onAddWeightLog }: Weigh
                   id="photo"
                   type="file"
                   accept="image/*"
-                  onChange={(e) => setWeightData(prev => ({ ...prev, photo: e.target.files?.[0]?.name || '' }))}
+                  onChange={handleImageChange}
                 />
+                {selectedImage && (
+                  <div className="mt-2">
+                    <img 
+                      src={URL.createObjectURL(selectedImage)} 
+                      alt="Weight tracking preview" 
+                      className="w-full h-32 object-cover rounded-md"
+                    />
+                  </div>
+                )}
               </div>
               <Button onClick={handleSubmit} className="w-full">
                 Log Weight
@@ -99,14 +123,32 @@ const WeightTrackingTaskRow = ({ weightLogs, weekNumber, onAddWeightLog }: Weigh
 
         {/* Existing weight logs */}
         {recentLogs.map((weightLog) => (
-          <Card key={weightLog.id} className="min-w-[200px]">
+          <Card key={weightLog.id} className="min-w-[250px]">
             <CardContent className="p-4">
+              {/* Weight Photo */}
+              {weightLog.photo && (
+                <div className="mb-3 rounded-lg overflow-hidden">
+                  <img 
+                    src={weightLog.photo} 
+                    alt="Weight tracking"
+                    className="w-full h-24 object-cover"
+                  />
+                </div>
+              )}
+              
               <div className="flex items-center gap-2 mb-2">
                 <Check className="h-4 w-4 text-green-500" />
-                <span className="text-sm text-gray-500">{weightLog.date}</span>
+                <Clock className="h-3 w-3 text-gray-400" />
+                <span className="text-xs text-gray-500">
+                  {formatDateTime(weightLog.date)}
+                </span>
               </div>
+              
               <h4 className="font-medium text-lg mb-1">{weightLog.weight} lbs</h4>
-              <p className="text-xs text-gray-600 mb-3">{weightLog.notes}</p>
+              {weightLog.notes && (
+                <p className="text-xs text-gray-600 mb-3 line-clamp-2">{weightLog.notes}</p>
+              )}
+              
               <Button size="sm" variant="outline" className="w-full" disabled>
                 Logged
               </Button>

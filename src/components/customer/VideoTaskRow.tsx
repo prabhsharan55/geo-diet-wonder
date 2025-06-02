@@ -37,12 +37,30 @@ const VideoTaskRow = ({ videos, weekNumber, onVideoComplete }: VideoTaskRowProps
             <Card 
               key={video.id} 
               className={cn(
-                "min-w-[200px] cursor-pointer transition-all",
+                "min-w-[280px] cursor-pointer transition-all",
                 accessible ? "hover:shadow-md" : "opacity-50",
                 selectedVideo === video.id && "ring-2 ring-blue-500"
               )}
             >
               <CardContent className="p-4">
+                {/* Video Preview Box */}
+                <div className="relative mb-3 bg-gray-100 rounded-lg overflow-hidden aspect-video">
+                  {accessible ? (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
+                      <PlayCircle className="h-12 w-12 text-white" />
+                    </div>
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-300">
+                      <Lock className="h-8 w-8 text-gray-500" />
+                    </div>
+                  )}
+                  {video.watched && (
+                    <div className="absolute top-2 right-2 bg-green-500 rounded-full p-1">
+                      <Check className="h-3 w-3 text-white" />
+                    </div>
+                  )}
+                </div>
+                
                 <div className="flex items-center gap-2 mb-2">
                   {video.watched ? (
                     <Check className="h-4 w-4 text-green-500" />
@@ -53,7 +71,9 @@ const VideoTaskRow = ({ videos, weekNumber, onVideoComplete }: VideoTaskRowProps
                   )}
                   <span className="text-sm text-gray-500">{video.duration}</span>
                 </div>
+                
                 <h4 className="font-medium text-sm mb-3">{video.title}</h4>
+                
                 <Button
                   size="sm"
                   variant={video.watched ? "outline" : "default"}

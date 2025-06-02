@@ -85,17 +85,19 @@ const Program = () => {
               <span>Overall Completion</span>
               <span className="font-medium">{overallCompletion}%</span>
             </div>
-            <AnimatedProgressBar 
-              value={overallCompletion} 
-              userName={userData.name}
-              shouldAnimate={shouldAnimateProgress}
-              onAnimationComplete={() => setShouldAnimateProgress(false)}
-            />
+            <div className="max-w-md"> {/* Smaller width for progress bar */}
+              <AnimatedProgressBar 
+                value={overallCompletion} 
+                userName={userData.name}
+                shouldAnimate={shouldAnimateProgress}
+                onAnimationComplete={() => setShouldAnimateProgress(false)}
+              />
+            </div>
           </CardContent>
         </Card>
         
         <Tabs defaultValue={`week-${currentWeek}`} className="w-full">
-          <TabsList className="w-full flex overflow-x-auto">
+          <TabsList className="w-full grid overflow-x-auto" style={{ gridTemplateColumns: `repeat(${totalWeeks}, minmax(0, 1fr))` }}>
             {program.weeks.map((week) => {
               const status = getWeekStatus(week.weekNumber);
               return (
@@ -104,13 +106,15 @@ const Program = () => {
                   value={`week-${week.weekNumber}`}
                   disabled={status === "locked"}
                   className={cn(
-                    "flex-1",
+                    "text-xs px-2 py-1",
                     status === "completed" && "bg-green-100 data-[state=active]:bg-green-200"
                   )}
                 >
-                  Week {week.weekNumber}
-                  {status === "completed" && <Check className="ml-2 h-4 w-4 text-green-500" />}
-                  {status === "locked" && <Lock className="ml-2 h-4 w-4" />}
+                  <span className="truncate">
+                    Week {week.weekNumber}
+                    {status === "completed" && <Check className="ml-1 h-3 w-3 text-green-500 inline" />}
+                    {status === "locked" && <Lock className="ml-1 h-3 w-3 inline" />}
+                  </span>
                 </TabsTrigger>
               );
             })}
