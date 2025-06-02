@@ -13,32 +13,45 @@ const ClientManagement = () => {
   const [selectedClient, setSelectedClient] = useState<null | string>(null);
   const { userDetails } = useAuth();
   
-  // Fetch customers for this partner's clinic
-  const { data: clients, isLoading } = useQuery({
-    queryKey: ['partner-clients', userDetails?.clinic_id],
+  // Fetch partner's clinic first
+  const { data: clinic } = useQuery({
+    queryKey: ['partner-clinic', userDetails?.id],
     queryFn: async () => {
-      console.log('Fetching clients for clinic:', userDetails?.clinic_id);
+      if (!userDetails?.id || userDetails.role !== 'partner') {
+        return null;
+      }
       
-      if (!userDetails?.clinic_id) {
-        console.log('No clinic_id found for user');
+      const { data, error } = await supabase
+        .from('clinics')
+        .select('*')
+        .eq('partner_id', userDetails.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching clinic:', error);
+        return null;
+      }
+      return data;
+    },
+    enabled: !!userDetails?.id && userDetails.role === 'partner',
+  });
+  
+  // Fetch customers for this partner
+  const { data: clients, isLoading } = useQuery({
+    queryKey: ['partner-clients', userDetails?.id],
+    queryFn: async () => {
+      console.log('Fetching clients for partner:', userDetails?.id);
+      
+      if (!userDetails?.id) {
+        console.log('No partner id found');
         return [];
       }
       
       const { data, error } = await supabase
-        .from('customers')
-        .select(`
-          id,
-          email,
-          access_status,
-          created_at,
-          expiry_date,
-          purchase_date,
-          users!customers_user_id_fkey(
-            id,
-            full_name
-          )
-        `)
-        .eq('clinic_id', userDetails.clinic_id)
+        .from('users')
+        .select('*')
+        .eq('role', 'customer')
+        .eq('linked_partner_id', userDetails.id)
         .order('created_at', { ascending: false });
 
       console.log('Clients query result:', { data, error });
@@ -46,24 +59,11 @@ const ClientManagement = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!userDetails?.clinic_id,
+    enabled: !!userDetails?.id,
   });
   
   const handleClientClick = (id: string) => {
     setSelectedClient(id === selectedClient ? null : id);
-  };
-  
-  const getStatusClass = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-green-100 text-green-800";
-      case "expired":
-        return "bg-red-100 text-red-800";
-      case "frozen":
-        return "bg-blue-100 text-blue-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
   };
 
   const formatDate = (dateString: string) => {
@@ -114,9 +114,7 @@ const ClientManagement = () => {
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
@@ -131,21 +129,13 @@ const ClientManagement = () => {
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className="h-8 w-8 rounded-full bg-[#BED1AB] flex items-center justify-center text-[#160041]">
-                                {(client.users?.full_name || client.email).charAt(0).toUpperCase()}
+                                {client.full_name.charAt(0).toUpperCase()}
                               </div>
-                              <div className="ml-3">{client.users?.full_name || 'No Name'}</div>
+                              <div className="ml-3">{client.full_name}</div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">{client.email}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{formatDate(client.purchase_date)}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 py-1 text-xs rounded-full ${getStatusClass(client.access_status)}`}>
-                              {client.access_status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            {client.expiry_date ? formatDate(client.expiry_date) : 'No expiry'}
-                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">{formatDate(client.created_at)}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex space-x-2">
                               <Button variant="ghost" size="sm">
@@ -160,7 +150,7 @@ const ClientManagement = () => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                        <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
                           <div className="flex flex-col items-center">
                             <Users className="h-12 w-12 text-gray-400 mb-2" />
                             <p>No clients found</p>
@@ -191,37 +181,30 @@ const ClientManagement = () => {
                 
                 <div className="mb-6 flex items-center">
                   <div className="h-16 w-16 rounded-full bg-[#BED1AB] flex items-center justify-center text-[#160041] text-xl">
-                    {(selectedClientData.users?.full_name || selectedClientData.email).charAt(0).toUpperCase()}
+                    {selectedClientData.full_name.charAt(0).toUpperCase()}
                   </div>
                   <div className="ml-4">
-                    <h4 className="text-lg font-medium">{selectedClientData.users?.full_name || 'No Name'}</h4>
+                    <h4 className="text-lg font-medium">{selectedClientData.full_name}</h4>
                     <p className="text-gray-500">{selectedClientData.email}</p>
                   </div>
                 </div>
                 
                 <div className="space-y-4">
                   <div>
-                    <h5 className="text-sm text-gray-500">Program Status</h5>
-                    <p className="font-medium">{selectedClientData.access_status}</p>
+                    <h5 className="text-sm text-gray-500">Role</h5>
+                    <p className="font-medium">{selectedClientData.role}</p>
                   </div>
                   
                   <div>
-                    <h5 className="text-sm text-gray-500">Start Date</h5>
-                    <p className="font-medium">{formatDate(selectedClientData.purchase_date)}</p>
-                  </div>
-                  
-                  <div>
-                    <h5 className="text-sm text-gray-500">Expiry Date</h5>
-                    <p className="font-medium">
-                      {selectedClientData.expiry_date ? formatDate(selectedClientData.expiry_date) : 'No expiry'}
-                    </p>
+                    <h5 className="text-sm text-gray-500">Joined Date</h5>
+                    <p className="font-medium">{formatDate(selectedClientData.created_at)}</p>
                   </div>
                 </div>
                 
                 <div className="mt-6 space-y-3">
-                  <Button className="w-full">Extend Access</Button>
-                  <Button variant="outline" className="w-full">Freeze Plan</Button>
-                  <Button variant="outline" className="w-full">View Progress</Button>
+                  <Button className="w-full">View Progress</Button>
+                  <Button variant="outline" className="w-full">Send Message</Button>
+                  <Button variant="outline" className="w-full">Generate Report</Button>
                 </div>
               </Card>
             ) : (

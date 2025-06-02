@@ -13,7 +13,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState("customer");
+  const [role, setRole] = useState<'admin' | 'partner' | 'customer'>("customer");
   const { signIn, signUp, user, loading } = useAuth();
   const [searchParams] = useSearchParams();
 
@@ -34,33 +34,12 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Determine redirect based on role or admin flag
-    let redirectTo;
-    if (isAdminLogin) {
-      redirectTo = "/admin";
-    } else {
-      // Will use role-based redirect from AuthContext
-      redirectTo = undefined;
-    }
-    
-    await signIn(email, password, redirectTo);
+    await signIn(email, password);
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Determine redirect based on role
-    let redirectTo;
-    if (role === 'admin') {
-      redirectTo = "/admin";
-    } else if (role === 'partner') {
-      redirectTo = "/partner";
-    } else {
-      redirectTo = "/customer";
-    }
-    
-    await signUp(email, password, fullName, { role }, redirectTo);
+    await signUp(email, password, fullName, role);
   };
 
   return (
@@ -161,7 +140,7 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Select value={role} onValueChange={setRole}>
+                    <Select value={role} onValueChange={(value: 'admin' | 'partner' | 'customer') => setRole(value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select your role" />
                       </SelectTrigger>

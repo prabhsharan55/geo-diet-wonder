@@ -31,26 +31,33 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
   useEffect(() => {
     const fetchApprovedPartners = async () => {
       try {
-        // Fetch approved partners with their clinic information
-        const { data, error } = await supabase
+        // Fetch approved partners
+        const { data: partnersData, error: partnersError } = await supabase
           .from('users')
-          .select(`
-            id,
-            full_name,
-            email,
-            clinics (
-              name,
-              address,
-              region
-            )
-          `)
+          .select('id, full_name, email')
           .eq('role', 'partner')
           .eq('approval_status', 'approved')
           .order('full_name');
 
-        if (error) throw error;
+        if (partnersError) throw partnersError;
+
+        // Fetch clinic data for each partner
+        const partnersWithClinics = await Promise.all(
+          (partnersData || []).map(async (partner) => {
+            const { data: clinicData } = await supabase
+              .from('clinics')
+              .select('name, address, region')
+              .eq('partner_id', partner.id)
+              .single();
+
+            return {
+              ...partner,
+              clinic: clinicData || undefined
+            };
+          })
+        );
         
-        setPartners(data || []);
+        setPartners(partnersWithClinics);
       } catch (error) {
         console.error('Error fetching partners:', error);
         toast.error('Failed to load partners');
