@@ -14,20 +14,22 @@ const PartnerDashboard = () => {
   const { userDetails, user } = useAuth();
   
   // Check if user has an approved application
-  const { data: application, isLoading: applicationLoading } = useQuery<any>({
-    queryKey: ['partner-application-check', user?.email],
-    queryFn: async (): Promise<any> => {
-      if (!user?.email) return null;
-      
-      const { data, error } = await supabase
-        .from('partner_applications')
-        .select('status')
-        .eq('email', user.email)
-        .single();
+  const getApplicationStatus = async () => {
+    if (!user?.email) return null;
+    
+    const { data, error } = await supabase
+      .from('partner_applications')
+      .select('status')
+      .eq('email', user.email)
+      .single();
 
-      if (error) return null;
-      return data;
-    },
+    if (error) return null;
+    return data;
+  };
+
+  const { data: application, isLoading: applicationLoading } = useQuery({
+    queryKey: ['partner-application-check', user?.email],
+    queryFn: getApplicationStatus,
     enabled: !!user?.email,
   });
 
@@ -47,68 +49,72 @@ const PartnerDashboard = () => {
   }
 
   // Fetch real customer statistics for this partner
-  const { data: customerStatsData } = useQuery<any>({
+  const getCustomerStats = async () => {
+    console.log('Fetching customer stats for partner:', userDetails?.id);
+    
+    if (!userDetails?.id) {
+      console.log('No partner id found');
+      return { total: 0, active: 0, pending: 0 };
+    }
+    
+    const { data: allCustomers, error: allError } = await supabase
+      .from('users')
+      .select('id, role, created_at')
+      .eq('role', 'customer')
+      .eq('linked_partner_id', userDetails.id);
+
+    console.log('All customers query result:', { allCustomers, allError });
+
+    if (allError) throw allError;
+
+    const stats = {
+      total: allCustomers?.length || 0,
+      active: allCustomers?.length || 0,
+      pending: 0
+    };
+
+    console.log('Calculated stats:', stats);
+    return stats;
+  };
+
+  const { data: customerStatsData } = useQuery({
     queryKey: ['partner-customer-stats', userDetails?.id],
-    queryFn: async (): Promise<any> => {
-      console.log('Fetching customer stats for partner:', userDetails?.id);
-      
-      if (!userDetails?.id) {
-        console.log('No partner id found');
-        return { total: 0, active: 0, pending: 0 };
-      }
-      
-      const { data: allCustomers, error: allError } = await supabase
-        .from('users')
-        .select('id, role, created_at')
-        .eq('role', 'customer')
-        .eq('linked_partner_id', userDetails.id);
-
-      console.log('All customers query result:', { allCustomers, allError });
-
-      if (allError) throw allError;
-
-      const stats = {
-        total: allCustomers?.length || 0,
-        active: allCustomers?.length || 0,
-        pending: 0
-      };
-
-      console.log('Calculated stats:', stats);
-      return stats;
-    },
+    queryFn: getCustomerStats,
     enabled: !!userDetails?.id,
   });
 
   // Fetch recent customer activity for this partner
-  const { data: recentActivityData } = useQuery<any>({
+  const getRecentActivity = async () => {
+    console.log('Fetching recent activity for partner:', userDetails?.id);
+    
+    if (!userDetails?.id) {
+      console.log('No partner id found');
+      return [];
+    }
+    
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, email, full_name, created_at')
+      .eq('role', 'customer')
+      .eq('linked_partner_id', userDetails.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    console.log('Recent activity query result:', { data, error });
+
+    if (error) throw error;
+    return data || [];
+  };
+
+  const { data: recentActivityData } = useQuery({
     queryKey: ['partner-recent-activity', userDetails?.id],
-    queryFn: async (): Promise<any> => {
-      console.log('Fetching recent activity for partner:', userDetails?.id);
-      
-      if (!userDetails?.id) {
-        console.log('No partner id found');
-        return [];
-      }
-      
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, email, full_name, created_at')
-        .eq('role', 'customer')
-        .eq('linked_partner_id', userDetails.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      console.log('Recent activity query result:', { data, error });
-
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: getRecentActivity,
     enabled: !!userDetails?.id,
   });
 
   // Break into separate variables to avoid deep inference
   const customerStats = customerStatsData || { total: 0, active: 0, pending: 0 };
-  const recentActivity = (recentActivityData || []) as any[];
+  const recentActivity = recentActivityData || [];
 
   const getActivityText = (customer: any): string => {
     return 'Active access';

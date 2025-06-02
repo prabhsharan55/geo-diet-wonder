@@ -24,12 +24,12 @@ interface ClinicSelectionProps {
 }
 
 const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
-  const [partners, setPartners] = useState<any[]>([]);
+  const [partners, setPartners] = useState<Partner[]>([]);
   const [selectedPartner, setSelectedPartner] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchApprovedPartners = async (): Promise<any> => {
+    const fetchApprovedPartners = async () => {
       try {
         // Fetch approved partners - simplified query
         const { data: partnersData, error: partnersError } = await supabase
@@ -42,17 +42,17 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
         if (partnersError) throw partnersError;
 
         // Fetch clinic data for each partner
-        const partnersWithClinics: any[] = [];
+        const partnersWithClinics: Partner[] = [];
         
         if (partnersData) {
-          for (const partner of partnersData as any[]) {
+          for (const partner of partnersData) {
             const { data: clinicData } = await supabase
               .from('clinics')
               .select('name, address, region')
               .eq('partner_id', partner.id)
               .single();
 
-            const partnerWithClinic = {
+            const partnerWithClinic: Partner = {
               ...partner,
               clinic: clinicData || undefined
             };
@@ -61,7 +61,7 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
         }
         
         setPartners(partnersWithClinics);
-      } catch (error: any) {
+      } catch (error) {
         console.error('Error fetching partners:', error);
         toast.error('Failed to load partners');
       } finally {
@@ -80,7 +80,7 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
     onSelectClinic(selectedPartner);
   };
 
-  const selectedPartnerData = partners.find((p: any) => p.id === selectedPartner);
+  const selectedPartnerData = partners.find((p) => p.id === selectedPartner);
 
   if (loading) {
     return (
@@ -92,7 +92,7 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
   }
 
   // Break JSX mapping into separate variable
-  const partnerOptions = partners.map((partner: any) => (
+  const partnerOptions = partners.map((partner) => (
     <SelectItem key={partner.id} value={partner.id}>
       <div className="flex items-center space-x-2">
         <Building2 className="h-4 w-4" />
