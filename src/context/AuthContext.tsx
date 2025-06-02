@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,16 +66,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const redirectBasedOnRole = (userDetails: UserDetails) => {
-    const { role, approval_status } = userDetails;
+  const checkPartnerApplicationStatus = async (userEmail: string) => {
+    try {
+      const normalizedEmail = userEmail.trim().toLowerCase();
+      const { data, error } = await supabase
+        .from('partner_applications')
+        .select('status')
+        .ilike('email', normalizedEmail)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error checking partner application:', error);
+        return null;
+      }
+
+      return data?.status?.trim().toLowerCase() || null;
+    } catch (err) {
+      console.error('Error checking partner application:', err);
+      return null;
+    }
+  };
+
+  const redirectBasedOnRole = async (userDetails: UserDetails) => {
+    const { role } = userDetails;
     
     if (role === 'admin') {
       navigate('/admin');
     } else if (role === 'partner') {
-      if (approval_status === 'pending') {
-        navigate('/partner/application-status');
-      } else {
+      // Check application status for partners
+      const applicationStatus = await checkPartnerApplicationStatus(userDetails.email);
+      console.log('Partner application status:', applicationStatus);
+      
+      if (applicationStatus === 'approved') {
         navigate('/partner');
+      } else {
+        navigate('/partner/application-status');
       }
     } else if (role === 'customer') {
       navigate('/customer');
@@ -101,7 +127,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               const details = await fetchUserDetails(currentSession.user.id);
               if (details) {
                 setUserDetails(details);
-                redirectBasedOnRole(details);
+                await redirectBasedOnRole(details);
               } else {
                 console.error('No user details found');
                 await signOut();
@@ -187,7 +213,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         setUserDetails(details);
         toast.success("Signed in successfully");
-        redirectBasedOnRole(details);
+        await redirectBasedOnRole(details);
       }
     } catch (error: any) {
       console.error('Sign in error:', error);
@@ -230,7 +256,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const details = await fetchUserDetails(data.user.id);
           if (details) {
             setUserDetails(details);
-            redirectBasedOnRole(details);
+            await redirectBasedOnRole(details);
           }
         }
       }

@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import MainNavigation from "@/components/MainNavigation";
 import Footer from "@/components/Footer";
-import { Building2, Mail, Phone, MapPin, CheckCircle } from "lucide-react";
+import { Building2, Mail, Phone, MapPin, CheckCircle, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const PartnerSignup = () => {
@@ -24,6 +24,7 @@ const PartnerSignup = () => {
   });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -34,59 +35,154 @@ const PartnerSignup = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
-      // First, create the partner application
-      const { error: applicationError } = await supabase
+      console.log("Starting partner signup process for:", formData.email);
+
+      // Step 1: Check if user already exists
+      const { data: existingUser } = await supabase.auth.admin.getUserByEmail(formData.email);
+      if (existingUser.user) {
+        throw new Error("An account with this email already exists. Please sign in instead.");
+      }
+
+      // Step 2: Create the partner application first
+      console.log("Creating partner application...");
+      const { data: applicationData, error: applicationError } = await supabase
         .from('partner_applications')
         .insert({
           clinic_name: formData.clinicName,
           owner_name: formData.ownerName,
-          email: formData.email,
+          email: formData.email.trim().toLowerCase(), // Normalize email
           phone: formData.phone,
           address: formData.address,
           region: formData.region,
           zip_code: formData.zipCode
-        });
+        })
+        .select()
+        .single();
 
-      if (applicationError) throw applicationError;
+      if (applicationError) {
+        console.error("Partner application creation failed:", applicationError);
+        throw new Error(`Failed to create partner application: ${applicationError.message}`);
+      }
 
-      // Create the user account with email confirmation
+      console.log("Partner application created successfully:", applicationData);
+
+      // Step 3: Create the user account with proper configuration
+      console.log("Creating user account...");
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email,
+        email: formData.email.trim().toLowerCase(),
         password: formData.password,
         options: {
           data: {
             full_name: formData.ownerName,
             role: 'partner'
           },
-          emailRedirectTo: `${window.location.origin}/partner`
+          emailRedirectTo: `${window.location.origin}/auth`
         }
       });
 
-      if (authError) throw authError;
+      console.log("Auth signup response:", { authData, authError });
 
-      // Update the user role to partner if user was created
-      if (authData.user) {
-        const { error: userError } = await supabase
-          .from('users')
-          .update({ role: 'partner' })
-          .eq('id', authData.user.id);
-
-        if (userError) {
-          console.warn('Could not update user role:', userError);
-        }
+      if (authError) {
+        console.error("Auth signup failed:", authError);
+        
+        // If auth fails, we should clean up the application
+        await supabase
+          .from('partner_applications')
+          .delete()
+          .eq('id', applicationData.id);
+        
+        throw new Error(`Account creation failed: ${authError.message}`);
       }
 
+      if (!authData.user) {
+        console.error("No user returned from signup");
+        
+        // Clean up application
+        await supabase
+          .from('partner_applications')
+          .delete()
+          .eq('id', applicationData.id);
+        
+        throw new Error("Account creation failed: No user data returned");
+      }
+
+      console.log("User created successfully:", authData.user);
+
+      // Step 4: Update the user role to partner (backup in case trigger doesn't work)
+      const { error: userUpdateError } = await supabase
+        .from('users')
+        .update({ role: 'partner' })
+        .eq('id', authData.user.id);
+
+      if (userUpdateError) {
+        console.warn('Could not update user role:', userUpdateError);
+      }
+
+      console.log("Partner signup completed successfully");
       setSubmitted(true);
-      toast.success("Application submitted successfully! Please check your email to confirm your account.");
+      toast.success("Registration successful! Please check your email to confirm your account.");
       
     } catch (error: any) {
+      console.error('Partner signup error:', error);
+      setError(error.message || "Failed to submit application");
       toast.error(error.message || "Failed to submit application");
     } finally {
       setLoading(false);
     }
   };
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <MainNavigation />
+        <div className="container mx-auto py-12">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="mb-8">
+              <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+              <h1 className="text-3xl font-bold mb-2">Registration Failed</h1>
+              <p className="text-gray-600 mb-6">
+                There was an issue with your partner application.
+              </p>
+            </div>
+
+            <Card>
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  <div className="bg-red-50 p-4 rounded-lg text-left">
+                    <h3 className="font-medium text-red-900 mb-2">Error Details:</h3>
+                    <p className="text-sm text-red-800">{error}</p>
+                  </div>
+                  
+                  <div className="pt-4 space-y-3">
+                    <Button 
+                      onClick={() => {
+                        setError(null);
+                        setSubmitted(false);
+                      }}
+                      className="w-full"
+                    >
+                      Try Again
+                    </Button>
+                    <Button 
+                      variant="outline"
+                      onClick={() => navigate('/auth')}
+                      className="w-full"
+                    >
+                      Go to Sign In
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   if (submitted) {
     return (
