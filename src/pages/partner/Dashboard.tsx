@@ -10,18 +10,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import ApplicationStatus from "./ApplicationStatus";
 
-type CustomerStats = {
+interface CustomerStats {
   total: number;
   active: number;
   pending: number;
-};
+}
 
-type CustomerActivity = {
+interface CustomerActivity {
   id: string;
   email: string;
   full_name: string;
   created_at: string;
-};
+}
 
 const PartnerDashboard = () => {
   const { userDetails, user } = useAuth();
@@ -62,7 +62,7 @@ const PartnerDashboard = () => {
   // Fetch real customer statistics for this partner
   const { data: customerStats } = useQuery<CustomerStats>({
     queryKey: ['partner-customer-stats', userDetails?.id],
-    queryFn: async () => {
+    queryFn: async (): Promise<CustomerStats> => {
       console.log('Fetching customer stats for partner:', userDetails?.id);
       
       if (!userDetails?.id) {
@@ -95,7 +95,7 @@ const PartnerDashboard = () => {
   // Fetch recent customer activity for this partner
   const { data: recentActivity } = useQuery<CustomerActivity[]>({
     queryKey: ['partner-recent-activity', userDetails?.id],
-    queryFn: async () => {
+    queryFn: async (): Promise<CustomerActivity[]> => {
       console.log('Fetching recent activity for partner:', userDetails?.id);
       
       if (!userDetails?.id) {
@@ -114,20 +114,20 @@ const PartnerDashboard = () => {
       console.log('Recent activity query result:', { data, error });
 
       if (error) throw error;
-      return (data || []) as CustomerActivity[];
+      return data as CustomerActivity[] || [];
     },
     enabled: !!userDetails?.id,
   });
 
-  const getActivityText = (customer: CustomerActivity) => {
+  const getActivityText = (customer: CustomerActivity): string => {
     return 'Active access';
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): string => {
     return 'bg-green-100 text-green-800';
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInMs = now.getTime() - date.getTime();
@@ -254,7 +254,7 @@ const PartnerDashboard = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {recentActivity.map((customer) => (
+                      {recentActivity.map((customer: CustomerActivity) => (
                         <tr key={customer.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">

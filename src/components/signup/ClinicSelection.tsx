@@ -8,7 +8,7 @@ import { MapPin, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type Partner = {
+interface Partner {
   id: string;
   full_name: string;
   email: string;
@@ -17,11 +17,11 @@ type Partner = {
     address: string;
     region: string;
   };
-};
+}
 
-type ClinicSelectionProps = {
+interface ClinicSelectionProps {
   onSelectClinic: (partnerId: string) => void;
-};
+}
 
 const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
   const [partners, setPartners] = useState<Partner[]>([]);
@@ -52,10 +52,11 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
               .eq('partner_id', partner.id)
               .single();
 
-            partnersWithClinics.push({
+            const partnerWithClinic: Partner = {
               ...partner,
               clinic: clinicData || undefined
-            });
+            };
+            partnersWithClinics.push(partnerWithClinic);
           }
         }
         
