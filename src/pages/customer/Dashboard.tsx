@@ -1,21 +1,20 @@
 
-import { useState } from "react";
 import CustomerLayout from "@/components/customer/CustomerLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowRight } from "lucide-react";
-import { useAuth } from "@/context/AuthContext";
-import { useUserProfile } from "@/hooks/useUserProfile";
+import { useUserData } from "@/context/UserDataContext";
+import ProgressChart from "@/components/charts/ProgressChart";
+import NutritionChart from "@/components/charts/NutritionChart";
+import ActivityChart from "@/components/charts/ActivityChart";
+import DataInputForm from "@/components/dashboard/DataInputForm";
 
 const CustomerDashboard = () => {
-  const { userDetails } = useAuth();
-  const { profile } = useUserProfile();
-  const [activeTab, setActiveTab] = useState("progress");
+  const { userData } = useUserData();
   
-  const userName = profile?.full_name || userDetails?.full_name || "User";
-  const firstNameOnly = userName.split(' ')[0];
+  const firstNameOnly = userData.name.split(' ')[0];
 
   return (
     <CustomerLayout>
@@ -28,32 +27,29 @@ const CustomerDashboard = () => {
           View Analytics <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </header>
+
+      <DataInputForm />
       
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <StatCard 
           title="Current Weight" 
-          value={`${profile?.weight || 172} ${profile?.health_data?.weight_unit || 'lbs'}`}
+          value={`${userData.currentWeight} lbs`}
           description="-3 lbs from last week" 
         />
         <StatCard 
           title="Workouts Completed" 
-          value="12"
+          value={userData.workoutCompleted.toString()}
           description="+2 from last week" 
         />
         <StatCard 
           title="Calories Tracked" 
-          value="19,203"
+          value={userData.caloriesTracked.toLocaleString()}
           description="93% of weekly target" 
-        />
-        <StatCard 
-          title="CGM Readings" 
-          value="210"
-          description="98% compliance" 
         />
       </div>
       
       <div className="mt-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs defaultValue="progress">
           <TabsList className="mb-6">
             <TabsTrigger value="progress">Progress</TabsTrigger>
             <TabsTrigger value="nutrition">Nutrition</TabsTrigger>
@@ -67,9 +63,7 @@ const CustomerDashboard = () => {
                 <CardTitle>Your Progress</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px] bg-gray-100 rounded-md flex items-center justify-center">
-                  <p className="text-gray-500">Progress chart will be displayed here</p>
-                </div>
+                <ProgressChart />
               </CardContent>
             </Card>
           </TabsContent>
@@ -80,9 +74,7 @@ const CustomerDashboard = () => {
                 <CardTitle>Nutrition Report</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px] bg-gray-100 rounded-md flex items-center justify-center">
-                  <p className="text-gray-500">Nutrition data will be displayed here</p>
-                </div>
+                <NutritionChart />
               </CardContent>
             </Card>
           </TabsContent>
@@ -93,9 +85,7 @@ const CustomerDashboard = () => {
                 <CardTitle>Activity Summary</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px] bg-gray-100 rounded-md flex items-center justify-center">
-                  <p className="text-gray-500">Activity data will be displayed here</p>
-                </div>
+                <ActivityChart />
               </CardContent>
             </Card>
           </TabsContent>
@@ -107,20 +97,20 @@ const CustomerDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex justify-between items-center p-4 bg-gray-100 rounded-md">
-                    <div>
-                      <h3 className="font-medium">Nutritionist Consultation</h3>
-                      <p className="text-sm text-gray-500">May 22, 2025 - 2:30 PM</p>
+                  {userData.appointments.map((appointment) => (
+                    <div key={appointment.id} className="flex justify-between items-center p-4 bg-gray-100 rounded-md">
+                      <div>
+                        <h3 className="font-medium">{appointment.title}</h3>
+                        <p className="text-sm text-gray-500">{appointment.date} - {appointment.time}</p>
+                      </div>
+                      <Button variant="outline">Reschedule</Button>
                     </div>
-                    <Button variant="outline">Reschedule</Button>
-                  </div>
-                  <div className="flex justify-between items-center p-4 bg-gray-100 rounded-md">
-                    <div>
-                      <h3 className="font-medium">CGM Review Session</h3>
-                      <p className="text-sm text-gray-500">May 29, 2025 - 10:00 AM</p>
+                  ))}
+                  {userData.appointments.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      No appointments scheduled. Use the form above to add appointments.
                     </div>
-                    <Button variant="outline">Reschedule</Button>
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

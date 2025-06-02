@@ -1,10 +1,10 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { UserDataProvider } from "./context/UserDataContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/Dashboard";
@@ -85,71 +85,73 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/signup" element={<SignupPage />} />
-            <Route path="/shop" element={<Shop />} />
-            <Route path="/shop/cgm" element={<ShopCGM />} />
-            <Route path="/shop/workouts" element={<ShopWorkouts />} />
-            <Route path="/shop/diet" element={<ShopDiet />} />
-            <Route path="/nutritionists" element={<Nutritionists />} />
-            <Route path="/nutritionists/find" element={<NutritionistsFind />} />
-            <Route path="/nutritionists/become" element={<NutritionistsBecome />} />
-            <Route path="/nutritionists/about" element={<NutritionistsAbout />} />
-            <Route path="/journal" element={<Journal />} />
-            <Route path="/journal/:id" element={<ArticleDetail />} />
-            <Route path="/our-story" element={<OurStory />} />
-            <Route path="/contact" element={<Contact />} />
-            
-            {/* Dashboard route - redirects based on role */}
-            <Route path="/dashboard" element={<Dashboard />} />
-            
-            {/* Customer dashboard routes - now public access */}
-            <Route path="/customer" element={<CustomerDashboard />} />
-            <Route path="/customer/program" element={<CustomerProgram />} />
-            <Route path="/customer/cgm" element={<CustomerCGMTracker />} />
-            <Route path="/customer/coach" element={<CustomerGeoDietCoach />} />
-            <Route path="/customer/progress" element={<CustomerProgress />} />
-            <Route path="/customer/ask-coach" element={<CustomerAskCoach />} />
-            <Route path="/customer/videos" element={<CustomerVideos />} />
-            <Route path="/customer/settings" element={<CustomerSettings />} />
-            <Route path="/customer/support" element={<CustomerSupport />} />
-            
-            {/* Partner dashboard routes - now public access */}
-            <Route path="/partner" element={<PartnerDashboard />} />
-            <Route path="/partner/clients" element={<ClientManagement />} />
-            <Route path="/partner/requests" element={<AccessRequests />} />
-            <Route path="/partner/reports" element={<PartnerDashboard />} />
-            <Route path="/partner/plans" element={<PlansManagement />} />
-            <Route path="/partner/content" element={<ContentManagement />} />
-            <Route path="/partner/announcements" element={<Announcements />} />
-            <Route path="/partner/settings" element={<Settings />} />
-            <Route path="/partner/support" element={<Support />} />
-            
-            {/* Admin routes - now public access */}
-            <Route path="/admin/login" element={<Navigate to="/admin" replace />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/partners" element={<Partners />} />
-            <Route path="/admin/partners/add" element={<AddPartner />} />
-            <Route path="/admin/partners/map" element={<PartnersMap />} />
-            <Route path="/admin/customers" element={<Customers />} />
-            <Route path="/admin/customers/reports" element={<CustomerReports />} />
-            <Route path="/admin/packages" element={<Packages />} />
-            <Route path="/admin/packages/add" element={<AddPackage />} />
-            <Route path="/admin/content/videos" element={<Videos />} />
-            <Route path="/admin/content/blog" element={<Blog />} />
-            <Route path="/admin/analytics" element={<Analytics />} />
-            <Route path="/admin/partner-locator" element={<PartnerLocator />} />
-            <Route path="/admin/email" element={<Email />} />
-            <Route path="/admin/legal/terms" element={<Terms />} />
-            <Route path="/admin/legal/policy" element={<Policy />} />
-            <Route path="/admin/settings" element={<AdminSettings />} />
-            
-            {/* Catch-all route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <UserDataProvider>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/signup" element={<SignupPage />} />
+              <Route path="/shop" element={<Shop />} />
+              <Route path="/shop/cgm" element={<ShopCGM />} />
+              <Route path="/shop/workouts" element={<ShopWorkouts />} />
+              <Route path="/shop/diet" element={<ShopDiet />} />
+              <Route path="/nutritionists" element={<Nutritionists />} />
+              <Route path="/nutritionists/find" element={<NutritionistsFind />} />
+              <Route path="/nutritionists/become" element={<NutritionistsBecome />} />
+              <Route path="/nutritionists/about" element={<NutritionistsAbout />} />
+              <Route path="/journal" element={<Journal />} />
+              <Route path="/journal/:id" element={<ArticleDetail />} />
+              <Route path="/our-story" element={<OurStory />} />
+              <Route path="/contact" element={<Contact />} />
+              
+              {/* Dashboard route - redirects based on role */}
+              <Route path="/dashboard" element={<Dashboard />} />
+              
+              {/* Customer dashboard routes - now public access */}
+              <Route path="/customer" element={<CustomerDashboard />} />
+              <Route path="/customer/program" element={<CustomerProgram />} />
+              <Route path="/customer/cgm" element={<CustomerCGMTracker />} />
+              <Route path="/customer/coach" element={<CustomerGeoDietCoach />} />
+              <Route path="/customer/progress" element={<CustomerProgress />} />
+              <Route path="/customer/ask-coach" element={<CustomerAskCoach />} />
+              <Route path="/customer/videos" element={<CustomerVideos />} />
+              <Route path="/customer/settings" element={<CustomerSettings />} />
+              <Route path="/customer/support" element={<CustomerSupport />} />
+              
+              {/* Partner dashboard routes - now public access */}
+              <Route path="/partner" element={<PartnerDashboard />} />
+              <Route path="/partner/clients" element={<ClientManagement />} />
+              <Route path="/partner/requests" element={<AccessRequests />} />
+              <Route path="/partner/reports" element={<PartnerDashboard />} />
+              <Route path="/partner/plans" element={<PlansManagement />} />
+              <Route path="/partner/content" element={<ContentManagement />} />
+              <Route path="/partner/announcements" element={<Announcements />} />
+              <Route path="/partner/settings" element={<Settings />} />
+              <Route path="/partner/support" element={<Support />} />
+              
+              {/* Admin routes - now public access */}
+              <Route path="/admin/login" element={<Navigate to="/admin" replace />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/partners" element={<Partners />} />
+              <Route path="/admin/partners/add" element={<AddPartner />} />
+              <Route path="/admin/partners/map" element={<PartnersMap />} />
+              <Route path="/admin/customers" element={<Customers />} />
+              <Route path="/admin/customers/reports" element={<CustomerReports />} />
+              <Route path="/admin/packages" element={<Packages />} />
+              <Route path="/admin/packages/add" element={<AddPackage />} />
+              <Route path="/admin/content/videos" element={<Videos />} />
+              <Route path="/admin/content/blog" element={<Blog />} />
+              <Route path="/admin/analytics" element={<Analytics />} />
+              <Route path="/admin/partner-locator" element={<PartnerLocator />} />
+              <Route path="/admin/email" element={<Email />} />
+              <Route path="/admin/legal/terms" element={<Terms />} />
+              <Route path="/admin/legal/policy" element={<Policy />} />
+              <Route path="/admin/settings" element={<AdminSettings />} />
+              
+              {/* Catch-all route */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </UserDataProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
