@@ -1,38 +1,86 @@
+
 import { Search, PlusCircle, Clock, FileBarChart, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import PartnerLayout from "@/components/partner/PartnerLayout";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 const ClientManagement = () => {
-  const [selectedClient, setSelectedClient] = useState<null | number>(null);
+  const [selectedClient, setSelectedClient] = useState<null | string>(null);
+  const { userDetails } = useAuth();
   
-  const clients = [
-    { id: 1, name: "John Doe", email: "john@example.com", startDate: "Jan 15, 2023", status: "Active", expires: "Feb 28, 2023" },
-    { id: 2, name: "Taylor Kim", email: "taylor@example.com", startDate: "Dec 5, 2022", status: "Active", expires: "Jan 23, 2023" },
-    { id: 3, name: "Sam Miller", email: "sam@example.com", startDate: "Feb 1, 2023", status: "Frozen", expires: "Mar 22, 2023" },
-    { id: 4, name: "Rebecca Lee", email: "rebecca@example.com", startDate: "Jan 10, 2023", status: "Expired", expires: "Feb 28, 2023" },
-    { id: 5, name: "Alex Brown", email: "alex@example.com", startDate: "Jan 20, 2023", status: "Active", expires: "Mar 10, 2023" },
-    { id: 6, name: "Jamie Wilson", email: "jamie@example.com", startDate: "Feb 5, 2023", status: "Active", expires: "Mar 26, 2023" },
-  ];
+  // Fetch customers for this partner's clinic
+  const { data: clients, isLoading } = useQuery({
+    queryKey: ['partner-clients', userDetails?.clinic_id],
+    queryFn: async () => {
+      console.log('Fetching clients for clinic:', userDetails?.clinic_id);
+      
+      if (!userDetails?.clinic_id) {
+        console.log('No clinic_id found for user');
+        return [];
+      }
+      
+      const { data, error } = await supabase
+        .from('customers')
+        .select(`
+          id,
+          email,
+          access_status,
+          created_at,
+          expiry_date,
+          purchase_date,
+          users!customers_user_id_fkey(
+            id,
+            full_name
+          )
+        `)
+        .eq('clinic_id', userDetails.clinic_id)
+        .order('created_at', { ascending: false });
+
+      console.log('Clients query result:', { data, error });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!userDetails?.clinic_id,
+  });
   
-  const handleClientClick = (id: number) => {
+  const handleClientClick = (id: string) => {
     setSelectedClient(id === selectedClient ? null : id);
   };
   
   const getStatusClass = (status: string) => {
     switch (status) {
-      case "Active":
+      case "active":
         return "bg-green-100 text-green-800";
-      case "Expired":
+      case "expired":
         return "bg-red-100 text-red-800";
-      case "Frozen":
+      case "frozen":
         return "bg-blue-100 text-blue-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const selectedClientData = clients?.find(c => c.id === selectedClient);
+
+  if (isLoading) {
+    return (
+      <PartnerLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      </PartnerLayout>
+    );
+  }
 
   return (
     <PartnerLayout>
@@ -73,45 +121,61 @@ const ClientManagement = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {clients.map((client) => (
-                      <tr 
-                        key={client.id} 
-                        className={`hover:bg-gray-50 cursor-pointer ${selectedClient === client.id ? 'bg-blue-50' : ''}`}
-                        onClick={() => handleClientClick(client.id)}
-                      >
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="h-8 w-8 rounded-full bg-[#BED1AB] flex items-center justify-center text-[#160041]">
-                              {client.name.split(' ').map(n => n[0]).join('')}
+                    {clients && clients.length > 0 ? (
+                      clients.map((client) => (
+                        <tr 
+                          key={client.id} 
+                          className={`hover:bg-gray-50 cursor-pointer ${selectedClient === client.id ? 'bg-blue-50' : ''}`}
+                          onClick={() => handleClientClick(client.id)}
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="h-8 w-8 rounded-full bg-[#BED1AB] flex items-center justify-center text-[#160041]">
+                                {(client.users?.full_name || client.email).charAt(0).toUpperCase()}
+                              </div>
+                              <div className="ml-3">{client.users?.full_name || 'No Name'}</div>
                             </div>
-                            <div className="ml-3">{client.name}</div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">{client.email}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">{client.startDate}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs rounded-full ${getStatusClass(client.status)}`}>
-                            {client.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">{client.expires}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex space-x-2">
-                            <Button variant="ghost" size="sm">
-                              <Clock className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm">
-                              <FileBarChart className="h-4 w-4" />
-                            </Button>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">{client.email}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">{formatDate(client.purchase_date)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-1 text-xs rounded-full ${getStatusClass(client.access_status)}`}>
+                              {client.access_status}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {client.expiry_date ? formatDate(client.expiry_date) : 'No expiry'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex space-x-2">
+                              <Button variant="ghost" size="sm">
+                                <Clock className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <FileBarChart className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                          <div className="flex flex-col items-center">
+                            <Users className="h-12 w-12 text-gray-400 mb-2" />
+                            <p>No clients found</p>
+                            <p className="text-sm">Clients will appear here once they sign up for your clinic</p>
                           </div>
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
               <div className="p-4 border-t flex justify-between items-center">
-                <div className="text-sm text-gray-500">Showing 6 of 6 clients</div>
+                <div className="text-sm text-gray-500">
+                  Showing {clients?.length || 0} of {clients?.length || 0} clients
+                </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" disabled>Previous</Button>
                   <Button variant="outline" size="sm" disabled>Next</Button>
@@ -121,34 +185,36 @@ const ClientManagement = () => {
           </div>
           
           <div className="md:w-1/3">
-            {selectedClient ? (
+            {selectedClientData ? (
               <Card className="p-6">
                 <h3 className="text-xl font-medium mb-4">Client Details</h3>
                 
                 <div className="mb-6 flex items-center">
                   <div className="h-16 w-16 rounded-full bg-[#BED1AB] flex items-center justify-center text-[#160041] text-xl">
-                    {clients.find(c => c.id === selectedClient)?.name.split(' ').map(n => n[0]).join('')}
+                    {(selectedClientData.users?.full_name || selectedClientData.email).charAt(0).toUpperCase()}
                   </div>
                   <div className="ml-4">
-                    <h4 className="text-lg font-medium">{clients.find(c => c.id === selectedClient)?.name}</h4>
-                    <p className="text-gray-500">{clients.find(c => c.id === selectedClient)?.email}</p>
+                    <h4 className="text-lg font-medium">{selectedClientData.users?.full_name || 'No Name'}</h4>
+                    <p className="text-gray-500">{selectedClientData.email}</p>
                   </div>
                 </div>
                 
                 <div className="space-y-4">
                   <div>
                     <h5 className="text-sm text-gray-500">Program Status</h5>
-                    <p className="font-medium">{clients.find(c => c.id === selectedClient)?.status}</p>
+                    <p className="font-medium">{selectedClientData.access_status}</p>
                   </div>
                   
                   <div>
                     <h5 className="text-sm text-gray-500">Start Date</h5>
-                    <p className="font-medium">{clients.find(c => c.id === selectedClient)?.startDate}</p>
+                    <p className="font-medium">{formatDate(selectedClientData.purchase_date)}</p>
                   </div>
                   
                   <div>
                     <h5 className="text-sm text-gray-500">Expiry Date</h5>
-                    <p className="font-medium">{clients.find(c => c.id === selectedClient)?.expires}</p>
+                    <p className="font-medium">
+                      {selectedClientData.expiry_date ? formatDate(selectedClientData.expiry_date) : 'No expiry'}
+                    </p>
                   </div>
                 </div>
                 

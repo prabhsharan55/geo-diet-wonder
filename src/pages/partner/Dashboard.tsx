@@ -6,17 +6,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PartnerLayout from "@/components/partner/PartnerLayout";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 const PartnerDashboard = () => {
-  // Fetch real customer statistics
+  const { userDetails } = useAuth();
+  
+  // Fetch real customer statistics for this partner's clinic
   const { data: customerStats } = useQuery({
-    queryKey: ['partner-customer-stats'],
+    queryKey: ['partner-customer-stats', userDetails?.clinic_id],
     queryFn: async () => {
-      console.log('Fetching customer stats...');
+      console.log('Fetching customer stats for clinic:', userDetails?.clinic_id);
+      
+      if (!userDetails?.clinic_id) {
+        console.log('No clinic_id found for user');
+        return { total: 0, active: 0, frozen: 0, expiring: 0 };
+      }
       
       const { data: allCustomers, error: allError } = await supabase
         .from('customers')
-        .select('id, access_status, expiry_date');
+        .select('id, access_status, expiry_date')
+        .eq('clinic_id', userDetails.clinic_id);
 
       console.log('All customers query result:', { allCustomers, allError });
 
@@ -44,13 +53,19 @@ const PartnerDashboard = () => {
       console.log('Calculated stats:', stats);
       return stats;
     },
+    enabled: !!userDetails?.clinic_id,
   });
 
-  // Fetch recent customer activity
+  // Fetch recent customer activity for this partner's clinic
   const { data: recentActivity } = useQuery({
-    queryKey: ['partner-recent-activity'],
+    queryKey: ['partner-recent-activity', userDetails?.clinic_id],
     queryFn: async () => {
-      console.log('Fetching recent activity...');
+      console.log('Fetching recent activity for clinic:', userDetails?.clinic_id);
+      
+      if (!userDetails?.clinic_id) {
+        console.log('No clinic_id found for user');
+        return [];
+      }
       
       const { data, error } = await supabase
         .from('customers')
@@ -64,6 +79,7 @@ const PartnerDashboard = () => {
             full_name
           )
         `)
+        .eq('clinic_id', userDetails.clinic_id)
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -72,6 +88,7 @@ const PartnerDashboard = () => {
       if (error) throw error;
       return data || [];
     },
+    enabled: !!userDetails?.clinic_id,
   });
 
   const getActivityText = (customer: any) => {
@@ -157,6 +174,9 @@ const PartnerDashboard = () => {
             <CardContent className="p-4">
               <h3 className="font-medium mb-2">Debug Info:</h3>
               <pre className="text-xs bg-gray-100 p-2 rounded">
+                User Clinic ID: {userDetails?.clinic_id || 'Not set'}
+              </pre>
+              <pre className="text-xs bg-gray-100 p-2 rounded mt-2">
                 Customer Stats: {JSON.stringify(customerStats, null, 2)}
               </pre>
               <pre className="text-xs bg-gray-100 p-2 rounded mt-2">
@@ -255,7 +275,7 @@ const PartnerDashboard = () => {
                 ) : (
                   <div className="p-8 text-center text-gray-500">
                     <p>No recent activity found</p>
-                    <p className="text-sm">Customer activity will appear here</p>
+                    <p className="text-sm">Customer activity will appear here once clients sign up</p>
                   </div>
                 )}
               </TabsContent>

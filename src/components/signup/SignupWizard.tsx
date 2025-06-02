@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -6,6 +7,7 @@ import { toast } from "sonner";
 import HealthQuestions from "./HealthQuestions";
 import UserDetailsForm from "./UserDetailsForm";
 import PlanSelection from "./PlanSelection";
+import ClinicSelection from "./ClinicSelection";
 import { Card, CardContent } from "@/components/ui/card";
 import { Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +20,7 @@ type UserData = {
   city: string;
   healthData: Record<string, string>;
   selectedPlan: string;
+  clinicId: string;
 }
 
 const SignupWizard = () => {
@@ -29,14 +32,20 @@ const SignupWizard = () => {
     mobile: "",
     city: "",
     healthData: {},
-    selectedPlan: ""
+    selectedPlan: "",
+    clinicId: ""
   });
   const navigate = useNavigate();
   const { signUp, loading } = useAuth();
 
+  const handleClinicSelection = (clinicId: string) => {
+    setUserData(prev => ({ ...prev, clinicId }));
+    setStep(2);
+  };
+
   const handleHealthDataSubmit = (healthData: Record<string, string>) => {
     setUserData(prev => ({ ...prev, healthData }));
-    setStep(2);
+    setStep(3);
   };
 
   const handleUserDetailsSubmit = (details: {
@@ -47,18 +56,22 @@ const SignupWizard = () => {
     city: string;
   }) => {
     setUserData(prev => ({ ...prev, ...details }));
-    setStep(3);
+    setStep(4);
   };
 
   const handlePlanSelection = async (plan: string) => {
     try {
       setUserData(prev => ({ ...prev, selectedPlan: plan }));
       
-      // Register the user with Supabase Auth
+      // Register the user with Supabase Auth, including clinic metadata
       await signUp(
         userData.email,
         userData.password,
-        userData.fullName
+        userData.fullName,
+        { 
+          clinic_id: userData.clinicId,
+          selectedPlan: plan
+        }
       );
       
       // Get the current user - if signup was successful, we should have a user
@@ -106,25 +119,34 @@ const SignupWizard = () => {
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 1 ? "bg-primary text-white" : "bg-gray-200"}`}>
               {step > 1 ? <Check className="h-4 w-4" /> : "1"}
             </div>
-            <span className="ml-2 font-medium">Health Questions</span>
+            <span className="ml-2 font-medium text-sm">Choose Clinic</span>
           </div>
-          <div className="h-1 flex-1 mx-4 bg-gray-200">
+          <div className="h-1 flex-1 mx-2 bg-gray-200">
             <div className={`h-1 bg-primary ${step > 1 ? "w-full" : "w-0"}`} />
           </div>
           <div className={`flex items-center ${step >= 2 ? "text-primary" : "text-gray-400"}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 2 ? "bg-primary text-white" : "bg-gray-200"}`}>
               {step > 2 ? <Check className="h-4 w-4" /> : "2"}
             </div>
-            <span className="ml-2 font-medium">User Details</span>
+            <span className="ml-2 font-medium text-sm">Health Questions</span>
           </div>
-          <div className="h-1 flex-1 mx-4 bg-gray-200">
+          <div className="h-1 flex-1 mx-2 bg-gray-200">
             <div className={`h-1 bg-primary ${step > 2 ? "w-full" : "w-0"}`} />
           </div>
           <div className={`flex items-center ${step >= 3 ? "text-primary" : "text-gray-400"}`}>
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 3 ? "bg-primary text-white" : "bg-gray-200"}`}>
-              "3"
+              {step > 3 ? <Check className="h-4 w-4" /> : "3"}
             </div>
-            <span className="ml-2 font-medium">Choose Plan</span>
+            <span className="ml-2 font-medium text-sm">User Details</span>
+          </div>
+          <div className="h-1 flex-1 mx-2 bg-gray-200">
+            <div className={`h-1 bg-primary ${step > 3 ? "w-full" : "w-0"}`} />
+          </div>
+          <div className={`flex items-center ${step >= 4 ? "text-primary" : "text-gray-400"}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= 4 ? "bg-primary text-white" : "bg-gray-200"}`}>
+              "4"
+            </div>
+            <span className="ml-2 font-medium text-sm">Choose Plan</span>
           </div>
         </div>
       </div>
@@ -132,14 +154,18 @@ const SignupWizard = () => {
       <Card>
         <CardContent className="pt-6">
           {step === 1 && (
-            <HealthQuestions onSubmit={handleHealthDataSubmit} />
+            <ClinicSelection onSelectClinic={handleClinicSelection} />
           )}
           
           {step === 2 && (
-            <UserDetailsForm onSubmit={handleUserDetailsSubmit} />
+            <HealthQuestions onSubmit={handleHealthDataSubmit} />
           )}
           
           {step === 3 && (
+            <UserDetailsForm onSubmit={handleUserDetailsSubmit} />
+          )}
+          
+          {step === 4 && (
             <PlanSelection onSelectPlan={handlePlanSelection} isLoading={loading} />
           )}
         </CardContent>
