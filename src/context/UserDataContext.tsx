@@ -93,6 +93,10 @@ type UserDataContextType = {
   markVideoWatched: (weekNumber: number, videoId: string) => void;
   addMealLog: (weekNumber: number, mealLog: Omit<MealLog, 'id'>) => void;
   addWeightLog: (weekNumber: number, weightLog: Omit<WeightLog, 'id'>) => void;
+  editMealLog: (weekNumber: number, mealLogId: string, updatedMealLog: Partial<MealLog>) => void;
+  deleteMealLog: (weekNumber: number, mealLogId: string) => void;
+  editWeightLog: (weekNumber: number, weightLogId: string, updatedWeightLog: Partial<WeightLog>) => void;
+  deleteWeightLog: (weekNumber: number, weightLogId: string) => void;
   completeWeek: (weekNumber: number) => void;
 };
 
@@ -324,6 +328,90 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     }));
   };
 
+  const editMealLog = (weekNumber: number, mealLogId: string, updatedMealLog: Partial<MealLog>) => {
+    setUserData(prev => ({
+      ...prev,
+      program: {
+        ...prev.program,
+        weeks: prev.program.weeks.map(week => 
+          week.weekNumber === weekNumber 
+            ? {
+                ...week,
+                tasks: {
+                  ...week.tasks,
+                  mealLogs: week.tasks.mealLogs.map(mealLog =>
+                    mealLog.id === mealLogId ? { ...mealLog, ...updatedMealLog } : mealLog
+                  )
+                }
+              }
+            : week
+        )
+      }
+    }));
+  };
+
+  const deleteMealLog = (weekNumber: number, mealLogId: string) => {
+    setUserData(prev => ({
+      ...prev,
+      program: {
+        ...prev.program,
+        weeks: prev.program.weeks.map(week => 
+          week.weekNumber === weekNumber 
+            ? {
+                ...week,
+                tasks: {
+                  ...week.tasks,
+                  mealLogs: week.tasks.mealLogs.filter(mealLog => mealLog.id !== mealLogId)
+                }
+              }
+            : week
+        )
+      }
+    }));
+  };
+
+  const editWeightLog = (weekNumber: number, weightLogId: string, updatedWeightLog: Partial<WeightLog>) => {
+    setUserData(prev => ({
+      ...prev,
+      program: {
+        ...prev.program,
+        weeks: prev.program.weeks.map(week => 
+          week.weekNumber === weekNumber 
+            ? {
+                ...week,
+                tasks: {
+                  ...week.tasks,
+                  weightLogs: week.tasks.weightLogs.map(weightLog =>
+                    weightLog.id === weightLogId ? { ...weightLog, ...updatedWeightLog } : weightLog
+                  )
+                }
+              }
+            : week
+        )
+      }
+    }));
+  };
+
+  const deleteWeightLog = (weekNumber: number, weightLogId: string) => {
+    setUserData(prev => ({
+      ...prev,
+      program: {
+        ...prev.program,
+        weeks: prev.program.weeks.map(week => 
+          week.weekNumber === weekNumber 
+            ? {
+                ...week,
+                tasks: {
+                  ...week.tasks,
+                  weightLogs: week.tasks.weightLogs.filter(weightLog => weightLog.id !== weightLogId)
+                }
+              }
+            : week
+        )
+      }
+    }));
+  };
+
   const completeWeek = (weekNumber: number) => {
     setUserData(prev => ({
       ...prev,
@@ -355,6 +443,10 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       markVideoWatched,
       addMealLog,
       addWeightLog,
+      editMealLog,
+      deleteMealLog,
+      editWeightLog,
+      deleteWeightLog,
       completeWeek
     }}>
       {children}

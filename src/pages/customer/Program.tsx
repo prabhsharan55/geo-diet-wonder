@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import CustomerLayout from "@/components/customer/CustomerLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +12,7 @@ import MealLogTaskRow from "@/components/customer/MealLogTaskRow";
 import WeightTrackingTaskRow from "@/components/customer/WeightTrackingTaskRow";
 
 const Program = () => {
-  const { userData, markVideoWatched, addMealLog, addWeightLog, completeWeek } = useUserData();
+  const { userData, markVideoWatched, addMealLog, addWeightLog, editMealLog, deleteMealLog, editWeightLog, deleteWeightLog, completeWeek } = useUserData();
   const [shouldAnimateProgress, setShouldAnimateProgress] = useState(false);
   const [showWeekCompleteAnimation, setShowWeekCompleteAnimation] = useState(false);
   const [selectedDay, setSelectedDay] = useState(1);
@@ -28,6 +27,21 @@ const Program = () => {
   const currentDayName = dayNames[currentDate.getDay()];
   const currentDayOfWeek = currentDate.getDay() === 0 ? 7 : currentDate.getDay(); // Convert Sunday (0) to 7
   
+  // Check if a day tab should be accessible based on current system day
+  const isDayAccessible = (weekNumber: number, dayNumber: number) => {
+    if (weekNumber < currentWeek) return true; // Past weeks are fully accessible
+    if (weekNumber > currentWeek) return false; // Future weeks are locked
+    if (weekNumber === currentWeek) {
+      return dayNumber <= currentDayOfWeek; // Current week: only current and past days
+    }
+    return false;
+  };
+
+  // Check if it's current day for edit/delete permissions
+  const isCurrentDay = (weekNumber: number, dayNumber: number) => {
+    return weekNumber === currentWeek && dayNumber === currentDayOfWeek;
+  };
+
   // Check if user just completed a week (simulate checking on page load)
   useEffect(() => {
     // This would normally check if user just completed tasks and trigger animation
@@ -71,13 +85,15 @@ const Program = () => {
   const overallCompletion = Math.round(((currentWeek - 1) / totalWeeks) * 100);
 
   // Generate day tabs for any week
-  const generateDayTabs = () => {
+  const generateDayTabs = (weekNumber: number) => {
     const days = [];
     for (let i = 1; i <= 7; i++) {
       const dayName = dayNames[i % 7]; // Start from Monday
+      const accessible = isDayAccessible(weekNumber, i);
       days.push({
         day: i,
-        name: dayName
+        name: dayName,
+        accessible
       });
     }
     return days;
@@ -91,11 +107,6 @@ const Program = () => {
       day: 'numeric' 
     };
     return currentDate.toLocaleDateString('en-US', options);
-  };
-
-  // Check if it's current day for edit/delete permissions
-  const isCurrentDay = (weekNumber: number, dayNumber: number) => {
-    return weekNumber === currentWeek && dayNumber === currentDayOfWeek;
   };
 
   return (
@@ -177,26 +188,31 @@ const Program = () => {
                   </Card>
                 )}
 
-                {/* Day tabs for all weeks (not just current) */}
+                {/* Day tabs for all weeks */}
                 <Tabs defaultValue="day-1" className="w-full">
                   <TabsList className="w-full grid grid-cols-7">
-                    {generateDayTabs().map((day) => (
+                    {generateDayTabs(week.weekNumber).map((day) => (
                       <TabsTrigger 
                         key={`day-${day.day}`} 
                         value={`day-${day.day}`}
-                        className="text-xs px-2 py-1"
-                        onClick={() => setSelectedDay(day.day)}
+                        disabled={!day.accessible}
+                        className={cn(
+                          "text-xs px-2 py-1",
+                          !day.accessible && "opacity-50"
+                        )}
+                        onClick={() => day.accessible && setSelectedDay(day.day)}
                       >
                         <span className="truncate">
                           Day {day.day}
                           <br />
                           <span className="text-xs text-gray-500">{day.name}</span>
+                          {!day.accessible && <Lock className="h-3 w-3 inline ml-1" />}
                         </span>
                       </TabsTrigger>
                     ))}
                   </TabsList>
                   
-                  {generateDayTabs().map((day) => (
+                  {generateDayTabs(week.weekNumber).map((day) => (
                     <TabsContent key={`day-content-${day.day}`} value={`day-${day.day}`} className="mt-4">
                       <Card>
                         <CardHeader>
@@ -221,6 +237,8 @@ const Program = () => {
                               )}
                               weekNumber={week.weekNumber}
                               onAddMealLog={(mealLog) => addMealLog(week.weekNumber, mealLog)}
+                              onEditMealLog={(mealLogId, updatedMealLog) => editMealLog(week.weekNumber, mealLogId, updatedMealLog)}
+                              onDeleteMealLog={(mealLogId) => deleteMealLog(week.weekNumber, mealLogId)}
                               canEdit={isCurrentDay(week.weekNumber, day.day)}
                             />
                             
@@ -228,6 +246,8 @@ const Program = () => {
                               weightLogs={week.tasks.weightLogs}
                               weekNumber={week.weekNumber}
                               onAddWeightLog={(weightLog) => addWeightLog(week.weekNumber, weightLog)}
+                              onEditWeightLog={(weightLogId, updatedWeightLog) => editWeightLog(week.weekNumber, weightLogId, updatedWeightLog)}
+                              onDeleteWeightLog={(weightLogId) => deleteWeightLog(week.weekNumber, weightLogId)}
                               canEdit={isCurrentDay(week.weekNumber, day.day)}
                             />
                           </div>

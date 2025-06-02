@@ -12,11 +12,15 @@ interface WeightTrackingTaskRowProps {
   weightLogs: WeightLog[];
   weekNumber: number;
   onAddWeightLog: (weightLog: Omit<WeightLog, 'id'>) => void;
+  onEditWeightLog: (weightLogId: string, updatedWeightLog: Partial<WeightLog>) => void;
+  onDeleteWeightLog: (weightLogId: string) => void;
   canEdit?: boolean;
 }
 
-const WeightTrackingTaskRow = ({ weightLogs, weekNumber, onAddWeightLog, canEdit = false }: WeightTrackingTaskRowProps) => {
+const WeightTrackingTaskRow = ({ weightLogs, weekNumber, onAddWeightLog, onEditWeightLog, onDeleteWeightLog, canEdit = false }: WeightTrackingTaskRowProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingWeight, setEditingWeight] = useState<WeightLog | null>(null);
   const [weightData, setWeightData] = useState({
     weight: '',
     notes: '',
@@ -59,14 +63,32 @@ const WeightTrackingTaskRow = ({ weightLogs, weekNumber, onAddWeightLog, canEdit
     return `${formattedDate} at ${formattedTime}`;
   };
 
-  const handleEdit = (weightId: string) => {
-    console.log('Edit weight:', weightId);
-    // TODO: Implement edit functionality
+  const handleEdit = (weightLog: WeightLog) => {
+    setEditingWeight(weightLog);
+    setWeightData({
+      weight: weightLog.weight.toString(),
+      notes: weightLog.notes,
+      photo: weightLog.photo || ''
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditSubmit = () => {
+    if (editingWeight) {
+      onEditWeightLog(editingWeight.id, {
+        weight: Number(weightData.weight),
+        notes: weightData.notes,
+        photo: selectedImage ? URL.createObjectURL(selectedImage) : weightData.photo
+      });
+      setIsEditDialogOpen(false);
+      setEditingWeight(null);
+      setWeightData({ weight: '', notes: '', photo: '' });
+      setSelectedImage(null);
+    }
   };
 
   const handleDelete = (weightId: string) => {
-    console.log('Delete weight:', weightId);
-    // TODO: Implement delete functionality
+    onDeleteWeightLog(weightId);
   };
 
   return (
@@ -141,6 +163,57 @@ const WeightTrackingTaskRow = ({ weightLogs, weekNumber, onAddWeightLog, canEdit
           </Dialog>
         )}
 
+        {/* Edit weight dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Weight</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="editWeight">Weight (lbs)</Label>
+                <Input
+                  id="editWeight"
+                  type="number"
+                  value={weightData.weight}
+                  onChange={(e) => setWeightData(prev => ({ ...prev, weight: e.target.value }))}
+                  placeholder="Enter your weight"
+                />
+              </div>
+              <div>
+                <Label htmlFor="editNotes">Notes (optional)</Label>
+                <Textarea
+                  id="editNotes"
+                  value={weightData.notes}
+                  onChange={(e) => setWeightData(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Any notes about your weight..."
+                />
+              </div>
+              <div>
+                <Label htmlFor="editPhoto">Photo (optional)</Label>
+                <Input
+                  id="editPhoto"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
+                {(selectedImage || weightData.photo) && (
+                  <div className="mt-2">
+                    <img 
+                      src={selectedImage ? URL.createObjectURL(selectedImage) : weightData.photo} 
+                      alt="Weight tracking preview" 
+                      className="w-full h-32 object-cover rounded-md"
+                    />
+                  </div>
+                )}
+              </div>
+              <Button onClick={handleEditSubmit} className="w-full">
+                Update Weight
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Existing weight logs */}
         {recentLogs.map((weightLog) => (
           <Card key={weightLog.id} className="min-w-[250px]">
@@ -175,7 +248,7 @@ const WeightTrackingTaskRow = ({ weightLogs, weekNumber, onAddWeightLog, canEdit
                     size="sm" 
                     variant="outline" 
                     className="flex-1"
-                    onClick={() => handleEdit(weightLog.id)}
+                    onClick={() => handleEdit(weightLog)}
                   >
                     <Edit className="h-3 w-3 mr-1" />
                     Edit
