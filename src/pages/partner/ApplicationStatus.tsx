@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -90,7 +89,7 @@ const ApplicationStatus = () => {
   useEffect(() => {
     if (validatedStatus === "approved") {
       console.log("Status is approved, redirecting to dashboard");
-      navigate("/partner/dashboard");
+      navigate("/partner");
     }
   }, [validatedStatus, navigate]);
 
@@ -191,7 +190,7 @@ const ApplicationStatus = () => {
 
           <div className="space-y-3">
             {status.action && validatedStatus === "approved" && (
-              <Button className="w-full" onClick={() => navigate("/partner/dashboard")}>
+              <Button className="w-full" onClick={() => navigate("/partner")}>
                 {status.action}
               </Button>
             )}
