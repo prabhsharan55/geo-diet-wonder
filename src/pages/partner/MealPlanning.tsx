@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +10,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, PlusCircle, Edit, Trash2 } from "lucide-react";
+import { CalendarIcon, PlusCircle, Edit, Trash2, User } from "lucide-react";
 import { format } from "date-fns";
 import PartnerLayout from "@/components/partner/PartnerLayout";
 import { useToast } from "@/hooks/use-toast";
@@ -52,6 +51,9 @@ const MealPlanning = () => {
       return data || [];
     },
   });
+
+  // Get selected customer details
+  const selectedCustomerData = customers?.find(customer => customer.id === selectedCustomer);
 
   // Fetch meal plans for selected customer and date
   const { data: mealPlans } = useQuery({
@@ -232,7 +234,10 @@ const MealPlanning = () => {
                   <SelectContent>
                     {customers?.map((customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
-                        {customer.users?.full_name} ({customer.email})
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          <span>{customer.users?.full_name || 'No Name'} ({customer.email})</span>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -274,11 +279,23 @@ const MealPlanning = () => {
                   Add Meal Plan
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>
                     {editingPlan ? "Edit Meal Plan" : "Add Meal Plan"}
                   </DialogTitle>
+                  {selectedCustomerData && (
+                    <div className="bg-blue-50 p-3 rounded-lg mt-2">
+                      <h4 className="font-medium text-blue-900">Customer Details</h4>
+                      <div className="text-sm text-blue-700 mt-1">
+                        <p><strong>Name:</strong> {selectedCustomerData.users?.full_name || 'No Name'}</p>
+                        <p><strong>Email:</strong> {selectedCustomerData.email}</p>
+                        {selectedDate && (
+                          <p><strong>Date:</strong> {format(selectedDate, "PPP")}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
@@ -312,6 +329,7 @@ const MealPlanning = () => {
                       value={mealData.description}
                       onChange={(e) => setMealData(prev => ({ ...prev, description: e.target.value }))}
                       placeholder="Detailed meal description..."
+                      rows={3}
                     />
                   </div>
 
@@ -333,6 +351,7 @@ const MealPlanning = () => {
                       value={mealData.feedback}
                       onChange={(e) => setMealData(prev => ({ ...prev, feedback: e.target.value }))}
                       placeholder="Why this meal is recommended..."
+                      rows={3}
                     />
                   </div>
 
@@ -350,7 +369,7 @@ const MealPlanning = () => {
           <Card>
             <CardHeader>
               <CardTitle>
-                Meal Plans for {format(selectedDate, "PPP")}
+                Meal Plans for {selectedCustomerData?.users?.full_name || 'Customer'} - {format(selectedDate, "PPP")}
               </CardTitle>
             </CardHeader>
             <CardContent>
