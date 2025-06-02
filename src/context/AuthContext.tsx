@@ -38,18 +38,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(currentSession?.user ?? null);
         
         if (event === 'SIGNED_IN' && currentSession?.user) {
-          // Use user metadata as fallback for userDetails to prevent RLS issues
-          const userMetadata = currentSession.user.user_metadata;
-          const fallbackUserDetails = {
-            id: currentSession.user.id,
-            email: currentSession.user.email,
-            full_name: userMetadata?.full_name || 'User',
-            role: userMetadata?.role || 'customer'
-          };
-          
-          setUserDetails(fallbackUserDetails);
-          
-          // Try to fetch from database, but don't block on it
+          // Check if user exists in database
           setTimeout(async () => {
             if (mounted) {
               try {
@@ -62,13 +51,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 if (data && mounted) {
                   console.log('User details fetched from DB:', data);
                   setUserDetails(data);
+                } else if (!data && !error) {
+                  console.log('User authenticated but no database record found - signing out');
+                  // User is authenticated but has no database record, sign them out
+                  await supabase.auth.signOut();
+                  setUserDetails(null);
+                  toast.error("Your account data was not found. Please sign up again.");
                 } else if (error) {
-                  console.warn('Could not fetch user details from DB, using metadata:', error);
-                  // Keep using the fallback details
+                  console.warn('Could not fetch user details from DB:', error);
+                  setUserDetails(null);
                 }
               } catch (err) {
-                console.warn('Error fetching user details, using metadata:', err);
-                // Keep using the fallback details
+                console.warn('Error fetching user details:', err);
+                setUserDetails(null);
               }
             }
           }, 100);
@@ -92,16 +87,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setSession(currentSession);
           setUser(currentSession.user);
           
-          // Use metadata as fallback
-          const userMetadata = currentSession.user.user_metadata;
-          const fallbackUserDetails = {
-            id: currentSession.user.id,
-            email: currentSession.user.email,
-            full_name: userMetadata?.full_name || 'User',
-            role: userMetadata?.role || 'customer'
-          };
-          
-          setUserDetails(fallbackUserDetails);
+          // Check if user exists in database
+          try {
+            const { data, error } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', currentSession.user.id)
+              .maybeSingle();
+            
+            if (data) {
+              setUserDetails(data);
+            } else if (!data && !error) {
+              console.log('User authenticated but no database record found - signing out');
+              // User is authenticated but has no database record, sign them out
+              await supabase.auth.signOut();
+              setUserDetails(null);
+              toast.error("Your account data was not found. Please sign up again.");
+            } else {
+              setUserDetails(null);
+            }
+          } catch (err) {
+            console.warn('Error checking user details:', err);
+            setUserDetails(null);
+          }
         }
         
         if (mounted) {
