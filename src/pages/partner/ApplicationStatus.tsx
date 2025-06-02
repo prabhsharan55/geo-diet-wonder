@@ -1,3 +1,4 @@
+
 // src/pages/partner/ApplicationStatus.tsx
 
 import { useEffect, useState } from "react";
@@ -5,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { Clock, CheckCircle, AlertCircle, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -16,8 +17,8 @@ const ApplicationStatus = () => {
   // Holds the raw status string from the database (or null)
   const [rawStatus, setRawStatus] = useState<string | null>(null);
 
-  // Only "pending" | "approved" | null, after we normalize rawStatus
-  const [validatedStatus, setValidatedStatus] = useState<"pending" | "approved" | null>(null);
+  // Only "pending" | "approved" | "not_found" | null, after we normalize rawStatus
+  const [validatedStatus, setValidatedStatus] = useState<"pending" | "approved" | "not_found" | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,17 +26,19 @@ const ApplicationStatus = () => {
   useEffect(() => {
     if (!user?.email) return;
 
-    // Wait 500ms before querying, so Supabase has time to insert the new row
+    // Wait 1000ms before querying to ensure any recent submissions are processed
     const timer = setTimeout(() => {
       const fetchStatus = async () => {
         setLoading(true);
         setError(null);
 
+        console.log("Fetching application status for:", user.email);
+
         const { data, error: supabaseError } = await supabase
           .from("partner_applications")
           .select("status")
           .eq("email", user.email.trim().toLowerCase())
-          .order("id", { ascending: false })
+          .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
 
@@ -47,9 +50,9 @@ const ApplicationStatus = () => {
           setRawStatus(null);
           setError("Unable to fetch your application status.");
         } else if (!data) {
-          // No row found yet
+          // No row found - this means no application submitted yet
           console.log("No application row found for:", user.email);
-          setRawStatus(null);
+          setRawStatus("not_found");
         } else {
           setRawStatus(data.status);
         }
@@ -58,38 +61,49 @@ const ApplicationStatus = () => {
       };
 
       fetchStatus();
-    }, 500);
+    }, 1000);
 
     return () => clearTimeout(timer);
   }, [user?.email]);
 
-  // Normalize rawStatus → exactly "pending" | "approved" or null
+  // Normalize rawStatus → exactly "pending" | "approved" | "not_found" or null
   useEffect(() => {
     if (rawStatus === null) {
       setValidatedStatus(null);
       return;
     }
+    
+    if (rawStatus === "not_found") {
+      setValidatedStatus("not_found");
+      return;
+    }
+    
     const trimmed = rawStatus.trim().toLowerCase();
     if (trimmed === "pending") {
       setValidatedStatus("pending");
     } else if (trimmed === "approved") {
       setValidatedStatus("approved");
     } else {
-      console.warn(`Unrecognized status: "${rawStatus}", marking as null`);
-      setValidatedStatus(null);
+      console.warn(`Unrecognized status: "${rawStatus}", marking as not_found`);
+      setValidatedStatus("not_found");
     }
   }, [rawStatus]);
 
   // If approved, redirect immediately
   useEffect(() => {
     if (validatedStatus === "approved") {
-      navigate("/partner/dashboard");
+      navigate("/partner");
     }
   }, [validatedStatus, navigate]);
+
+  const handleSubmitApplication = () => {
+    navigate("/partner-signup");
+  };
 
   const getStatusIcon = () => {
     if (validatedStatus === "approved") return <CheckCircle className="h-12 w-12 text-green-500" />;
     if (validatedStatus === "pending") return <Clock className="h-12 w-12 text-yellow-500" />;
+    if (validatedStatus === "not_found") return <FileText className="h-12 w-12 text-blue-500" />;
     return <AlertCircle className="h-12 w-12 text-red-500" />;
   };
 
@@ -104,13 +118,20 @@ const ApplicationStatus = () => {
     if (validatedStatus === "pending") {
       return {
         title: "Application Under Review",
-        message: "Your application is currently being reviewed.",
+        message: "Your application is currently being reviewed by our team. You will be notified once a decision is made.",
         action: null,
+      };
+    }
+    if (validatedStatus === "not_found") {
+      return {
+        title: "No Application Found",
+        message: "You haven't submitted a partner application yet. Please submit an application to get started.",
+        action: "Submit Application",
       };
     }
     return {
       title: "Status Unknown",
-      message: "There’s an issue with your application. Please contact support.",
+      message: "There's an issue with your application. Please contact support.",
       action: null,
     };
   };
@@ -161,7 +182,7 @@ const ApplicationStatus = () => {
 
           {userDetails && (
             <div className="bg-gray-100 p-4 rounded-lg text-left">
-              <h4 className="font-medium mb-2">Application Details:</h4>
+              <h4 className="font-medium mb-2">Account Details:</h4>
               <p className="text-sm text-gray-600">
                 <strong>Name:</strong> {userDetails.full_name}
               </p>
@@ -169,7 +190,7 @@ const ApplicationStatus = () => {
                 <strong>Email:</strong> {userDetails.email}
               </p>
               <p className="text-sm text-gray-600">
-                <strong>Status:</strong> {validatedStatus ?? "N/A"}
+                <strong>Application Status:</strong> {validatedStatus === "not_found" ? "Not Submitted" : validatedStatus ?? "N/A"}
               </p>
               <p className="text-sm text-gray-600">
                 <strong>Account Created:</strong>{" "}
@@ -180,7 +201,12 @@ const ApplicationStatus = () => {
 
           <div className="space-y-3">
             {status.action && validatedStatus === "approved" && (
-              <Button className="w-full" onClick={() => navigate("/partner/dashboard")}>
+              <Button className="w-full" onClick={() => navigate("/partner")}>
+                {status.action}
+              </Button>
+            )}
+            {status.action && validatedStatus === "not_found" && (
+              <Button className="w-full" onClick={handleSubmitApplication}>
                 {status.action}
               </Button>
             )}
