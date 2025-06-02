@@ -1,4 +1,3 @@
-// src/pages/partner/ApplicationStatus.tsx
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
@@ -13,9 +12,9 @@ const ApplicationStatus = () => {
   const { userDetails, signOut, user } = useAuth();
   const navigate = useNavigate();
 
-  // 1) Change to string|null so we can accept anything, then normalize.
+  // Separate raw status from database and validated status for UI
   const [rawStatus, setRawStatus] = useState<string | null>(null);
-  const [validatedStatus, setValidatedStatus] = useState<"pending" | "approved" | null>(null);
+  const [validatedStatus, setValidatedStatus] = useState<"pending" | "approved" | "unknown">("unknown");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,12 +25,14 @@ const ApplicationStatus = () => {
       setLoading(true);
       setError(null);
 
-      // 2) Grab exactly 1 row (the newest) so .maybeSingle() won't error if duplicates exist
+      console.log("Fetching application status for:", user.email);
+
+      // Get exactly 1 row (the newest) so .maybeSingle() won't error if duplicates exist
       const { data, error: supabaseError } = await supabase
         .from("partner_applications")
         .select("status")
         .eq("email", user.email)
-        .order("id", { ascending: false })   // or a timestamp column if you have one
+        .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -42,14 +43,19 @@ const ApplicationStatus = () => {
         toast.error("Could not fetch your application status.");
         setError("Unable to fetch your application status.");
         setRawStatus(null);
-        setValidatedStatus(null);
       } else if (!data) {
-        // No matching row at all
+        // No matching row at all - for partners without application records, treat as approved
         console.log("No application row found for:", user.email);
-        setRawStatus(null);
-        setValidatedStatus(null);
+        console.log("User role:", userDetails?.role);
+        if (userDetails?.role === "partner") {
+          console.log("Partner without application record - treating as approved");
+          setRawStatus("approved");
+        } else {
+          setRawStatus(null);
+        }
       } else {
-        // We got exactly one row, but data.status might be any string
+        // We got exactly one row
+        console.log("Found application with status:", data.status);
         setRawStatus(data.status);
       }
 
@@ -57,30 +63,33 @@ const ApplicationStatus = () => {
     };
 
     fetchStatus();
-  }, [user?.email]);
+  }, [user?.email, userDetails?.role]);
 
-  // 3) Whenever rawStatus changes, normalize & validate into "pending" | "approved"
+  // Validate and normalize the raw status whenever it changes
   useEffect(() => {
     if (rawStatus === null) {
-      setValidatedStatus(null);
+      setValidatedStatus("unknown");
       return;
     }
 
-    // Trim whitespace, convert to lowercase
+    // Trim whitespace, convert to lowercase for comparison
     const trimmed = rawStatus.trim().toLowerCase();
+    console.log("Validating status:", rawStatus, "->", trimmed);
+    
     if (trimmed === "pending") {
       setValidatedStatus("pending");
     } else if (trimmed === "approved") {
       setValidatedStatus("approved");
     } else {
       console.warn(`Unrecognized status value from DB: "${rawStatus}" → marking as unknown.`);
-      setValidatedStatus(null);
+      setValidatedStatus("unknown");
     }
   }, [rawStatus]);
 
-  // 4) Auto-redirect as soon as status becomes "approved"
+  // Auto-redirect as soon as status becomes "approved"
   useEffect(() => {
     if (validatedStatus === "approved") {
+      console.log("Status is approved, redirecting to dashboard");
       navigate("/partner/dashboard");
     }
   }, [validatedStatus, navigate]);
@@ -102,14 +111,14 @@ const ApplicationStatus = () => {
     if (validatedStatus === "pending") {
       return {
         title: "Application Under Review",
-        message: "Your application is currently being reviewed. We’ll notify you once it’s processed.",
+        message: "Your application is currently being reviewed. We'll notify you once it's processed.",
         action: null,
       };
     }
-    // Either rawStatus was null, or it wasn’t “pending”/“approved”
+    // validatedStatus === "unknown"
     return {
       title: "Status Unknown",
-      message: "There’s an issue with your application. Please contact support.",
+      message: "There's an issue with your application status. Please contact support.",
       action: null,
     };
   };
@@ -168,7 +177,10 @@ const ApplicationStatus = () => {
                 <strong>Email:</strong> {userDetails.email}
               </p>
               <p className="text-sm text-gray-600">
-                <strong>Status:</strong> {validatedStatus ?? "N/A"}
+                <strong>Status:</strong> {validatedStatus}
+              </p>
+              <p className="text-sm text-gray-600">
+                <strong>Raw Status:</strong> {rawStatus || "N/A"}
               </p>
               <p className="text-sm text-gray-600">
                 <strong>Account Created:</strong>{" "}
