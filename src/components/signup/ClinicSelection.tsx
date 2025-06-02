@@ -24,52 +24,57 @@ interface ClinicSelectionProps {
 }
 
 const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
-  const [partners, setPartners] = useState<Partner[]>([]);
+  const [partners, setPartners] = useState<any[]>([]);
   const [selectedPartner, setSelectedPartner] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchApprovedPartners = async () => {
-      try {
-        // Fetch approved partners - simplified query
-        const { data: partnersData, error: partnersError } = await supabase
-          .from('users')
-          .select('id, full_name, email')
-          .eq('role', 'partner')
-          .eq('approval_status', 'approved')
-          .order('full_name');
+  const fetchApprovedPartners = async (): Promise<any> => {
+    try {
+      // Fetch approved partners - simplified query
+      const partnersResult = await supabase
+        .from('users')
+        .select('id, full_name, email')
+        .eq('role', 'partner')
+        .eq('approval_status', 'approved')
+        .order('full_name');
 
-        if (partnersError) throw partnersError;
+      if (partnersResult.error) throw partnersResult.error;
 
-        // Fetch clinic data for each partner
-        const partnersWithClinics: Partner[] = [];
-        
-        if (partnersData) {
-          for (const partner of partnersData) {
-            const { data: clinicData } = await supabase
-              .from('clinics')
-              .select('name, address, region')
-              .eq('partner_id', partner.id)
-              .single();
+      // Fetch clinic data for each partner
+      const partnersWithClinics: any[] = [];
+      
+      if (partnersResult.data) {
+        for (const partner of partnersResult.data) {
+          const clinicResult = await supabase
+            .from('clinics')
+            .select('name, address, region')
+            .eq('partner_id', partner.id)
+            .single();
 
-            const partnerWithClinic: Partner = {
-              ...partner,
-              clinic: clinicData || undefined
-            };
-            partnersWithClinics.push(partnerWithClinic);
-          }
+          const partnerWithClinic: any = {
+            ...partner,
+            clinic: clinicResult.data || undefined
+          };
+          partnersWithClinics.push(partnerWithClinic);
         }
-        
-        setPartners(partnersWithClinics);
-      } catch (error) {
-        console.error('Error fetching partners:', error);
-        toast.error('Failed to load partners');
-      } finally {
-        setLoading(false);
       }
+      
+      return partnersWithClinics;
+    } catch (error) {
+      console.error('Error fetching partners:', error);
+      toast.error('Failed to load partners');
+      return [];
+    }
+  };
+
+  useEffect(() => {
+    const loadPartners = async () => {
+      const result = await fetchApprovedPartners();
+      setPartners(result as any[]);
+      setLoading(false);
     };
 
-    fetchApprovedPartners();
+    loadPartners();
   }, []);
 
   const handleContinue = () => {
@@ -80,7 +85,7 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
     onSelectClinic(selectedPartner);
   };
 
-  const selectedPartnerData = partners.find((p) => p.id === selectedPartner);
+  const selectedPartnerData = (partners as any[]).find((p: any) => p.id === selectedPartner);
 
   if (loading) {
     return (
@@ -92,7 +97,7 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
   }
 
   // Break JSX mapping into separate variable
-  const partnerOptions = partners.map((partner) => (
+  const partnerOptions = (partners as any[]).map((partner: any) => (
     <SelectItem key={partner.id} value={partner.id}>
       <div className="flex items-center space-x-2">
         <Building2 className="h-4 w-4" />

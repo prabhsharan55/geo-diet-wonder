@@ -1,4 +1,3 @@
-
 import { BarChart2, Clock, PlusCircle, Upload, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,17 +13,17 @@ const PartnerDashboard = () => {
   const { userDetails, user } = useAuth();
   
   // Check if user has an approved application
-  const getApplicationStatus = async () => {
+  const getApplicationStatus = async (): Promise<any> => {
     if (!user?.email) return null;
     
-    const { data, error } = await supabase
+    const result = await supabase
       .from('partner_applications')
       .select('status')
       .eq('email', user.email)
       .single();
 
-    if (error) return null;
-    return data;
+    if (result.error) return null;
+    return result.data;
   };
 
   const { data: application, isLoading: applicationLoading } = useQuery({
@@ -49,7 +48,7 @@ const PartnerDashboard = () => {
   }
 
   // Fetch real customer statistics for this partner
-  const getCustomerStats = async () => {
+  const getCustomerStats = async (): Promise<any> => {
     console.log('Fetching customer stats for partner:', userDetails?.id);
     
     if (!userDetails?.id) {
@@ -57,19 +56,19 @@ const PartnerDashboard = () => {
       return { total: 0, active: 0, pending: 0 };
     }
     
-    const { data: allCustomers, error: allError } = await supabase
+    const customersResult = await supabase
       .from('users')
       .select('id, role, created_at')
       .eq('role', 'customer')
       .eq('linked_partner_id', userDetails.id);
 
-    console.log('All customers query result:', { allCustomers, allError });
+    console.log('All customers query result:', customersResult);
 
-    if (allError) throw allError;
+    if (customersResult.error) throw customersResult.error;
 
     const stats = {
-      total: allCustomers?.length || 0,
-      active: allCustomers?.length || 0,
+      total: customersResult.data?.length || 0,
+      active: customersResult.data?.length || 0,
       pending: 0
     };
 
@@ -84,7 +83,7 @@ const PartnerDashboard = () => {
   });
 
   // Fetch recent customer activity for this partner
-  const getRecentActivity = async () => {
+  const getRecentActivity = async (): Promise<any[]> => {
     console.log('Fetching recent activity for partner:', userDetails?.id);
     
     if (!userDetails?.id) {
@@ -92,7 +91,7 @@ const PartnerDashboard = () => {
       return [];
     }
     
-    const { data, error } = await supabase
+    const activityResult = await supabase
       .from('users')
       .select('id, email, full_name, created_at')
       .eq('role', 'customer')
@@ -100,10 +99,10 @@ const PartnerDashboard = () => {
       .order('created_at', { ascending: false })
       .limit(5);
 
-    console.log('Recent activity query result:', { data, error });
+    console.log('Recent activity query result:', activityResult);
 
-    if (error) throw error;
-    return data || [];
+    if (activityResult.error) throw activityResult.error;
+    return activityResult.data || [];
   };
 
   const { data: recentActivityData } = useQuery({
@@ -113,8 +112,8 @@ const PartnerDashboard = () => {
   });
 
   // Break into separate variables to avoid deep inference
-  const customerStats = customerStatsData || { total: 0, active: 0, pending: 0 };
-  const recentActivity = recentActivityData || [];
+  const customerStats = (customerStatsData as any) || { total: 0, active: 0, pending: 0 };
+  const recentActivity = (recentActivityData as any[]) || [];
 
   const getActivityText = (customer: any): string => {
     return 'Active access';
