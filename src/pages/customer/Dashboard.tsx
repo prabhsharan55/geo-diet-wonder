@@ -4,16 +4,104 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowRight, Calendar, Clock } from "lucide-react";
 import { useUserData } from "@/context/UserDataContext";
 import ProgressChart from "@/components/charts/ProgressChart";
 import NutritionChart from "@/components/charts/NutritionChart";
 import ActivityChart from "@/components/charts/ActivityChart";
+import RescheduleAppointmentDialog from "@/components/customer/RescheduleAppointmentDialog";
+import { useState } from "react";
 
 const CustomerDashboard = () => {
-  const { userData } = useUserData();
+  const { userData, approveReschedule } = useUserData();
+  const [rescheduleDialog, setRescheduleDialog] = useState<{
+    isOpen: boolean;
+    appointmentId: string;
+    appointmentTitle: string;
+  }>({
+    isOpen: false,
+    appointmentId: "",
+    appointmentTitle: "",
+  });
   
   const firstNameOnly = userData.name.split(' ')[0];
+
+  const handleRescheduleClick = (appointmentId: string, appointmentTitle: string) => {
+    setRescheduleDialog({
+      isOpen: true,
+      appointmentId,
+      appointmentTitle,
+    });
+  };
+
+  const handleCloseRescheduleDialog = () => {
+    setRescheduleDialog({
+      isOpen: false,
+      appointmentId: "",
+      appointmentTitle: "",
+    });
+  };
+
+  // Simulate clinic approval (for demo purposes)
+  const handleApproveReschedule = (appointmentId: string) => {
+    approveReschedule(appointmentId);
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Pending</Badge>;
+      case 'rescheduled':
+        return <Badge variant="secondary" className="bg-green-100 text-green-800">Rescheduled</Badge>;
+      case 'booked':
+      default:
+        return <Badge variant="secondary" className="bg-blue-100 text-blue-800">Booked</Badge>;
+    }
+  };
+
+  const getActionButtons = (appointment: any) => {
+    switch (appointment.status) {
+      case 'pending':
+        return (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" disabled>
+              Pending Approval
+            </Button>
+            {/* Demo button to simulate clinic approval */}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => handleApproveReschedule(appointment.id)}
+              className="text-xs"
+            >
+              Approve (Demo)
+            </Button>
+          </div>
+        );
+      case 'rescheduled':
+        return (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => handleRescheduleClick(appointment.id, appointment.title)}
+          >
+            Reschedule Again
+          </Button>
+        );
+      case 'booked':
+      default:
+        return (
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => handleRescheduleClick(appointment.id, appointment.title)}
+          >
+            Reschedule
+          </Button>
+        );
+    }
+  };
 
   return (
     <CustomerLayout>
@@ -95,12 +183,32 @@ const CustomerDashboard = () => {
               <CardContent>
                 <div className="space-y-4">
                   {userData.appointments.map((appointment) => (
-                    <div key={appointment.id} className="flex justify-between items-center p-4 bg-gray-100 rounded-md">
-                      <div>
-                        <h3 className="font-medium">{appointment.title}</h3>
-                        <p className="text-sm text-gray-500">{appointment.date} - {appointment.time}</p>
+                    <div key={appointment.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-md border">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-medium">{appointment.title}</h3>
+                          {getStatusBadge(appointment.status)}
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            <span>{appointment.date}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            <span>{appointment.time}</span>
+                          </div>
+                        </div>
+                        {appointment.rescheduleRequest && appointment.status === 'pending' && (
+                          <div className="mt-2 p-2 bg-yellow-50 rounded text-xs text-gray-600">
+                            <p><strong>Requested:</strong> {appointment.rescheduleRequest.requestedDate} at {appointment.rescheduleRequest.requestedTime}</p>
+                            <p><strong>Reason:</strong> {appointment.rescheduleRequest.reason}</p>
+                          </div>
+                        )}
                       </div>
-                      <Button variant="outline">Reschedule</Button>
+                      <div className="ml-4">
+                        {getActionButtons(appointment)}
+                      </div>
                     </div>
                   ))}
                   {userData.appointments.length === 0 && (
@@ -114,6 +222,13 @@ const CustomerDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <RescheduleAppointmentDialog
+        appointmentId={rescheduleDialog.appointmentId}
+        appointmentTitle={rescheduleDialog.appointmentTitle}
+        isOpen={rescheduleDialog.isOpen}
+        onClose={handleCloseRescheduleDialog}
+      />
     </CustomerLayout>
   );
 };

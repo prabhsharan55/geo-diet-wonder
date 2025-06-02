@@ -1,6 +1,22 @@
 
 import { createContext, useContext, useState, ReactNode } from 'react';
 
+export type AppointmentStatus = 'booked' | 'pending' | 'rescheduled';
+
+export type Appointment = {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  status: AppointmentStatus;
+  rescheduleRequest?: {
+    requestedDate: string;
+    requestedTime: string;
+    reason: string;
+    requestedAt: string;
+  };
+};
+
 export type UserData = {
   name: string;
   currentWeight: number;
@@ -9,7 +25,7 @@ export type UserData = {
   progressData: Array<{ month: string; weight: number; calories: number }>;
   nutritionData: Array<{ date: string; protein: number; carbs: number; fats: number }>;
   activityData: Array<{ date: string; steps: number; minutes: number }>;
-  appointments: Array<{ id: string; title: string; date: string; time: string }>;
+  appointments: Appointment[];
 };
 
 type UserDataContextType = {
@@ -18,7 +34,9 @@ type UserDataContextType = {
   addProgressEntry: (entry: { month: string; weight: number; calories: number }) => void;
   addNutritionEntry: (entry: { date: string; protein: number; carbs: number; fats: number }) => void;
   addActivityEntry: (entry: { date: string; steps: number; minutes: number }) => void;
-  addAppointment: (appointment: Omit<UserData['appointments'][0], 'id'>) => void;
+  addAppointment: (appointment: Omit<Appointment, 'id'>) => void;
+  requestReschedule: (appointmentId: string, requestedDate: string, requestedTime: string, reason: string) => void;
+  approveReschedule: (appointmentId: string) => void;
 };
 
 const UserDataContext = createContext<UserDataContextType | undefined>(undefined);
@@ -46,8 +64,8 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       { date: '2025-05-03', steps: 7800, minutes: 38 },
     ],
     appointments: [
-      { id: '1', title: 'Nutritionist Consultation', date: 'May 22, 2025', time: '2:30 PM' },
-      { id: '2', title: 'Progress Review Session', date: 'May 29, 2025', time: '10:00 AM' },
+      { id: '1', title: 'Nutritionist Consultation', date: 'May 22, 2025', time: '2:30 PM', status: 'booked' },
+      { id: '2', title: 'Progress Review Session', date: 'May 29, 2025', time: '10:00 AM', status: 'booked' },
     ]
   });
 
@@ -76,7 +94,7 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     }));
   };
 
-  const addAppointment = (appointment: Omit<UserData['appointments'][0], 'id'>) => {
+  const addAppointment = (appointment: Omit<Appointment, 'id'>) => {
     const newAppointment = {
       ...appointment,
       id: Date.now().toString()
@@ -87,6 +105,43 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     }));
   };
 
+  const requestReschedule = (appointmentId: string, requestedDate: string, requestedTime: string, reason: string) => {
+    setUserData(prev => ({
+      ...prev,
+      appointments: prev.appointments.map(appointment => 
+        appointment.id === appointmentId 
+          ? {
+              ...appointment,
+              status: 'pending' as AppointmentStatus,
+              rescheduleRequest: {
+                requestedDate,
+                requestedTime,
+                reason,
+                requestedAt: new Date().toISOString()
+              }
+            }
+          : appointment
+      )
+    }));
+  };
+
+  const approveReschedule = (appointmentId: string) => {
+    setUserData(prev => ({
+      ...prev,
+      appointments: prev.appointments.map(appointment => 
+        appointment.id === appointmentId && appointment.rescheduleRequest
+          ? {
+              ...appointment,
+              date: appointment.rescheduleRequest.requestedDate,
+              time: appointment.rescheduleRequest.requestedTime,
+              status: 'rescheduled' as AppointmentStatus,
+              rescheduleRequest: undefined
+            }
+          : appointment
+      )
+    }));
+  };
+
   return (
     <UserDataContext.Provider value={{
       userData,
@@ -94,7 +149,9 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       addProgressEntry,
       addNutritionEntry,
       addActivityEntry,
-      addAppointment
+      addAppointment,
+      requestReschedule,
+      approveReschedule
     }}>
       {children}
     </UserDataContext.Provider>
