@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +20,7 @@ const MealPlanning = () => {
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingPlan, setEditingPlan] = useState(null);
+  const [editingPlan, setEditingPlan] = useState<any>(null);
   const [mealData, setMealData] = useState({
     meal_type: "",
     name: "",
@@ -228,12 +229,12 @@ const MealPlanning = () => {
               <div>
                 <Label htmlFor="customer">Customer</Label>
                 <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select a customer" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white z-50 max-h-60 overflow-y-auto">
                     {customers?.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
+                      <SelectItem key={customer.id} value={customer.id} className="flex items-center">
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4" />
                           <span>{customer.users?.full_name || 'No Name'} ({customer.email})</span>
@@ -253,7 +254,7 @@ const MealPlanning = () => {
                       {selectedDate ? format(selectedDate, "PPP") : "Pick a date"}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
+                  <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
                       selected={selectedDate}
@@ -273,6 +274,7 @@ const MealPlanning = () => {
                   onClick={() => {
                     setEditingPlan(null);
                     resetForm();
+                    setIsDialogOpen(true);
                   }}
                 >
                   <PlusCircle className="mr-2 h-4 w-4" />
@@ -304,7 +306,7 @@ const MealPlanning = () => {
                       <SelectTrigger>
                         <SelectValue placeholder="Select meal type" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white z-50">
                         {mealTypes.map((type) => (
                           <SelectItem key={type} value={type}>{type}</SelectItem>
                         ))}

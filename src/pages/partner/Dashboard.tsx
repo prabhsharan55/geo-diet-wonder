@@ -5,13 +5,119 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PartnerLayout from "@/components/partner/PartnerLayout";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const PartnerDashboard = () => {
+  // Fetch real customer statistics
+  const { data: customerStats } = useQuery({
+    queryKey: ['partner-customer-stats'],
+    queryFn: async () => {
+      const { data: totalCustomers, error: totalError } = await supabase
+        .from('customers')
+        .select('id, access_status')
+        .eq('access_status', 'active');
+
+      if (totalError) throw totalError;
+
+      const { data: allCustomers, error: allError } = await supabase
+        .from('customers')
+        .select('id, access_status, expiry_date');
+
+      if (allError) throw allError;
+
+      const activeCustomers = allCustomers?.filter(c => c.access_status === 'active') || [];
+      const pendingCustomers = allCustomers?.filter(c => c.access_status === 'pending') || [];
+      
+      // Calculate expiring soon (within 7 days)
+      const today = new Date();
+      const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const expiringSoon = allCustomers?.filter(c => {
+        if (!c.expiry_date) return false;
+        const expiryDate = new Date(c.expiry_date);
+        return expiryDate >= today && expiryDate <= sevenDaysFromNow;
+      }) || [];
+
+      return {
+        total: allCustomers?.length || 0,
+        active: activeCustomers.length,
+        pending: pendingCustomers.length,
+        expiring: expiringSoon.length
+      };
+    },
+  });
+
+  // Fetch recent customer activity
+  const { data: recentActivity } = useQuery({
+    queryKey: ['partner-recent-activity'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('customers')
+        .select(`
+          id,
+          email,
+          access_status,
+          created_at,
+          users!customers_user_id_fkey(
+            id,
+            full_name
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const getActivityText = (customer: any) => {
+    switch (customer.access_status) {
+      case 'active':
+        return 'Active access';
+      case 'pending':
+        return 'Pending approval';
+      case 'expired':
+        return 'Access expired';
+      case 'frozen':
+        return 'Access frozen';
+      default:
+        return 'Unknown status';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-100 text-green-800';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'expired':
+        return 'bg-red-100 text-red-800';
+      case 'frozen':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    
+    if (diffInDays === 0) return 'Today';
+    if (diffInDays === 1) return 'Yesterday';
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    return date.toLocaleDateString();
+  };
+
   return (
     <PartnerLayout>
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-          <h2 className="text-3xl font-bold">Welcome back, HealthFirst Clinic!</h2>
+          <h2 className="text-3xl font-bold">Welcome back, Partner!</h2>
           <div className="flex items-center gap-2 mt-4 md:mt-0">
             <Button variant="outline">View Reports</Button>
             <Button>Add New Client</Button>
@@ -22,25 +128,25 @@ const PartnerDashboard = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard 
             title="Total Clients" 
-            value="143" 
-            description="+12 this month" 
+            value={customerStats?.total?.toString() || "0"} 
+            description={`${customerStats?.active || 0} active`} 
             icon={<Users />} 
           />
           <StatCard 
             title="Active Clients" 
-            value="98" 
-            description="68% of total" 
+            value={customerStats?.active?.toString() || "0"} 
+            description={`${Math.round(((customerStats?.active || 0) / (customerStats?.total || 1)) * 100)}% of total`}
             className="bg-gradient-to-br from-[#E6E8FF] to-white"
           />
           <StatCard 
             title="Pending Approvals" 
-            value="7" 
+            value={customerStats?.pending?.toString() || "0"} 
             description="Requires attention" 
             className="bg-gradient-to-br from-[#FFF9E6] to-white"
           />
           <StatCard 
             title="Expiring Soon" 
-            value="15" 
+            value={customerStats?.expiring?.toString() || "0"} 
             description="Within 7 days" 
             className="bg-gradient-to-br from-[#FFEFEF] to-white"
           />
@@ -93,52 +199,57 @@ const PartnerDashboard = () => {
                 </TabsList>
               </div>
               <TabsContent value="all" className="p-0">
-                <table className="w-full">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activity</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {[1, 2, 3, 4, 5].map((_, i) => (
-                      <tr key={i} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="h-8 w-8 rounded-full bg-[#BED1AB] flex items-center justify-center text-[#160041]">
-                              {["JD", "TK", "SM", "RL", "AB"][i]}
-                            </div>
-                            <div className="ml-3">
-                              <div>{["John Doe", "Taylor Kim", "Sam Miller", "Rebecca Lee", "Alex Brown"][i]}</div>
-                              <div className="text-xs text-gray-500">{["john@example.com", "taylor@example.com", "sam@example.com", "rebecca@example.com", "alex@example.com"][i]}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          {["Completed weekly check-in", "Missed appointment", "Uploaded progress photo", "Requested access extension", "New access request"][i]}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {["Today", "Yesterday", "2 days ago", "3 days ago", "1 week ago"][i]}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs rounded-full ${
-                            ["bg-green-100 text-green-800", "bg-red-100 text-red-800", "bg-blue-100 text-blue-800", "bg-yellow-100 text-yellow-800", "bg-purple-100 text-purple-800"][i]
-                          }`}>
-                            {["Completed", "Attention needed", "In progress", "Pending", "New"][i]}
-                          </span>
-                        </td>
+                {recentActivity && recentActivity.length > 0 ? (
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activity</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {recentActivity.map((customer) => (
+                        <tr key={customer.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="h-8 w-8 rounded-full bg-[#BED1AB] flex items-center justify-center text-[#160041]">
+                                {(customer.users?.full_name || customer.email).charAt(0).toUpperCase()}
+                              </div>
+                              <div className="ml-3">
+                                <div>{customer.users?.full_name || 'No Name'}</div>
+                                <div className="text-xs text-gray-500">{customer.email}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {getActivityText(customer)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {formatDate(customer.created_at)}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(customer.access_status)}`}>
+                              {customer.access_status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="p-8 text-center text-gray-500">
+                    <p>No recent activity found</p>
+                    <p className="text-sm">Customer activity will appear here</p>
+                  </div>
+                )}
               </TabsContent>
               <TabsContent value="progress" className="p-4">
-                <p>Client progress tracking information will appear here.</p>
+                <p className="text-gray-500">Client progress tracking information will appear here.</p>
               </TabsContent>
               <TabsContent value="requests" className="p-4">
-                <p>New client access requests will appear here.</p>
+                <p className="text-gray-500">New client access requests will appear here.</p>
               </TabsContent>
             </Tabs>
           </Card>
