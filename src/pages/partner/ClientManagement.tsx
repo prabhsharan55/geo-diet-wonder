@@ -9,37 +9,23 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 
+// Simplified client type
+type Client = {
+  id: string;
+  full_name: string;
+  email: string;
+  role: string;
+  created_at: string;
+};
+
 const ClientManagement = () => {
   const [selectedClient, setSelectedClient] = useState<null | string>(null);
   const { userDetails } = useAuth();
   
-  // Fetch partner's clinic first
-  const { data: clinic } = useQuery({
-    queryKey: ['partner-clinic', userDetails?.id],
-    queryFn: async () => {
-      if (!userDetails?.id || userDetails.role !== 'partner') {
-        return null;
-      }
-      
-      const { data, error } = await supabase
-        .from('clinics')
-        .select('*')
-        .eq('partner_id', userDetails.id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching clinic:', error);
-        return null;
-      }
-      return data;
-    },
-    enabled: !!userDetails?.id && userDetails.role === 'partner',
-  });
-  
-  // Fetch customers for this partner
-  const { data: clients, isLoading } = useQuery({
+  // Fetch customers for this partner - simplified query
+  const { data: clients = [], isLoading } = useQuery({
     queryKey: ['partner-clients', userDetails?.id],
-    queryFn: async () => {
+    queryFn: async (): Promise<Client[]> => {
       console.log('Fetching clients for partner:', userDetails?.id);
       
       if (!userDetails?.id) {
@@ -49,7 +35,7 @@ const ClientManagement = () => {
       
       const { data, error } = await supabase
         .from('users')
-        .select('*')
+        .select('id, full_name, email, role, created_at')
         .eq('role', 'customer')
         .eq('linked_partner_id', userDetails.id)
         .order('created_at', { ascending: false });
@@ -57,7 +43,7 @@ const ClientManagement = () => {
       console.log('Clients query result:', { data, error });
 
       if (error) throw error;
-      return data || [];
+      return (data || []) as Client[];
     },
     enabled: !!userDetails?.id,
   });
@@ -70,7 +56,7 @@ const ClientManagement = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
-  const selectedClientData = clients?.find(c => c.id === selectedClient);
+  const selectedClientData = clients.find(c => c.id === selectedClient);
 
   if (isLoading) {
     return (

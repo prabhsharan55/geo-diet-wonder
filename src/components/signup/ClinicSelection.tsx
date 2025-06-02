@@ -31,7 +31,7 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
   useEffect(() => {
     const fetchApprovedPartners = async () => {
       try {
-        // Fetch approved partners
+        // Fetch approved partners - simplified query
         const { data: partnersData, error: partnersError } = await supabase
           .from('users')
           .select('id, full_name, email')
@@ -42,20 +42,22 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
         if (partnersError) throw partnersError;
 
         // Fetch clinic data for each partner
-        const partnersWithClinics = await Promise.all(
-          (partnersData || []).map(async (partner) => {
+        const partnersWithClinics: Partner[] = [];
+        
+        if (partnersData) {
+          for (const partner of partnersData) {
             const { data: clinicData } = await supabase
               .from('clinics')
               .select('name, address, region')
               .eq('partner_id', partner.id)
               .single();
 
-            return {
+            partnersWithClinics.push({
               ...partner,
               clinic: clinicData || undefined
-            };
-          })
-        );
+            });
+          }
+        }
         
         setPartners(partnersWithClinics);
       } catch (error) {
