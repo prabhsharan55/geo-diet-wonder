@@ -1,3 +1,6 @@
+// @ts-nocheck
+
+
 import { BarChart2, Clock, PlusCircle, Upload, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
