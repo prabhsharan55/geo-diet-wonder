@@ -32,38 +32,46 @@ const MealPlanning = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch customers for the clinic with proper joins and better error handling
+  // Fetch customers with a simplified query
   const { data: customers, isLoading: customersLoading, error: customersError } = useQuery({
     queryKey: ['clinic-customers'],
     queryFn: async () => {
       console.log('Fetching customers for meal planning...');
       
-      const { data, error } = await supabase
+      // First get customers
+      const { data: customersData, error: customersErr } = await supabase
         .from('customers')
-        .select(`
-          id,
-          email,
-          access_status,
-          users!customers_user_id_fkey(
-            id,
-            full_name
-          )
-        `)
+        .select('id, email, user_id, access_status')
         .eq('access_status', 'active');
       
-      console.log('Customers query result:', { data, error });
+      console.log('Customers query result:', { customersData, customersErr });
       
-      if (error) throw error;
-      return data || [];
+      if (customersErr) throw customersErr;
+      
+      if (!customersData || customersData.length === 0) {
+        console.log('No customers found');
+        return [];
+      }
+
+      // Then get user details for each customer
+      const customersWithUsers = await Promise.all(
+        customersData.map(async (customer) => {
+          const { data: userData, error: userErr } = await supabase
+            .rpc('get_user_details', { user_id: customer.user_id });
+          
+          console.log(`User data for ${customer.email}:`, { userData, userErr });
+          
+          return {
+            ...customer,
+            users: userData && userData.length > 0 ? userData[0] : null
+          };
+        })
+      );
+      
+      console.log('Final customers with users:', customersWithUsers);
+      return customersWithUsers;
     },
   });
-
-  // Add debugging for the specific customer name issue
-  console.log('All customers data:', customers);
-  console.log('Looking for prabhsharan in customers:', customers?.find(c => 
-    c.email?.toLowerCase().includes('prabhsharan') || 
-    c.users?.full_name?.toLowerCase().includes('prabhsharan')
-  ));
 
   // Get selected customer details
   const selectedCustomerData = customers?.find(customer => customer.id === selectedCustomer);
