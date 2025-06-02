@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import MainNavigation from "@/components/MainNavigation";
 import Footer from "@/components/Footer";
-import { Building2, Mail, Phone, MapPin } from "lucide-react";
+import { Building2, Mail, Phone, MapPin, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const PartnerSignup = () => {
@@ -23,6 +23,7 @@ const PartnerSignup = () => {
     password: ""
   });
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -50,35 +51,35 @@ const PartnerSignup = () => {
 
       if (applicationError) throw applicationError;
 
-      // Create the user account
+      // Create the user account with email confirmation
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
           data: {
             full_name: formData.ownerName,
-          }
+            role: 'partner'
+          },
+          emailRedirectTo: `${window.location.origin}/partner`
         }
       });
 
       if (authError) throw authError;
 
-      // Update the user role to partner
+      // Update the user role to partner if user was created
       if (authData.user) {
         const { error: userError } = await supabase
           .from('users')
           .update({ role: 'partner' })
           .eq('id', authData.user.id);
 
-        if (userError) throw userError;
+        if (userError) {
+          console.warn('Could not update user role:', userError);
+        }
       }
 
-      toast.success("Application submitted successfully! Redirecting to dashboard...");
-      
-      // Redirect to partner dashboard
-      setTimeout(() => {
-        navigate('/partner');
-      }, 1500);
+      setSubmitted(true);
+      toast.success("Application submitted successfully! Please check your email to confirm your account.");
       
     } catch (error: any) {
       toast.error(error.message || "Failed to submit application");
@@ -86,6 +87,51 @@ const PartnerSignup = () => {
       setLoading(false);
     }
   };
+
+  if (submitted) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <MainNavigation />
+        <div className="container mx-auto py-12">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="mb-8">
+              <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+              <h1 className="text-3xl font-bold mb-2">Application Submitted!</h1>
+              <p className="text-gray-600 mb-6">
+                Thank you for applying to become a GeoDiet partner. We've sent a confirmation email to {formData.email}.
+              </p>
+            </div>
+
+            <Card>
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  <div className="bg-blue-50 p-4 rounded-lg text-left">
+                    <h3 className="font-medium text-blue-900 mb-2">Next Steps:</h3>
+                    <ul className="text-sm text-blue-800 space-y-2">
+                      <li>1. Check your email and click the confirmation link</li>
+                      <li>2. Once confirmed, you can sign in to access your partner dashboard</li>
+                      <li>3. We'll review your application within 2-3 business days</li>
+                      <li>4. You'll receive an email notification once approved</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="pt-4">
+                    <Button 
+                      onClick={() => navigate('/auth')}
+                      className="w-full"
+                    >
+                      Go to Sign In Page
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -223,7 +269,8 @@ const PartnerSignup = () => {
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <h3 className="font-medium text-blue-900 mb-2">What happens next?</h3>
                   <ul className="text-sm text-blue-800 space-y-1">
-                    <li>• We'll create your account and redirect you to your dashboard</li>
+                    <li>• You'll receive a confirmation email to verify your account</li>
+                    <li>• After email verification, you can sign in to your dashboard</li>
                     <li>• We'll review your application within 2-3 business days</li>
                     <li>• Once approved, you can start adding clients and managing their health programs</li>
                   </ul>
@@ -234,7 +281,7 @@ const PartnerSignup = () => {
                   disabled={loading}
                   className="w-full"
                 >
-                  {loading ? "Creating Account..." : "Submit Application & Create Account"}
+                  {loading ? "Submitting Application..." : "Submit Application"}
                 </Button>
               </form>
             </CardContent>

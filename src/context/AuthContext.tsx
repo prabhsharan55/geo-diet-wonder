@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -184,7 +183,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         password,
       });
       
-      if (error) throw error;
+      if (error) {
+        // Provide more helpful error messages
+        if (error.message === 'Email not confirmed') {
+          throw new Error('Please check your email and click the confirmation link before signing in.');
+        }
+        throw error;
+      }
       
       if (data.user) {
         toast.success("Signed in successfully");
