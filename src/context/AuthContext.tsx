@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +25,40 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userDetails, setUserDetails] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const cleanupAuthState = () => {
+    // Remove standard auth tokens
+    localStorage.removeItem('supabase.auth.token');
+    
+    // Remove all Supabase auth keys from localStorage
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Remove from sessionStorage if in use
+    Object.keys(sessionStorage || {}).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+  };
+
+  const forceSignOutAndRedirect = async () => {
+    console.log('Force signing out user with no database record');
+    cleanupAuthState();
+    try {
+      await supabase.auth.signOut({ scope: 'global' });
+    } catch (err) {
+      console.warn('Error during force sign out:', err);
+    }
+    setSession(null);
+    setUser(null);
+    setUserDetails(null);
+    toast.error("Your account data was not found. Please sign up again.");
+    window.location.href = '/auth';
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -52,18 +87,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                   console.log('User details fetched from DB:', data);
                   setUserDetails(data);
                 } else if (!data && !error) {
-                  console.log('User authenticated but no database record found - signing out');
-                  // User is authenticated but has no database record, sign them out
-                  await supabase.auth.signOut();
-                  setUserDetails(null);
-                  toast.error("Your account data was not found. Please sign up again.");
+                  console.log('User authenticated but no database record found - force signing out');
+                  await forceSignOutAndRedirect();
+                  return;
                 } else if (error) {
                   console.warn('Could not fetch user details from DB:', error);
-                  setUserDetails(null);
+                  await forceSignOutAndRedirect();
+                  return;
                 }
               } catch (err) {
                 console.warn('Error fetching user details:', err);
-                setUserDetails(null);
+                await forceSignOutAndRedirect();
+                return;
               }
             }
           }, 100);
@@ -98,17 +133,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (data) {
               setUserDetails(data);
             } else if (!data && !error) {
-              console.log('User authenticated but no database record found - signing out');
-              // User is authenticated but has no database record, sign them out
-              await supabase.auth.signOut();
-              setUserDetails(null);
-              toast.error("Your account data was not found. Please sign up again.");
+              console.log('User authenticated but no database record found - force signing out');
+              await forceSignOutAndRedirect();
+              return;
             } else {
-              setUserDetails(null);
+              await forceSignOutAndRedirect();
+              return;
             }
           } catch (err) {
             console.warn('Error checking user details:', err);
-            setUserDetails(null);
+            await forceSignOutAndRedirect();
+            return;
           }
         }
         
@@ -130,25 +165,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       subscription.unsubscribe();
     };
   }, []);
-
-  const cleanupAuthState = () => {
-    // Remove standard auth tokens
-    localStorage.removeItem('supabase.auth.token');
-    
-    // Remove all Supabase auth keys from localStorage
-    Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-        localStorage.removeItem(key);
-      }
-    });
-    
-    // Remove from sessionStorage if in use
-    Object.keys(sessionStorage || {}).forEach((key) => {
-      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-        sessionStorage.removeItem(key);
-      }
-    });
-  };
 
   const signIn = async (email: string, password: string, redirectTo?: string) => {
     setLoading(true);
