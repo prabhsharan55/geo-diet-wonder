@@ -27,11 +27,17 @@ const MealLogTaskRow = ({ mealLogs, weekNumber, onAddMealLog }: MealLogTaskRowPr
 
   const handleSubmit = () => {
     const now = new Date();
+    const currentTime = now.toLocaleTimeString('en-US', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: true 
+    });
+    
     onAddMealLog({
       date: now.toISOString().split('T')[0],
       mealType: mealData.mealType,
       description: mealData.description,
-      time: mealData.time || now.toTimeString().slice(0, 5),
+      time: mealData.time || currentTime,
       photo: selectedImage ? URL.createObjectURL(selectedImage) : '',
       completed: true
     });
@@ -51,7 +57,17 @@ const MealLogTaskRow = ({ mealLogs, weekNumber, onAddMealLog }: MealLogTaskRowPr
   );
 
   const formatDateTime = (date: string, time: string) => {
-    return `${new Date(date).toLocaleDateString()} at ${time}`;
+    const dateObj = new Date(date);
+    const formattedDate = dateObj.toLocaleDateString();
+    // Convert 24-hour time to 12-hour format if needed
+    const timeFormatted = time.includes(':') && !time.includes('AM') && !time.includes('PM')
+      ? new Date(`2000-01-01 ${time}`).toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: true 
+        })
+      : time;
+    return `${formattedDate} at ${timeFormatted}`;
   };
 
   return (
@@ -99,7 +115,7 @@ const MealLogTaskRow = ({ mealLogs, weekNumber, onAddMealLog }: MealLogTaskRowPr
                 />
               </div>
               <div>
-                <Label htmlFor="time">Time</Label>
+                <Label htmlFor="time">Time (optional)</Label>
                 <Input
                   id="time"
                   type="time"

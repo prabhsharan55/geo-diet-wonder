@@ -16,11 +16,17 @@ const Program = () => {
   const { userData, markVideoWatched, addMealLog, addWeightLog, completeWeek } = useUserData();
   const [shouldAnimateProgress, setShouldAnimateProgress] = useState(false);
   const [showWeekCompleteAnimation, setShowWeekCompleteAnimation] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(1);
   
   const { program } = userData;
   const currentWeek = program.currentWeek;
   const totalWeeks = program.totalWeeks;
 
+  // Get current date info
+  const currentDate = new Date();
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const currentDayName = dayNames[currentDate.getDay()];
+  
   // Check if user just completed a week (simulate checking on page load)
   useEffect(() => {
     // This would normally check if user just completed tasks and trigger animation
@@ -63,6 +69,29 @@ const Program = () => {
 
   const overallCompletion = Math.round(((currentWeek - 1) / totalWeeks) * 100);
 
+  // Generate day tabs for the current week
+  const generateDayTabs = () => {
+    const days = [];
+    for (let i = 1; i <= 7; i++) {
+      const dayName = dayNames[i % 7]; // Start from Monday
+      days.push({
+        day: i,
+        name: dayName
+      });
+    }
+    return days;
+  };
+
+  const formatDateWithDay = () => {
+    const options: Intl.DateTimeFormatOptions = { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    };
+    return currentDate.toLocaleDateString('en-US', options);
+  };
+
   return (
     <CustomerLayout>
       <div className="space-y-6">
@@ -85,7 +114,7 @@ const Program = () => {
               <span>Overall Completion</span>
               <span className="font-medium">{overallCompletion}%</span>
             </div>
-            <div className="max-w-md"> {/* Smaller width for progress bar */}
+            <div className="max-w-sm">
               <AnimatedProgressBar 
                 value={overallCompletion} 
                 userName={userData.name}
@@ -97,88 +126,163 @@ const Program = () => {
         </Card>
         
         <Tabs defaultValue={`week-${currentWeek}`} className="w-full">
-          <TabsList className="w-full grid overflow-x-auto" style={{ gridTemplateColumns: `repeat(${totalWeeks}, minmax(0, 1fr))` }}>
-            {program.weeks.map((week) => {
-              const status = getWeekStatus(week.weekNumber);
-              return (
-                <TabsTrigger 
-                  key={`week-${week.weekNumber}`} 
-                  value={`week-${week.weekNumber}`}
-                  disabled={status === "locked"}
-                  className={cn(
-                    "text-xs px-2 py-1",
-                    status === "completed" && "bg-green-100 data-[state=active]:bg-green-200"
-                  )}
-                >
-                  <span className="truncate">
-                    Week {week.weekNumber}
-                    {status === "completed" && <Check className="ml-1 h-3 w-3 text-green-500 inline" />}
-                    {status === "locked" && <Lock className="ml-1 h-3 w-3 inline" />}
-                  </span>
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
+          <div className="overflow-x-auto">
+            <TabsList className="w-full min-w-max grid grid-flow-col">
+              {program.weeks.map((week) => {
+                const status = getWeekStatus(week.weekNumber);
+                return (
+                  <TabsTrigger 
+                    key={`week-${week.weekNumber}`} 
+                    value={`week-${week.weekNumber}`}
+                    disabled={status === "locked"}
+                    className={cn(
+                      "text-xs px-3 py-2 min-w-[80px]",
+                      status === "completed" && "bg-green-100 data-[state=active]:bg-green-200"
+                    )}
+                  >
+                    <span className="truncate">
+                      Week {week.weekNumber}
+                      {status === "completed" && <Check className="ml-1 h-3 w-3 text-green-500 inline" />}
+                      {status === "locked" && <Lock className="ml-1 h-3 w-3 inline" />}
+                    </span>
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+          </div>
           
           {program.weeks.map((week) => {
             const status = getWeekStatus(week.weekNumber);
             const completion = calculateWeekCompletion(week);
             const canComplete = canCompleteWeek(week);
+            const isCurrentWeek = status === "current";
             
             return (
               <TabsContent key={`content-${week.weekNumber}`} value={`week-${week.weekNumber}`} className="mt-6 space-y-6">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg flex items-center justify-between">
-                      <span>Week {week.weekNumber} Overview</span>
-                      <div className="flex items-center gap-2">
-                        <div className="text-sm font-medium px-3 py-1 rounded-full bg-gray-100">
-                          {completion}% Complete
-                        </div>
-                        {status === "current" && canComplete && (
-                          <Button 
-                            onClick={() => handleCompleteWeek(week.weekNumber)}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            Complete Week
-                          </Button>
-                        )}
+                {/* Show current date and day for current week */}
+                {isCurrentWeek && (
+                  <Card className="bg-blue-50 border-blue-200">
+                    <CardContent className="p-4">
+                      <div className="text-center">
+                        <h3 className="font-semibold text-lg text-blue-800">Today</h3>
+                        <p className="text-blue-600">{formatDateWithDay()}</p>
                       </div>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="mb-4">
-                      {status === "locked" 
-                        ? `This content will be unlocked when you reach Week ${week.weekNumber}` 
-                        : status === "completed"
-                          ? "You've completed this week! Review the content any time."
-                          : week.focus}
-                    </p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Day tabs for current week */}
+                {isCurrentWeek && (
+                  <Tabs defaultValue="day-1" className="w-full">
+                    <TabsList className="w-full grid grid-cols-7">
+                      {generateDayTabs().map((day) => (
+                        <TabsTrigger 
+                          key={`day-${day.day}`} 
+                          value={`day-${day.day}`}
+                          className="text-xs px-2 py-1"
+                          onClick={() => setSelectedDay(day.day)}
+                        >
+                          <span className="truncate">
+                            Day {day.day}
+                            <br />
+                            <span className="text-xs text-gray-500">{day.name}</span>
+                          </span>
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
                     
-                    {/* Task Grid */}
-                    {status !== "locked" && (
-                      <div className="space-y-6">
-                        <VideoTaskRow 
-                          videos={week.tasks.videos}
-                          weekNumber={week.weekNumber}
-                          onVideoComplete={(videoId) => markVideoWatched(week.weekNumber, videoId)}
-                        />
-                        
-                        <MealLogTaskRow 
-                          mealLogs={week.tasks.mealLogs}
-                          weekNumber={week.weekNumber}
-                          onAddMealLog={(mealLog) => addMealLog(week.weekNumber, mealLog)}
-                        />
-                        
-                        <WeightTrackingTaskRow 
-                          weightLogs={week.tasks.weightLogs}
-                          weekNumber={week.weekNumber}
-                          onAddWeightLog={(weightLog) => addWeightLog(week.weekNumber, weightLog)}
-                        />
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                    {generateDayTabs().map((day) => (
+                      <TabsContent key={`day-content-${day.day}`} value={`day-${day.day}`} className="mt-4">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle className="text-lg">
+                              Day {day.day} - {day.name} Tracking
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-6">
+                              <VideoTaskRow 
+                                videos={week.tasks.videos}
+                                weekNumber={week.weekNumber}
+                                onVideoComplete={(videoId) => markVideoWatched(week.weekNumber, videoId)}
+                              />
+                              
+                              <MealLogTaskRow 
+                                mealLogs={week.tasks.mealLogs.filter(log => 
+                                  new Date(log.date).getDay() === (day.day % 7)
+                                )}
+                                weekNumber={week.weekNumber}
+                                onAddMealLog={(mealLog) => addMealLog(week.weekNumber, mealLog)}
+                              />
+                              
+                              <WeightTrackingTaskRow 
+                                weightLogs={week.tasks.weightLogs}
+                                weekNumber={week.weekNumber}
+                                onAddWeightLog={(weightLog) => addWeightLog(week.weekNumber, weightLog)}
+                              />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </TabsContent>
+                    ))}
+                  </Tabs>
+                )}
+
+                {/* Week overview for non-current weeks */}
+                {!isCurrentWeek && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-lg flex items-center justify-between">
+                        <span>Week {week.weekNumber} Overview</span>
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-medium px-3 py-1 rounded-full bg-gray-100">
+                            {completion}% Complete
+                          </div>
+                          {status === "current" && canComplete && (
+                            <Button 
+                              onClick={() => handleCompleteWeek(week.weekNumber)}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              Complete Week
+                            </Button>
+                          )}
+                        </div>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="mb-4">
+                        {status === "locked" 
+                          ? `This content will be unlocked when you reach Week ${week.weekNumber}` 
+                          : status === "completed"
+                            ? "You've completed this week! Review the content any time."
+                            : week.focus}
+                      </p>
+                      
+                      {/* Task Grid */}
+                      {status !== "locked" && (
+                        <div className="space-y-6">
+                          <VideoTaskRow 
+                            videos={week.tasks.videos}
+                            weekNumber={week.weekNumber}
+                            onVideoComplete={(videoId) => markVideoWatched(week.weekNumber, videoId)}
+                          />
+                          
+                          <MealLogTaskRow 
+                            mealLogs={week.tasks.mealLogs}
+                            weekNumber={week.weekNumber}
+                            onAddMealLog={(mealLog) => addMealLog(week.weekNumber, mealLog)}
+                          />
+                          
+                          <WeightTrackingTaskRow 
+                            weightLogs={week.tasks.weightLogs}
+                            weekNumber={week.weekNumber}
+                            onAddWeightLog={(weightLog) => addWeightLog(week.weekNumber, weightLog)}
+                          />
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
                 
                 {status !== "locked" && week.recommendedVideos.length > 0 && (
                   <Card>

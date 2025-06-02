@@ -26,8 +26,10 @@ const WeightTrackingTaskRow = ({ weightLogs, weekNumber, onAddWeightLog }: Weigh
 
   const handleSubmit = () => {
     const now = new Date();
+    const currentDateTime = now.toISOString();
+    
     onAddWeightLog({
-      date: now.toISOString().split('T')[0],
+      date: currentDateTime,
       weight: Number(weightData.weight),
       notes: weightData.notes,
       photo: selectedImage ? URL.createObjectURL(selectedImage) : '',
@@ -48,7 +50,13 @@ const WeightTrackingTaskRow = ({ weightLogs, weekNumber, onAddWeightLog }: Weigh
 
   const formatDateTime = (date: string) => {
     const dateObj = new Date(date);
-    return `${dateObj.toLocaleDateString()} at ${dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+    const formattedDate = dateObj.toLocaleDateString();
+    const formattedTime = dateObj.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+    return `${formattedDate} at ${formattedTime}`;
   };
 
   return (
