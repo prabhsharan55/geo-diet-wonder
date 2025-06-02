@@ -1,12 +1,59 @@
-
 import CustomerLayout from "@/components/customer/CustomerLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Camera, Clock, MessageCircle, PlusCircle, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
 
 const GeoDietCoach = () => {
-  const meals = [
+  const [todayDate, setTodayDate] = useState("");
+  const [todayDay, setTodayDay] = useState("");
+
+  useEffect(() => {
+    const today = new Date();
+    const formatDate = today.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    const formatDay = today.toLocaleDateString('en-US', { weekday: 'long' });
+    setTodayDate(formatDate);
+    setTodayDay(formatDay);
+  }, []);
+
+  // Fetch personalized meal plans for today
+  const { data: mealPlans, isLoading } = useQuery({
+    queryKey: ['meal-plans', todayDate],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('meal_plans')
+        .select('*')
+        .eq('date', today)
+        .order('meal_type');
+      
+      if (error) {
+        console.error('Error fetching meal plans:', error);
+        return [];
+      }
+      
+      return data || [];
+    },
+  });
+
+  // Group meal plans by meal type
+  const groupedMealPlans = mealPlans?.reduce((acc, plan) => {
+    if (!acc[plan.meal_type]) {
+      acc[plan.meal_type] = [];
+    }
+    acc[plan.meal_type].push(plan);
+    return acc;
+  }, {} as Record<string, any[]>) || {};
+
+  // Default meal suggestions when no personalized plans are available
+  const defaultMeals = [
     {
       time: "Breakfast",
       suggestions: [
@@ -77,6 +124,26 @@ const GeoDietCoach = () => {
     }
   ];
 
+  // Convert database meal plans to the expected format
+  const getMealsForDisplay = () => {
+    if (Object.keys(groupedMealPlans).length === 0) {
+      return defaultMeals;
+    }
+
+    const mealTypes = ['Breakfast', 'Lunch', 'Dinner', 'Snacks'];
+    return mealTypes.map(mealType => ({
+      time: mealType,
+      suggestions: groupedMealPlans[mealType]?.map(plan => ({
+        name: plan.name,
+        description: plan.description,
+        calories: plan.calories || 0,
+        feedback: plan.feedback || "Personalized recommendation from your clinic."
+      })) || defaultMeals.find(m => m.time === mealType)?.suggestions || []
+    }));
+  };
+
+  const meals = getMealsForDisplay();
+
   return (
     <CustomerLayout>
       <div className="space-y-6">
@@ -97,40 +164,68 @@ const GeoDietCoach = () => {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Personalized Meal Suggestions</span>
-                  <span className="text-sm font-medium bg-[#F4D374] text-[#160041] py-1 px-3 rounded-full">
-                    May 19, 2025
-                  </span>
+                  <div className="text-right">
+                    <div className="text-sm font-medium bg-[#F4D374] text-[#160041] py-1 px-3 rounded-full">
+                      {todayDate}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">{todayDay}</div>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
-                  {meals.map((meal, idx) => (
-                    <div key={idx} className={idx < meals.length - 1 ? "border-b pb-6" : ""}>
-                      <div className="flex items-center mb-4">
-                        <Utensils className="h-5 w-5 mr-2 text-[#8D97DE]" />
-                        <h3 className="text-lg font-medium">{meal.time}</h3>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-gray-500">Loading your personalized meal plan...</div>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {Object.keys(groupedMealPlans).length > 0 && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                        <div className="flex items-center">
+                          <Utensils className="h-5 w-5 text-blue-600 mr-2" />
+                          <span className="text-sm font-medium text-blue-800">
+                            Personalized meal plan from your clinic
+                          </span>
+                        </div>
                       </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {meal.suggestions.map((suggestion, i) => (
-                          <Card key={i} className="overflow-hidden">
-                            <div className="h-32 bg-gradient-to-r from-[#BED1AB]/30 to-[#A6B8B9]/30 flex items-center justify-center">
-                              <span className="text-lg font-medium">{suggestion.name}</span>
-                            </div>
-                            <CardContent className="p-4">
-                              <p className="text-sm text-gray-600 mb-2">{suggestion.description}</p>
-                              <div className="flex justify-between text-sm">
-                                <span className="font-medium">{suggestion.calories} calories</span>
-                                <span className="text-green-600">Low Glycemic</span>
-                              </div>
-                              <p className="text-xs text-gray-500 mt-2 italic">{suggestion.feedback}</p>
-                            </CardContent>
-                          </Card>
-                        ))}
+                    )}
+                    
+                    {meals.map((meal, idx) => (
+                      <div key={idx} className={idx < meals.length - 1 ? "border-b pb-6" : ""}>
+                        <div className="flex items-center mb-4">
+                          <Utensils className="h-5 w-5 mr-2 text-[#8D97DE]" />
+                          <h3 className="text-lg font-medium">{meal.time}</h3>
+                        </div>
+                        
+                        {meal.suggestions.length > 0 ? (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {meal.suggestions.map((suggestion, i) => (
+                              <Card key={i} className="overflow-hidden">
+                                <div className="h-32 bg-gradient-to-r from-[#BED1AB]/30 to-[#A6B8B9]/30 flex items-center justify-center">
+                                  <span className="text-lg font-medium">{suggestion.name}</span>
+                                </div>
+                                <CardContent className="p-4">
+                                  <p className="text-sm text-gray-600 mb-2">{suggestion.description}</p>
+                                  <div className="flex justify-between text-sm">
+                                    <span className="font-medium">{suggestion.calories} calories</span>
+                                    <span className="text-green-600">Low Glycemic</span>
+                                  </div>
+                                  <p className="text-xs text-gray-500 mt-2 italic">{suggestion.feedback}</p>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-gray-500">
+                            <Utensils className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                            <p>No personalized suggestions for {meal.time} today</p>
+                            <p className="text-xs">Your clinic will add recommendations soon</p>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
             

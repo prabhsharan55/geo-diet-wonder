@@ -1,123 +1,62 @@
 
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import {
-  LayoutDashboard,
-  Users,
-  MailCheck,
-  BarChart2,
-  Clock,
-  Video,
-  Bell,
-  Settings,
-  CircleHelp,
+import { 
+  BarChart3, 
+  Users, 
+  UserPlus, 
+  FileText, 
+  Video, 
+  Megaphone, 
+  Settings, 
+  HelpCircle,
+  Utensils
 } from "lucide-react";
 
-interface PartnerSidebarProps {
-  sidebarOpen: boolean;
-  setSidebarOpen: (open: boolean) => void;
-}
+const navigation = [
+  { name: "Dashboard", href: "/partner", icon: BarChart3 },
+  { name: "Client Management", href: "/partner/clients", icon: Users },
+  { name: "Access Requests", href: "/partner/requests", icon: UserPlus },
+  { name: "Plans Management", href: "/partner/plans", icon: FileText },
+  { name: "Content Management", href: "/partner/content", icon: Video },
+  { name: "Meal Planning", href: "/partner/meal-planning", icon: Utensils },
+  { name: "Announcements", href: "/partner/announcements", icon: Megaphone },
+  { name: "Settings", href: "/partner/settings", icon: Settings },
+  { name: "Support", href: "/partner/support", icon: HelpCircle },
+];
 
-const PartnerSidebar = ({ sidebarOpen, setSidebarOpen }: PartnerSidebarProps) => {
+const PartnerSidebar = () => {
   const location = useLocation();
 
-  const navItems = [
-    {
-      title: "Dashboard",
-      icon: LayoutDashboard,
-      path: "/partner",
-    },
-    {
-      title: "Client Management",
-      icon: Users,
-      path: "/partner/clients",
-    },
-    {
-      title: "Access Requests",
-      icon: MailCheck,
-      path: "/partner/requests",
-    },
-    {
-      title: "Progress Reports",
-      icon: BarChart2,
-      path: "/partner/reports",
-    },
-    {
-      title: "Freeze / Extend Plans",
-      icon: Clock,
-      path: "/partner/plans",
-    },
-    {
-      title: "Video & Content",
-      icon: Video,
-      path: "/partner/content",
-    },
-    {
-      title: "Announcements",
-      icon: Bell,
-      path: "/partner/announcements",
-    },
-    {
-      title: "Settings",
-      icon: Settings,
-      path: "/partner/settings",
-    },
-    {
-      title: "Support & Help",
-      icon: CircleHelp,
-      path: "/partner/support",
-    },
-  ];
-
   return (
-    <div
-      className={cn(
-        "h-screen bg-gradient-to-b from-[#160041] to-[#8D97DE] text-white transition-all",
-        sidebarOpen ? "w-64" : "w-20"
-      )}
-    >
-      <div className="flex items-center justify-between p-5">
-        <Link to="/partner">
-          <h2 className={cn("font-lyon text-2xl font-semibold", !sidebarOpen && "hidden")}>
-            GeoDiet Partner
-          </h2>
-          <h2 className={cn("font-lyon text-2xl font-semibold", sidebarOpen && "hidden")}>
-            GP
-          </h2>
-        </Link>
-        <button
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="text-white focus:outline-none"
-        >
-          {sidebarOpen ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 18l6-6-6-6" />
-            </svg>
-          )}
-        </button>
-      </div>
-
-      <div className="mt-8">
-        {navItems.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            className={cn(
-              "flex items-center py-3 px-5 transition-all",
-              location.pathname === item.path
-                ? "bg-white/20"
-                : "hover:bg-white/10",
-              !sidebarOpen && "justify-center"
-            )}
-          >
-            <item.icon className="w-5 h-5" />
-            {sidebarOpen && <span className="ml-3">{item.title}</span>}
-          </Link>
-        ))}
+    <div className="flex h-full w-64 flex-col bg-white border-r border-gray-200">
+      <div className="flex flex-1 flex-col pt-5 pb-4 overflow-y-auto">
+        <nav className="mt-5 flex-1 px-2 space-y-1">
+          {navigation.map((item) => {
+            const isActive = location.pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={cn(
+                  "group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors",
+                  isActive
+                    ? "bg-[#160041] text-white"
+                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                )}
+              >
+                <item.icon
+                  className={cn(
+                    "mr-3 flex-shrink-0 h-5 w-5",
+                    isActive ? "text-white" : "text-gray-400 group-hover:text-gray-500"
+                  )}
+                  aria-hidden="true"
+                />
+                {item.name}
+              </Link>
+            );
+          })}
+        </nav>
       </div>
     </div>
   );

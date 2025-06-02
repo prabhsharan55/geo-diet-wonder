@@ -93,6 +93,63 @@ export type Database = {
           },
         ]
       }
+      meal_plans: {
+        Row: {
+          calories: number | null
+          clinic_id: string
+          created_at: string
+          customer_id: string
+          date: string
+          description: string
+          feedback: string | null
+          id: string
+          meal_type: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          calories?: number | null
+          clinic_id: string
+          created_at?: string
+          customer_id: string
+          date: string
+          description: string
+          feedback?: string | null
+          id?: string
+          meal_type: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          calories?: number | null
+          clinic_id?: string
+          created_at?: string
+          customer_id?: string
+          date?: string
+          description?: string
+          feedback?: string | null
+          id?: string
+          meal_type?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_plans_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_plans_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       progress_reports: {
         Row: {
           created_at: string
