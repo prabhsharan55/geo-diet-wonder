@@ -1,4 +1,3 @@
-
 import { BarChart2, Clock, PlusCircle, Upload, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,19 +16,48 @@ const PartnerDashboard = () => {
   const [customerStats, setCustomerStats] = useState<any>({ total: 0, active: 0, pending: 0 });
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
+  // Extract async function outside useEffect
+  const checkApplicationStatus = async (): Promise<any> => {
+    const result = await supabase
+      .from('partner_applications')
+      .select('status')
+      .eq('email', user?.email || '')
+      .single();
+    
+    return result.data;
+  };
+
+  // Extract async function outside useEffect
+  const fetchCustomerData = async (): Promise<any> => {
+    const customersResult = await supabase
+      .from('users')
+      .select('id, role, created_at')
+      .eq('role', 'customer')
+      .eq('linked_partner_id', userDetails?.id || '');
+
+    return customersResult.data;
+  };
+
+  // Extract async function outside useEffect
+  const fetchActivityData = async (): Promise<any[]> => {
+    const activityResult = await supabase
+      .from('users')
+      .select('id, email, full_name, created_at')
+      .eq('role', 'customer')
+      .eq('linked_partner_id', userDetails?.id || '')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    return activityResult.data || [];
+  };
+
   useEffect(() => {
     const checkApplication = async () => {
       if (!user?.email) return;
       
       try {
-        // Cast immediately to prevent deep inference
-        const result: any = await supabase
-          .from('partner_applications')
-          .select('status')
-          .eq('email', user.email)
-          .single();
-
-        setApplication(result.data);
+        const result = await checkApplicationStatus();
+        setApplication(result);
       } catch (error) {
         console.error('Error checking application:', error);
         setApplication(null);
@@ -46,17 +74,11 @@ const PartnerDashboard = () => {
       if (!userDetails?.id) return;
       
       try {
-        // Cast immediately to prevent deep inference
-        const customersResult: any = await supabase
-          .from('users')
-          .select('id, role, created_at')
-          .eq('role', 'customer')
-          .eq('linked_partner_id', userDetails.id);
-
-        if (customersResult.data) {
+        const customers = await fetchCustomerData();
+        if (customers) {
           const stats = {
-            total: customersResult.data.length,
-            active: customersResult.data.length,
+            total: customers.length,
+            active: customers.length,
             pending: 0
           };
           setCustomerStats(stats);
@@ -74,18 +96,8 @@ const PartnerDashboard = () => {
       if (!userDetails?.id) return;
       
       try {
-        // Cast immediately to prevent deep inference
-        const activityResult: any = await supabase
-          .from('users')
-          .select('id, email, full_name, created_at')
-          .eq('role', 'customer')
-          .eq('linked_partner_id', userDetails.id)
-          .order('created_at', { ascending: false })
-          .limit(5);
-
-        if (activityResult.data) {
-          setRecentActivity(activityResult.data);
-        }
+        const activity = await fetchActivityData();
+        setRecentActivity(activity);
       } catch (error) {
         console.error('Error fetching recent activity:', error);
       }
@@ -128,7 +140,7 @@ const PartnerDashboard = () => {
     return date.toLocaleDateString();
   };
 
-  // Pre-calculate activity rows to avoid JSX inference
+  // Extract JSX mapping outside of return
   const activityRows = recentActivity.map((customer: any) => (
     <tr key={customer.id} className="hover:bg-gray-50">
       <td className="px-6 py-4 whitespace-nowrap">
