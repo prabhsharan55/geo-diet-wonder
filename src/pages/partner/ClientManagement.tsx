@@ -23,29 +23,33 @@ const ClientManagement = () => {
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const { userDetails } = useAuth();
 
-  // Fetch customers linked to this partner
-  const { data: clients = [], isLoading } = useQuery<Client[]>({
-    queryKey: ['partner-clients', userDetails?.id],
-    queryFn: async () => {
+  // Fetch customers linked to this partner (no <Client[]> generic on useQuery)
+  const { data: rawClients, isLoading } = useQuery(
+    ['partner-clients', userDetails?.id],
+    async () => {
       if (!userDetails?.id) {
         return [];
       }
-
+      // Run Supabase query
       const { data, error } = await supabase
         .from('users')
         .select('id, full_name, email, role, created_at')
         .eq('role', 'customer')
         .eq('linked_partner_id', userDetails.id)
         .order('created_at', { ascending: false });
-
-      if (error) {
-        throw error;
-      }
-      // Cast to Client[] to avoid deep/infinite type inference
+      if (error) throw error;
+      // Cast explicitly here to Client[]
       return (data || []) as Client[];
     },
-    enabled: !!userDetails?.id,
-  });
+    {
+      enabled: !!userDetails?.id,
+      // Optionally provide an initial empty array
+      initialData: [],
+    }
+  );
+
+  // Now rawClients is typed as Client[] because of the cast above
+  const clients = rawClients || [];
 
   const handleClientClick = (id: string) => {
     setSelectedClient(id === selectedClient ? null : id);
@@ -76,7 +80,7 @@ const ClientManagement = () => {
             <PlusCircle className="mr-2 h-4 w-4" /> Add New Client
           </Button>
         </div>
-        
+
         <div className="flex flex-col md:flex-row gap-4">
           <div className="md:w-2/3">
             <Card className="overflow-hidden">
@@ -106,8 +110,8 @@ const ClientManagement = () => {
                   <tbody className="divide-y divide-gray-200">
                     {clients.length > 0 ? (
                       clients.map((client) => (
-                        <tr 
-                          key={client.id} 
+                        <tr
+                          key={client.id}
                           className={`hover:bg-gray-50 cursor-pointer ${selectedClient === client.id ? 'bg-blue-50' : ''}`}
                           onClick={() => handleClientClick(client.id)}
                         >
@@ -158,12 +162,12 @@ const ClientManagement = () => {
               </div>
             </Card>
           </div>
-          
+
           <div className="md:w-1/3">
             {selectedClientData ? (
               <Card className="p-6">
                 <h3 className="text-xl font-medium mb-4">Client Details</h3>
-                
+
                 <div className="mb-6 flex items-center">
                   <div className="h-16 w-16 rounded-full bg-[#BED1AB] flex items-center justify-center text-[#160041] text-xl">
                     {selectedClientData.full_name.charAt(0).toUpperCase()}
@@ -173,19 +177,19 @@ const ClientManagement = () => {
                     <p className="text-gray-500">{selectedClientData.email}</p>
                   </div>
                 </div>
-                
+
                 <div className="space-y-4">
                   <div>
                     <h5 className="text-sm text-gray-500">Role</h5>
                     <p className="font-medium">{selectedClientData.role}</p>
                   </div>
-                  
+
                   <div>
                     <h5 className="text-sm text-gray-500">Joined Date</h5>
                     <p className="font-medium">{formatDate(selectedClientData.created_at)}</p>
                   </div>
                 </div>
-                
+
                 <div className="mt-6 space-y-3">
                   <Button className="w-full">View Progress</Button>
                   <Button variant="outline" className="w-full">Send Message</Button>
