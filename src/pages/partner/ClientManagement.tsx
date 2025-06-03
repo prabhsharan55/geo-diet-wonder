@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import PartnerLayout from "@/components/partner/PartnerLayout";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client"; // Ensure this client is typed with generated schema
 import { useAuth } from "@/context/AuthContext";
 
 // Simplified Client interface
@@ -30,34 +30,26 @@ const ClientManagement = () => {
         return [];
       }
 
-      // Build the base query
-      const baseQuery = supabase
+      // *** WORKAROUND for TS2589 - Attempt 2: Cast after .select() ***
+      // The error moved to .eq(), suggesting type complexity from .select() onwards.
+      // Casting the result of .select() to 'any'.
+      const queryBuilder = supabase
         .from("users")
-        .select("id, full_name, email, role, created_at")
-        .eq("role", "customer")
-        .eq("linked_partner_id", userDetails.id); // userDetails.id is known non-null here
+        .select("id, full_name, email, role, created_at") as any; // Cast here
 
-      // *** WORKAROUND for TS2589 START ***
-      // The TS2589 error likely occurs because TypeScript struggles with the type
-      // inference of the chained .order() method on 'baseQuery'.
-      // Casting 'baseQuery' to 'any' bypasses this specific type check.
-      const { data: rows, error: supabaseError } = await (baseQuery as any)
+      const { data: rows, error: supabaseError } = await queryBuilder
+        .eq("role", "customer") // Previously: error TS2589 at this line (34,25)
+        .eq("linked_partner_id", userDetails.id) // userDetails.id is known non-null
         .order("created_at", { ascending: false });
-      // *** WORKAROUND for TS2589 END ***
-      
-      // Original line that might cause TS2589 (keep commented if using workaround):
-      // const { data: rows, error: supabaseError } = await baseQuery
-      //  .order("created_at", { ascending: false });
-
+      // *** END WORKAROUND ***
 
       if (supabaseError) {
         console.error("Supabase query error:", supabaseError.message, supabaseError.details);
-        // Ensure supabaseError.message is a string or handle appropriately
         throw new Error(typeof supabaseError.message === 'string' ? supabaseError.message : 'Unknown Supabase error');
       }
 
-      // Since 'rows' might be 'any[]' due to the workaround,
-      // this cast (or a more thorough mapping) is important.
+      // 'rows' will be 'any[]' due to the 'as any' cast.
+      // The 'as Client[]' cast is crucial here for type safety downstream.
       return (rows || []) as Client[];
     },
     enabled: !!userDetails?.id,
@@ -74,7 +66,7 @@ const ClientManagement = () => {
     );
   }
 
-  const clients: Client[] = data; // 'data' is Client[] because of initialData
+  const clients: Client[] = data;
 
   const handleClientClick = (id: string) => {
     setSelectedClient(id === selectedClient ? null : id);
