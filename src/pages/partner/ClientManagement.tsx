@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 
-// Simplified Client interface (no recursive types)
+// Simplified Client interface
 interface Client {
   id: string;
   full_name: string;
@@ -23,33 +23,46 @@ const ClientManagement = () => {
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const { userDetails } = useAuth();
 
-  // Fetch customers linked to this partner (no generics on useQuery)
-  const { data, isLoading } = useQuery(
-    ["partner-clients", userDetails?.id],
-    async () => {
+  // Fetch customers linked to this partner
+  const { data, isLoading, error: queryError } = useQuery<Client[], Error>({
+    queryKey: ["partner-clients", userDetails?.id],
+    queryFn: async (): Promise<Client[]> => {
       if (!userDetails?.id) {
         return [];
       }
 
-      const { data: rows, error } = await supabase
+      const { data: rows, error: supabaseError } = await supabase
         .from("users")
-        .select("id, full_name, email, role, created_at")
+        .select("id, full_name, email, role, created_at") // Ensure these fields match Client interface
         .eq("role", "customer")
         .eq("linked_partner_id", userDetails.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false }); // Original line 34 where TS2589 occurred
 
-      if (error) throw error;
-      // Cast to Client[] here
-      return (rows || []) as Client[];
+      if (supabaseError) {
+        console.error("Supabase query error:", supabaseError.message, supabaseError.details);
+        throw new Error(supabaseError.message); // Throw a standard error for React Query
+      }
+
+      return (rows || []) as Client[]; // Cast to Client[]
     },
-    {
-      enabled: !!userDetails?.id,
-      initialData: [] as Client[],
-    }
-  );
+    enabled: !!userDetails?.id,
+    initialData: [] as Client[], // Ensures 'data' is always Client[]
+                                  // This options object structure resolves TS2554 (original line 45)
+  });
 
-  // Force TS to treat data as Client[]
-  const clients = (data as Client[]) || [];
+  // Handle query error (good practice)
+  if (queryError) {
+    return (
+      <PartnerLayout>
+        <div className="p-4 text-red-500">
+          Error loading client data: {queryError.message}
+        </div>
+      </PartnerLayout>
+    );
+  }
+
+  // 'data' is Client[] because of initialData.
+  const clients: Client[] = data;
 
   const handleClientClick = (id: string) => {
     setSelectedClient(id === selectedClient ? null : id);
@@ -62,6 +75,7 @@ const ClientManagement = () => {
   const selectedClientData =
     clients.find((c) => c.id === selectedClient) || null;
 
+  // Original loading state logic
   if (isLoading) {
     return (
       <PartnerLayout>
