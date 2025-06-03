@@ -10,22 +10,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 
 // Simplified client type
-type Client = {
+interface Client {
   id: string;
   full_name: string;
   email: string;
   role: string;
   created_at: string;
-};
+}
 
 const ClientManagement = () => {
-  const [selectedClient, setSelectedClient] = useState<null | string>(null);
+  const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const { userDetails } = useAuth();
   
   // Fetch customers for this partner - simplified query
-  const { data: clients = [], isLoading } = useQuery({
+  const { data: clients = [], isLoading } = useQuery<Client[]>({
     queryKey: ['partner-clients', userDetails?.id],
-    queryFn: async (): Promise<Client[]> => {
+    queryFn: async () => {
       console.log('Fetching clients for partner:', userDetails?.id);
       
       if (!userDetails?.id) {
