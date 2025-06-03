@@ -1,3 +1,4 @@
+// src/pages/partner/ClientManagement.tsx
 
 import { Search, PlusCircle, Clock, FileBarChart, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 
-// Simplified client type
+// Simplified Client interface (no recursive types)
 interface Client {
   id: string;
   full_name: string;
@@ -21,18 +22,15 @@ interface Client {
 const ClientManagement = () => {
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const { userDetails } = useAuth();
-  
-  // Fetch customers for this partner - simplified query
+
+  // Fetch customers linked to this partner
   const { data: clients = [], isLoading } = useQuery<Client[]>({
     queryKey: ['partner-clients', userDetails?.id],
     queryFn: async () => {
-      console.log('Fetching clients for partner:', userDetails?.id);
-      
       if (!userDetails?.id) {
-        console.log('No partner id found');
         return [];
       }
-      
+
       const { data, error } = await supabase
         .from('users')
         .select('id, full_name, email, role, created_at')
@@ -40,14 +38,15 @@ const ClientManagement = () => {
         .eq('linked_partner_id', userDetails.id)
         .order('created_at', { ascending: false });
 
-      console.log('Clients query result:', { data, error });
-
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
+      // Cast to Client[] to avoid deep/infinite type inference
       return (data || []) as Client[];
     },
     enabled: !!userDetails?.id,
   });
-  
+
   const handleClientClick = (id: string) => {
     setSelectedClient(id === selectedClient ? null : id);
   };
@@ -105,7 +104,7 @@ const ClientManagement = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {clients && clients.length > 0 ? (
+                    {clients.length > 0 ? (
                       clients.map((client) => (
                         <tr 
                           key={client.id} 
@@ -150,7 +149,7 @@ const ClientManagement = () => {
               </div>
               <div className="p-4 border-t flex justify-between items-center">
                 <div className="text-sm text-gray-500">
-                  Showing {clients?.length || 0} of {clients?.length || 0} clients
+                  Showing {clients.length} of {clients.length} clients
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" disabled>Previous</Button>
