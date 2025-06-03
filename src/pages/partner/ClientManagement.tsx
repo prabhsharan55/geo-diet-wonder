@@ -39,6 +39,7 @@ const ClientManagement = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
+      // Cast to Client[] here
       return (rows || []) as Client[];
     },
     {
@@ -47,8 +48,8 @@ const ClientManagement = () => {
     }
   );
 
-  // Cast to Client[] so TypeScript knows it's an array of Client
-  const clients: Client[] = (data as Client[]) || [];
+  // Force TS to treat data as Client[]
+  const clients = (data as Client[]) || [];
 
   const handleClientClick = (id: string) => {
     setSelectedClient(id === selectedClient ? null : id);
