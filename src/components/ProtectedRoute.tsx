@@ -71,6 +71,10 @@ const ProtectedRoute = ({ children, requiredRole, requireApproval = false }: Pro
   // Not authenticated - redirect to auth
   if (!user) {
     console.log('No user, redirecting to /auth');
+    // For admin routes, redirect to admin login
+    if (requiredRole === 'admin') {
+      return <Navigate to="/admin/login" replace />;
+    }
     return <Navigate to="/auth" replace />;
   }
 

@@ -92,7 +92,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const redirectBasedOnRole = async (userDetails: UserDetails) => {
     const { role } = userDetails;
     
+    console.log('Redirecting based on role:', role);
+    
     if (role === 'admin') {
+      console.log('Redirecting admin to /admin');
       navigate('/admin');
     } else if (role === 'partner') {
       // Check application status for partners
@@ -122,9 +125,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(currentSession?.user ?? null);
         
         if (event === 'SIGNED_IN' && currentSession?.user) {
+          console.log('User signed in, fetching details...');
           setTimeout(async () => {
             if (mounted) {
               const details = await fetchUserDetails(currentSession.user.id);
+              console.log('User details fetched:', details);
               if (details) {
                 setUserDetails(details);
                 await redirectBasedOnRole(details);
@@ -150,10 +155,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         
         if (mounted && currentSession?.user) {
+          console.log('Existing session found, fetching user details...');
           setSession(currentSession);
           setUser(currentSession.user);
           
           const details = await fetchUserDetails(currentSession.user.id);
+          console.log('Initial user details:', details);
           if (details) {
             setUserDetails(details);
           } else {
@@ -192,6 +199,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Continue even if this fails
       }
       
+      console.log('Attempting sign in for:', email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -205,12 +214,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       if (data.user) {
+        console.log('Sign in successful, fetching user details...');
         const details = await fetchUserDetails(data.user.id);
         
         if (!details) {
           throw new Error('User account not found. Please contact support.');
         }
         
+        console.log('User details after sign in:', details);
         setUserDetails(details);
         toast.success("Signed in successfully");
         await redirectBasedOnRole(details);
