@@ -23,7 +23,6 @@ const ClientManagement = () => {
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const { userDetails } = useAuth();
 
-  // Fetch customers linked to this partner
   const { data, isLoading, error: queryError } = useQuery<Client[], Error>({
     queryKey: ["partner-clients", userDetails?.id],
     queryFn: async (): Promise<Client[]> => {
@@ -31,26 +30,40 @@ const ClientManagement = () => {
         return [];
       }
 
-      const { data: rows, error: supabaseError } = await supabase
+      // Build the base query
+      const baseQuery = supabase
         .from("users")
-        .select("id, full_name, email, role, created_at") // Ensure these fields match Client interface
+        .select("id, full_name, email, role, created_at")
         .eq("role", "customer")
-        .eq("linked_partner_id", userDetails.id)
-        .order("created_at", { ascending: false }); // Original line 34 where TS2589 occurred
+        .eq("linked_partner_id", userDetails.id); // userDetails.id is known non-null here
+
+      // *** WORKAROUND for TS2589 START ***
+      // The TS2589 error likely occurs because TypeScript struggles with the type
+      // inference of the chained .order() method on 'baseQuery'.
+      // Casting 'baseQuery' to 'any' bypasses this specific type check.
+      const { data: rows, error: supabaseError } = await (baseQuery as any)
+        .order("created_at", { ascending: false });
+      // *** WORKAROUND for TS2589 END ***
+      
+      // Original line that might cause TS2589 (keep commented if using workaround):
+      // const { data: rows, error: supabaseError } = await baseQuery
+      //  .order("created_at", { ascending: false });
+
 
       if (supabaseError) {
         console.error("Supabase query error:", supabaseError.message, supabaseError.details);
-        throw new Error(supabaseError.message); // Throw a standard error for React Query
+        // Ensure supabaseError.message is a string or handle appropriately
+        throw new Error(typeof supabaseError.message === 'string' ? supabaseError.message : 'Unknown Supabase error');
       }
 
-      return (rows || []) as Client[]; // Cast to Client[]
+      // Since 'rows' might be 'any[]' due to the workaround,
+      // this cast (or a more thorough mapping) is important.
+      return (rows || []) as Client[];
     },
     enabled: !!userDetails?.id,
-    initialData: [] as Client[], // Ensures 'data' is always Client[]
-                                  // This options object structure resolves TS2554 (original line 45)
+    initialData: [] as Client[],
   });
 
-  // Handle query error (good practice)
   if (queryError) {
     return (
       <PartnerLayout>
@@ -61,8 +74,7 @@ const ClientManagement = () => {
     );
   }
 
-  // 'data' is Client[] because of initialData.
-  const clients: Client[] = data;
+  const clients: Client[] = data; // 'data' is Client[] because of initialData
 
   const handleClientClick = (id: string) => {
     setSelectedClient(id === selectedClient ? null : id);
@@ -75,7 +87,6 @@ const ClientManagement = () => {
   const selectedClientData =
     clients.find((c) => c.id === selectedClient) || null;
 
-  // Original loading state logic
   if (isLoading) {
     return (
       <PartnerLayout>
@@ -206,7 +217,6 @@ const ClientManagement = () => {
             {selectedClientData ? (
               <Card className="p-6">
                 <h3 className="text-xl font-medium mb-4">Client Details</h3>
-
                 <div className="mb-6 flex items-center">
                   <div className="h-16 w-16 rounded-full bg-[#BED1AB] flex items-center justify-center text-[#160041] text-xl">
                     {selectedClientData.full_name
@@ -222,13 +232,11 @@ const ClientManagement = () => {
                     </p>
                   </div>
                 </div>
-
                 <div className="space-y-4">
                   <div>
                     <h5 className="text-sm text-gray-500">Role</h5>
                     <p className="font-medium">{selectedClientData.role}</p>
                   </div>
-
                   <div>
                     <h5 className="text-sm text-gray-500">Joined Date</h5>
                     <p className="font-medium">
@@ -236,7 +244,6 @@ const ClientManagement = () => {
                     </p>
                   </div>
                 </div>
-
                 <div className="mt-6 space-y-3">
                   <Button className="w-full">View Progress</Button>
                   <Button variant="outline" className="w-full">
