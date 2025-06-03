@@ -23,33 +23,32 @@ const ClientManagement = () => {
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const { userDetails } = useAuth();
 
-  // Fetch customers linked to this partner (no <Client[]> generic on useQuery)
-  const { data: rawClients, isLoading } = useQuery(
-    ['partner-clients', userDetails?.id],
+  // Fetch customers linked to this partner
+  const {
+    data: clients = [], // explicitly typed as Client[]
+    isLoading,
+  } = useQuery<Client[], Error>(
+    ["partner-clients", userDetails?.id],
     async () => {
       if (!userDetails?.id) {
         return [];
       }
-      // Run Supabase query
+
       const { data, error } = await supabase
-        .from('users')
-        .select('id, full_name, email, role, created_at')
-        .eq('role', 'customer')
-        .eq('linked_partner_id', userDetails.id)
-        .order('created_at', { ascending: false });
+        .from("users")
+        .select("id, full_name, email, role, created_at")
+        .eq("role", "customer")
+        .eq("linked_partner_id", userDetails.id)
+        .order("created_at", { ascending: false });
+
       if (error) throw error;
-      // Cast explicitly here to Client[]
       return (data || []) as Client[];
     },
     {
       enabled: !!userDetails?.id,
-      // Optionally provide an initial empty array
       initialData: [],
     }
   );
-
-  // Now rawClients is typed as Client[] because of the cast above
-  const clients = rawClients || [];
 
   const handleClientClick = (id: string) => {
     setSelectedClient(id === selectedClient ? null : id);
@@ -59,7 +58,7 @@ const ClientManagement = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
-  const selectedClientData = clients.find(c => c.id === selectedClient);
+  const selectedClientData = clients.find((c) => c.id === selectedClient) || null;
 
   if (isLoading) {
     return (
@@ -87,10 +86,7 @@ const ClientManagement = () => {
               <div className="p-4 bg-white border-b flex flex-col sm:flex-row gap-4">
                 <div className="relative flex-grow">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search clients by name or email..."
-                    className="pl-9"
-                  />
+                  <Input placeholder="Search clients by name or email..." className="pl-9" />
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline">Filter</Button>
@@ -101,10 +97,18 @@ const ClientManagement = () => {
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Joined
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -112,7 +116,9 @@ const ClientManagement = () => {
                       clients.map((client) => (
                         <tr
                           key={client.id}
-                          className={`hover:bg-gray-50 cursor-pointer ${selectedClient === client.id ? 'bg-blue-50' : ''}`}
+                          className={`hover:bg-gray-50 cursor-pointer ${
+                            selectedClient === client.id ? "bg-blue-50" : ""
+                          }`}
                           onClick={() => handleClientClick(client.id)}
                         >
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -156,8 +162,12 @@ const ClientManagement = () => {
                   Showing {clients.length} of {clients.length} clients
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" disabled>Previous</Button>
-                  <Button variant="outline" size="sm" disabled>Next</Button>
+                  <Button variant="outline" size="sm" disabled>
+                    Previous
+                  </Button>
+                  <Button variant="outline" size="sm" disabled>
+                    Next
+                  </Button>
                 </div>
               </div>
             </Card>
@@ -192,8 +202,12 @@ const ClientManagement = () => {
 
                 <div className="mt-6 space-y-3">
                   <Button className="w-full">View Progress</Button>
-                  <Button variant="outline" className="w-full">Send Message</Button>
-                  <Button variant="outline" className="w-full">Generate Report</Button>
+                  <Button variant="outline" className="w-full">
+                    Send Message
+                  </Button>
+                  <Button variant="outline" className="w-full">
+                    Generate Report
+                  </Button>
                 </div>
               </Card>
             ) : (
