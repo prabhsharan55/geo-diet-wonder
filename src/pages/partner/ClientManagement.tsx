@@ -23,18 +23,15 @@ const ClientManagement = () => {
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const { userDetails } = useAuth();
 
-  // Fetch customers linked to this partner
-  const {
-    data: clients = [], // explicitly typed as Client[]
-    isLoading,
-  } = useQuery<Client[], Error>(
+  // Fetch customers linked to this partner (no generics on useQuery)
+  const { data, isLoading } = useQuery(
     ["partner-clients", userDetails?.id],
     async () => {
       if (!userDetails?.id) {
         return [];
       }
 
-      const { data, error } = await supabase
+      const { data: rows, error } = await supabase
         .from("users")
         .select("id, full_name, email, role, created_at")
         .eq("role", "customer")
@@ -42,13 +39,16 @@ const ClientManagement = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return (data || []) as Client[];
+      return (rows || []) as Client[];
     },
     {
       enabled: !!userDetails?.id,
-      initialData: [],
+      initialData: [] as Client[],
     }
   );
+
+  // Cast to Client[] so TypeScript knows it's an array of Client
+  const clients: Client[] = (data as Client[]) || [];
 
   const handleClientClick = (id: string) => {
     setSelectedClient(id === selectedClient ? null : id);
@@ -58,7 +58,8 @@ const ClientManagement = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
-  const selectedClientData = clients.find((c) => c.id === selectedClient) || null;
+  const selectedClientData =
+    clients.find((c) => c.id === selectedClient) || null;
 
   if (isLoading) {
     return (
@@ -86,7 +87,10 @@ const ClientManagement = () => {
               <div className="p-4 bg-white border-b flex flex-col sm:flex-row gap-4">
                 <div className="relative flex-grow">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input placeholder="Search clients by name or email..." className="pl-9" />
+                  <Input
+                    placeholder="Search clients by name or email..."
+                    className="pl-9"
+                  />
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline">Filter</Button>
@@ -129,8 +133,12 @@ const ClientManagement = () => {
                               <div className="ml-3">{client.full_name}</div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">{client.email}</td>
-                          <td className="px-6 py-4 whitespace-nowrap">{formatDate(client.created_at)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {client.email}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {formatDate(client.created_at)}
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex space-x-2">
                               <Button variant="ghost" size="sm">
@@ -145,11 +153,17 @@ const ClientManagement = () => {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                        <td
+                          colSpan={4}
+                          className="px-6 py-8 text-center text-gray-500"
+                        >
                           <div className="flex flex-col items-center">
                             <Users className="h-12 w-12 text-gray-400 mb-2" />
                             <p>No clients found</p>
-                            <p className="text-sm">Clients will appear here once they sign up for your clinic</p>
+                            <p className="text-sm">
+                              Clients will appear here once they sign up for your
+                              clinic
+                            </p>
                           </div>
                         </td>
                       </tr>
@@ -180,11 +194,17 @@ const ClientManagement = () => {
 
                 <div className="mb-6 flex items-center">
                   <div className="h-16 w-16 rounded-full bg-[#BED1AB] flex items-center justify-center text-[#160041] text-xl">
-                    {selectedClientData.full_name.charAt(0).toUpperCase()}
+                    {selectedClientData.full_name
+                      .charAt(0)
+                      .toUpperCase()}
                   </div>
                   <div className="ml-4">
-                    <h4 className="text-lg font-medium">{selectedClientData.full_name}</h4>
-                    <p className="text-gray-500">{selectedClientData.email}</p>
+                    <h4 className="text-lg font-medium">
+                      {selectedClientData.full_name}
+                    </h4>
+                    <p className="text-gray-500">
+                      {selectedClientData.email}
+                    </p>
                   </div>
                 </div>
 
@@ -196,7 +216,9 @@ const ClientManagement = () => {
 
                   <div>
                     <h5 className="text-sm text-gray-500">Joined Date</h5>
-                    <p className="font-medium">{formatDate(selectedClientData.created_at)}</p>
+                    <p className="font-medium">
+                      {formatDate(selectedClientData.created_at)}
+                    </p>
                   </div>
                 </div>
 
@@ -215,7 +237,9 @@ const ClientManagement = () => {
                 <div className="text-center py-8">
                   <Users className="h-12 w-12 mx-auto text-gray-400 mb-2" />
                   <h3 className="text-lg font-medium mb-1">No Client Selected</h3>
-                  <p className="text-gray-500 mb-4">Click on a client to view details</p>
+                  <p className="text-gray-500 mb-4">
+                    Click on a client to view details
+                  </p>
                   <Button>Add New Client</Button>
                 </div>
               </Card>
