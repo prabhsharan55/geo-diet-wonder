@@ -140,14 +140,13 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Select value={role} onValueChange={(value: 'admin' | 'partner' | 'customer') => setRole(value)}>
+                    <Select value={role} onValueChange={(value: 'partner' | 'customer') => setRole(value)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select your role" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="customer">Customer</SelectItem>
                         <SelectItem value="partner">Partner (Clinic)</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

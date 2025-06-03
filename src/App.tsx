@@ -1,4 +1,3 @@
-
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -7,6 +6,7 @@ import { UserDataProvider } from "./context/UserDataContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import PartnerSignup from "./pages/PartnerSignup";
+import AdminLogin from "./pages/admin/AdminLogin";
 import Shop from "./pages/Shop";
 import ShopCGM from "./pages/shop/ShopCGM";
 import ShopWorkouts from "./pages/shop/ShopWorkouts";
@@ -54,6 +54,7 @@ function App() {
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/partner-signup" element={<PartnerSignup />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/shop" element={<Shop />} />
               <Route path="/shop/cgm" element={<ShopCGM />} />
               <Route path="/shop/workouts" element={<ShopWorkouts />} />
