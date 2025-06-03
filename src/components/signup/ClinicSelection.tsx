@@ -1,6 +1,4 @@
 
-// @ts-nocheck
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,32 +21,65 @@ const ClinicSelection = ({ onSelectClinic }: ClinicSelectionProps) => {
     const loadPartners = async () => {
       setLoading(true);
       try {
-        // Get partners - cast result to any immediately
-        const partnersResult = await supabase
+        console.log("Loading approved partners...");
+        
+        // First get approved partner applications
+        const { data: approvedApplications, error: applicationsError } = await supabase
+          .from('partner_applications')
+          .select('email')
+          .eq('status', 'approved');
+
+        if (applicationsError) {
+          console.error('Error fetching approved applications:', applicationsError);
+          throw applicationsError;
+        }
+
+        console.log("Found approved applications:", approvedApplications);
+
+        if (!approvedApplications || approvedApplications.length === 0) {
+          console.log("No approved partner applications found");
+          setPartners([]);
+          setLoading(false);
+          return;
+        }
+
+        // Get the approved emails
+        const approvedEmails = approvedApplications.map(app => app.email);
+        console.log("Approved emails:", approvedEmails);
+
+        // Now get partner users whose emails are in the approved list
+        const { data: partnerUsers, error: usersError } = await supabase
           .from('users')
           .select('id, full_name, email')
           .eq('role', 'partner')
-          .eq('approval_status', 'approved')
+          .in('email', approvedEmails)
           .order('full_name');
 
-        if (partnersResult.error) throw partnersResult.error;
+        if (usersError) {
+          console.error('Error fetching partner users:', usersError);
+          throw usersError;
+        }
 
-        const partnersData = (partnersResult.data || []) as any[];
+        console.log("Found partner users:", partnerUsers);
+
+        const partnersData = (partnerUsers || []) as any[];
         const partnersWithClinics: any[] = [];
         
         for (const partner of partnersData) {
-          const clinicResult = await supabase
+          // Try to get clinic information for this partner
+          const { data: clinicData } = await supabase
             .from('clinics')
             .select('name, address, region')
-            .eq('partner_id', partner.id)
-            .single();
+            .eq('owner_email', partner.email)
+            .maybeSingle();
 
           partnersWithClinics.push({
             ...partner,
-            clinic: clinicResult.data || undefined
+            clinic: clinicData || undefined
           });
         }
         
+        console.log("Partners with clinic data:", partnersWithClinics);
         setPartners(partnersWithClinics);
       } catch (error: any) {
         console.error('Error fetching partners:', error);
