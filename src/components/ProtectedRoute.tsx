@@ -1,66 +1,92 @@
-
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client"; // Assuming this client is correctly initialized
 
 type ProtectedRouteProps = {
   children: React.ReactNode;
   requiredRole?: "admin" | "partner" | "customer";
-  requireApproval?: boolean;
+  requireApproval?: boolean; // Specifically for partners to access approved-only routes
 };
 
+// Define expected statuses from 'partner_applications' table
+type PartnerApplicationStatus = 'pending' | 'approved' | 'rejected' | 'not_found' | string | null;
+
 const ProtectedRoute = ({ children, requiredRole, requireApproval = false }: ProtectedRouteProps) => {
-  const { user, userDetails, loading } = useAuth();
-  const [partnerStatus, setPartnerStatus] = useState<string | null>(null);
+  const { user, userDetails, loading: authLoading } = useAuth(); // Renamed loading to authLoading
+  const [partnerApplicationStatus, setPartnerApplicationStatus] = useState<PartnerApplicationStatus>(null);
   const [statusLoading, setStatusLoading] = useState(false);
 
-  // Check partner application status if needed
   useEffect(() => {
-    if (user?.email && userDetails?.role === 'partner' && requireApproval) {
+    // This effect should only run if the user is a partner and approval status needs to be checked
+    // for this specific route (due to requireApproval = true).
+    // It fetches from 'partner_applications', not 'users.approval_status'.
+    if (user && userDetails?.role === 'partner' && requiredRole === 'partner' && requireApproval) {
       setStatusLoading(true);
-      
-      const checkPartnerStatus = async () => {
+      const checkPartnerDbStatus = async () => {
+        // Ensure user.email is available for the query
+        if (!user.email) {
+            console.error('ProtectedRoute: Partner email not available for status check.');
+            setPartnerApplicationStatus('not_found'); // Or handle as an error
+            setStatusLoading(false);
+            return;
+        }
         const userEmail = user.email.trim().toLowerCase();
+        console.log('ProtectedRoute: Checking partner application status for email:', userEmail);
         
         const { data, error } = await supabase
-          .from("partner_applications")
+          .from("partner_applications") // This table should exist and have 'email' and 'status'
           .select("status")
-          .ilike("email", userEmail)
+          .ilike("email", userEmail) // Case-insensitive like
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
 
         if (error) {
-          console.error('Error checking partner status:', error);
-          setPartnerStatus(null);
+          console.error('ProtectedRoute: Error checking partner application status:', error);
+          setPartnerApplicationStatus(null); // Represents an error or unknown state
         } else if (!data) {
-          setPartnerStatus('not_found');
+          console.log('ProtectedRoute: No partner application found for email:', userEmail);
+          setPartnerApplicationStatus('not_found');
         } else {
-          setPartnerStatus(data.status?.trim().toLowerCase() || null);
+          const status = data.status?.trim().toLowerCase() || null;
+          console.log('ProtectedRoute: Partner application status from DB:', status);
+          setPartnerApplicationStatus(status as PartnerApplicationStatus);
         }
-        
         setStatusLoading(false);
       };
 
-      checkPartnerStatus();
+      checkPartnerDbStatus();
     } else {
-      setStatusLoading(false);
+      // If not a partner requiring approval check for this route, ensure statusLoading is false.
+      if (userDetails?.role !== 'partner' || !requireApproval) {
+        setStatusLoading(false);
+        setPartnerApplicationStatus(null); // Reset if not applicable
+      }
     }
-  }, [user?.email, userDetails?.role, requireApproval]);
+  }, [user, userDetails?.role, requiredRole, requireApproval]); // user.email could be a dependency if stable
 
-  console.log('ProtectedRoute check:', { 
-    user: !!user, 
-    userDetails: userDetails ? { role: userDetails.role, approval_status: userDetails.approval_status } : null, 
-    loading, 
-    statusLoading,
-    partnerStatus,
-    requiredRole,
-    requireApproval
-  });
 
-  // Show loading state while checking auth
-  if (loading || statusLoading) {
+  // Consolidate loading state
+  const isLoading = authLoading || statusLoading;
+
+  if (process.env.NODE_ENV === 'development') { // Conditional logging
+    console.log('ProtectedRoute Debug:', {
+      isAuthenticated: !!user,
+      roleFromAuthContext: userDetails?.role,
+      approvalStatusFromUsersTable: userDetails?.approval_status, // From users table via AuthContext
+      partnerApplicationStatusFromDb: partnerApplicationStatus, // From partner_applications table
+      authLoading,
+      partnerStatusLoading: statusLoading,
+      requiredRole,
+      requireApprovalForThisRoute: requireApproval,
+      isActuallyLoading: isLoading,
+    });
+  }
+
+
+  if (isLoading) {
+    console.log('ProtectedRoute: Loading authentication or partner status...');
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -68,73 +94,65 @@ const ProtectedRoute = ({ children, requiredRole, requireApproval = false }: Pro
     );
   }
 
-  // Not authenticated - redirect to auth
   if (!user) {
-    console.log('No user, redirecting to auth');
-    // For admin routes, redirect to admin login
-    if (requiredRole === 'admin') {
-      return <Navigate to="/admin/login" replace />;
-    }
-    return <Navigate to="/auth" replace />;
+    console.log('ProtectedRoute: No user found, redirecting to login.');
+    // Redirect to admin login if trying to access an admin route, else general auth
+    return <Navigate to={requiredRole === 'admin' ? "/admin/login" : "/auth"} replace />;
   }
 
-  // If user exists but userDetails is null, wait a bit more or redirect
+  // User is authenticated, now check userDetails (which contains role, etc.)
   if (!userDetails) {
-    console.log('User exists but no userDetails, showing loading...');
+    // This state should ideally be brief if user is authenticated.
+    // It might indicate userDetails are still being fetched by AuthContext.
+    // AuthContext's 'loading' should cover this, but as a fallback:
+    console.log('ProtectedRoute: User authenticated, but userDetails not yet available. Showing loader.');
     return (
       <div className="flex items-center justify-center h-screen">
+         <p>Loading user details...</p> {/* Fallback loader */}
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
-  // Check role requirement
-  if (requiredRole && userDetails?.role !== requiredRole) {
-    console.log('Wrong role, redirecting based on actual role:', userDetails?.role);
-    
-    // If this is an admin trying to access non-admin routes, redirect to admin
-    if (userDetails?.role === 'admin' && requiredRole !== 'admin') {
+  // Role check: Does the user have the required role for this route?
+  if (requiredRole && userDetails.role !== requiredRole) {
+    console.log(`ProtectedRoute: Role mismatch. User role: ${userDetails.role}, Required role: ${requiredRole}. Redirecting.`);
+    // User has a role, but it's not the one required for this route.
+    // Redirect them to their appropriate default dashboard.
+    if (userDetails.role === 'admin') {
       return <Navigate to="/admin" replace />;
-    }
-    
-    // If non-admin trying to access admin routes, redirect to appropriate dashboard
-    if (requiredRole === 'admin' && userDetails?.role !== 'admin') {
-      if (userDetails?.role === 'partner') {
-        if (partnerStatus === 'pending' || partnerStatus === 'not_found' || !partnerStatus) {
-          return <Navigate to="/partner/application-status" replace />;
-        } else {
-          return <Navigate to="/partner" replace />;
-        }
-      } else if (userDetails?.role === 'customer') {
-        return <Navigate to="/customer" replace />;
+    } else if (userDetails.role === 'partner') {
+      // For partner, approval_status from 'users' table (via userDetails) is for general access.
+      // The partnerApplicationStatus is for specific application check.
+      // The redirect from redirectBasedOnRole should already handle this.
+      // If they land here due to wrong role, send to their default.
+      if (userDetails.approval_status === 'approved') {
+         return <Navigate to="/partner" replace />;
       } else {
-        return <Navigate to="/auth" replace />;
+         return <Navigate to="/partner/application-status" replace />;
       }
-    }
-    
-    // Handle other role mismatches
-    if (userDetails?.role === 'partner') {
-      if (partnerStatus === 'pending' || partnerStatus === 'not_found' || !partnerStatus) {
-        return <Navigate to="/partner/application-status" replace />;
-      } else {
-        return <Navigate to="/partner" replace />;
-      }
-    } else if (userDetails?.role === 'customer') {
+    } else if (userDetails.role === 'customer') {
       return <Navigate to="/customer" replace />;
     } else {
+      // Fallback if role is unknown or not handled above
+      console.warn('ProtectedRoute: Unknown user role for redirect:', userDetails.role);
       return <Navigate to="/auth" replace />;
     }
   }
 
-  // Check approval requirement for partners
-  if (requireApproval && userDetails?.role === 'partner') {
-    if (partnerStatus !== 'approved') {
+  // Approval check (specifically for partners on routes that require approval)
+  // This uses partnerApplicationStatus fetched from 'partner_applications' if requireApproval is true.
+  // Note: Your 'users' table also has an 'approval_status'. Ensure clarity on which one is used where.
+  // This 'requireApproval' flag seems to imply a check against 'partner_applications.status'.
+  if (requiredRole === 'partner' && requireApproval) {
+    if (partnerApplicationStatus !== 'approved') {
+      console.log(`ProtectedRoute: Partner requires approval for this route, but status is '${partnerApplicationStatus}'. Redirecting.`);
       return <Navigate to="/partner/application-status" replace />;
     }
   }
 
-  // Access granted
-  console.log('Access granted');
+  // If all checks pass
+  console.log(`ProtectedRoute: Access GRANTED for role '${userDetails.role}' to a route requiring '${requiredRole || 'any authenticated'}'.`);
   return <>{children}</>;
 };
 
