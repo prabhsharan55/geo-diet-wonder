@@ -204,6 +204,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signIn = async (email: string, password: string) => {
     setLoading(true);
     try {
+      // Clean up any existing auth state
+      cleanupAuthState();
+      
       try {
         await supabase.auth.signOut({ scope: 'global' });
       } catch (signOutError) {
@@ -219,29 +222,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) {
         console.error('AuthContext: signInWithPassword error:', error.message);
         
-        // Handle specific error messages
-        if (error.message === 'Email not confirmed') {
-          throw new Error('Please confirm your email address before signing in. Check your inbox for a confirmation link.');
+        // Handle specific error messages for email confirmation
+        if (error.message === 'Email not confirmed' || 
+            error.message.toLowerCase().includes('email') && error.message.toLowerCase().includes('confirm')) {
+          throw new Error('UNCONFIRMED_EMAIL');
         }
         if (error.message === 'Invalid login credentials') {
           throw new Error('Invalid email or password. Please check your credentials and try again.');
         }
-        if (error.message.includes('email') && error.message.includes('confirm')) {
-          throw new Error('Please confirm your email address before signing in. Check your inbox for a confirmation link.');
-        }
         throw new Error(error.message || 'Sign in failed.');
+      }
+      
+      if (data.user && !data.user.email_confirmed_at) {
+        console.log('AuthContext: User signed in but email not confirmed.');
+        await supabase.auth.signOut();
+        throw new Error('UNCONFIRMED_EMAIL');
       }
       
       if (data.user) {
         console.log('AuthContext: signInWithPassword successful for user:', data.user.id);
-        
-        // Check email confirmation status
-        if (!data.user.email_confirmed_at) {
-          console.log('AuthContext: User signed in but email not confirmed.');
-          await supabase.auth.signOut();
-          throw new Error('Please confirm your email address before signing in. Check your inbox for a confirmation link.');
-        }
-        
         const details = await fetchUserDetails(data.user.id);
         if (details) {
             setUserDetails(details);
@@ -255,7 +254,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } catch (error: any) {
       console.error('AuthContext: Overall signIn function error:', error);
-      toast.error(error.message || "Sign in failed.");
+      if (error.message !== 'UNCONFIRMED_EMAIL') {
+        toast.error(error.message || "Sign in failed.");
+      }
       setLoading(false);
       throw error;
     }
@@ -334,10 +335,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     console.log('AuthContext: Attempting signOut.');
     try {
+      cleanupAuthState();
       const { error } = await supabase.auth.signOut({ scope: 'global' });
       if (error) {
         console.error('AuthContext: Error during supabase.auth.signOut:', error);
-        toast.error(error.message || "Failed to sign out from Supabase.");
       }
       setSession(null);
       setUser(null);
