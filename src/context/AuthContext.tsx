@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-// Removed `approval_status` and `linked_partner_id` since they don’t exist in `users` table
+// Adjust this type to exactly match your `users` table schema
 type UserDetails = {
   id: string;
   email: string;
@@ -38,8 +38,7 @@ type AuthContextType = {
     email: string,
     password: string,
     fullName: string,
-    role: "admin" | "partner" | "customer",
-    linkedPartnerId?: string
+    role: "admin" | "partner" | "customer"
   ) => Promise<void>;
   signOut: () => Promise<void>;
   resendConfirmation: (email: string) => Promise<void>;
@@ -74,15 +73,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUserDetails(null);
   };
 
-  const fetchUserDetails = async (userId: string): Promise<UserDetails | null> => {
+  const fetchUserDetails = async (
+    userId: string
+  ): Promise<UserDetails | null> => {
     try {
       console.log("AuthContext: Fetching user details for ID:", userId);
       const { data, error } = await supabase
         .from("users")
-        .select(
-          // Removed approval_status and linked_partner_id from select
-          "id, email, full_name, role, created_at"
-        )
+        .select("id, email, full_name, role, created_at")
         .eq("id", userId)
         .single();
 
@@ -301,29 +299,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     email: string,
     password: string,
     fullName: string,
-    role: "admin" | "partner" | "customer",
-    linkedPartnerId?: string
+    role: "admin" | "partner" | "customer"
   ) => {
     setLoading(true);
     try {
       console.log("AuthContext: Starting sign up process for:", email, "role:", role);
 
-      const userDataForSignUp: any = {
-        full_name: fullName,
-        role,
-      };
-      if (role === "partner") {
-        userDataForSignUp.approval_status = "pending";
-      }
-      if (role === "customer" && linkedPartnerId) {
-        userDataForSignUp.linked_partner_id = linkedPartnerId;
-      }
-
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: userDataForSignUp,
+          data: {
+            full_name: fullName,
+            role,
+          },
           emailRedirectTo: `${window.location.origin}/auth`,
         },
       });
@@ -382,7 +371,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       cleanupAuthState();
 
-      const { error } = await supabase.auth.signOut({ scope: "global" });
+      const { error } = await supabase.auth.signOut();
       if (error) {
         console.error("AuthContext: Supabase sign out error:", error);
       }
@@ -390,15 +379,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log("AuthContext: Sign out successful, redirecting to home");
       toast.success("Signed out successfully");
 
-      setTimeout(() => {
-        window.location.href = "/";
-      }, 100);
+      navigate("/");
     } catch (error: any) {
       console.error("AuthContext: Sign out process error:", error);
       toast.error(error.message || "Failed to sign out.");
-      setTimeout(() => {
-        window.location.href = "/";
-      }, 100);
+      navigate("/");
     } finally {
       setLoading(false);
     }
