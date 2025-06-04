@@ -7,6 +7,7 @@ import HealthQuestions from "./HealthQuestions";
 import UserDetailsForm from "./UserDetailsForm";
 import PlanSelection from "./PlanSelection";
 import ClinicSelection from "./ClinicSelection";
+import SignupSuccess from "./SignupSuccess";
 import { Card, CardContent } from "@/components/ui/card";
 import { Check } from "lucide-react";
 
@@ -23,6 +24,7 @@ type UserData = {
 
 const SignupWizard = () => {
   const [step, setStep] = useState(1);
+  const [signupComplete, setSignupComplete] = useState(false);
   const [userData, setUserData] = useState<UserData>({
     fullName: "",
     email: "",
@@ -75,13 +77,34 @@ const SignupWizard = () => {
         userData.linkedPartnerId
       );
       
+      console.log('Signup completed successfully');
+      setSignupComplete(true);
       toast.success("Registration successful! Please check your email to confirm your account.");
       
     } catch (error: any) {
       console.error('Signup error:', error);
-      toast.error(error.message || "Failed to complete registration");
+      
+      // Handle specific signup errors with better messaging
+      let errorMessage = "Failed to complete registration";
+      
+      if (error.message?.includes('User already registered')) {
+        errorMessage = "An account with this email already exists. Please try signing in instead.";
+      } else if (error.message?.includes('Invalid email')) {
+        errorMessage = "Please enter a valid email address.";
+      } else if (error.message?.includes('Password')) {
+        errorMessage = "Password must be at least 6 characters long.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     }
   };
+
+  // Show success page after signup
+  if (signupComplete) {
+    return <SignupSuccess email={userData.email} />;
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">

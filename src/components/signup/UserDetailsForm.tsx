@@ -49,9 +49,6 @@ const UserDetailsForm = ({ onSubmit }: UserDetailsFormProps) => {
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
     console.log('Form submitted with values:', values);
     
-    // Prevent default form behavior
-    event?.preventDefault();
-    
     // Call the onSubmit prop with the form values
     onSubmit({
       fullName: values.fullName,
