@@ -7,7 +7,7 @@ import React, {
   useState,
   ReactNode,
 } from "react";
-import { useNavigate } from "react-router-dom"; // replaced next/router with react-router
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 interface UserDetails {
@@ -15,21 +15,15 @@ interface UserDetails {
   email: string;
   full_name: string;
   role: "admin" | "partner" | "customer";
-  approval_status?: "pending" | "approved";
   linked_partner_id?: string;
   created_at?: string;
 }
 
 interface AuthContextValue {
-  user: UserDetails | null;
-  loading: boolean;
+  user: UserDetails | null;                     // renamed from userDetails
+  loading: boolean;                             // renamed from loading
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (
-    email: string,
-    password: string,
-    fullName?: string,
-    extra?: any
-  ) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
   signUpCustomer: (
     email: string,
     password: string,
@@ -59,7 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Listen for Supabase auth state changes
+  // 1) Listen for Supabase auth state changes
   useEffect(() => {
     const {
       data: { subscription },
@@ -67,9 +61,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (event === "SIGNED_IN" && session?.user) {
         const { data: u, error } = await supabase
           .from("users")
-          .select(
-            "id, email, full_name, role, approval_status, linked_partner_id, created_at"
-          )
+          // Remove `approval_status` since that column does not exist
+          .select("id, email, full_name, role, linked_partner_id, created_at")
           .eq("id", session.user.id)
           .single();
 
@@ -84,7 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     });
 
-    // On mount, check if there's already a session
+    // 1a) On mount, check whether there's an existing session
     (async () => {
       const {
         data: { session },
@@ -92,9 +85,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (session?.user) {
         const { data: u } = await supabase
           .from("users")
-          .select(
-            "id, email, full_name, role, approval_status, linked_partner_id, created_at"
-          )
+          .select("id, email, full_name, role, linked_partner_id, created_at")
           .eq("id", session.user.id)
           .single();
         setUser(u as UserDetails);
@@ -109,7 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  // Basic signIn
+  // 2) signIn
   const signIn = async (email: string, password: string) => {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
@@ -120,16 +111,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       throw error;
     }
-    // onAuthStateChange will update `user`
+    // onAuthStateChange listener will populate `user`
   };
 
-  // Generic signUp
-  const signUp = async (
-    email: string,
-    password: string,
-    fullName?: string,
-    extra?: any
-  ) => {
+  // 3) Generic signUp (only Supabase Auth; user table insert handled elsewhere)
+  const signUp = async (email: string, password: string) => {
     setLoading(true);
     const { data: authData, error } = await supabase.auth.signUp({
       email,
@@ -139,10 +125,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       throw error;
     }
-    // DB insertion of `users` row should be handled elsewhere
+    // Don’t insert into `users` here—SignupWizard or a component should do that
   };
 
-  // signUpCustomer
+  // 4) signUpCustomer inserts into `users` table
   const signUpCustomer = async (
     email: string,
     password: string,
@@ -166,17 +152,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       full_name: fullName,
       role: "customer",
       linked_partner_id: partnerId,
-      approval_status: null,
       created_at: new Date().toISOString(),
     });
     if (insertErr) {
       setLoading(false);
       throw insertErr;
     }
-    // onAuthStateChange will fire next
+    // onAuthStateChange listener will fire next
   };
 
-  // signUpPartner
+  // 5) signUpPartner inserts into `users` and `clinics`
   const signUpPartner = async (
     email: string,
     password: string,
@@ -200,12 +185,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const userId = authData.user?.id!;
+    // Insert into `users` table
     const { error: userErr } = await supabase.from("users").insert({
       id: userId,
       email,
       full_name: fullName,
       role: "partner",
-      approval_status: "pending",
       created_at: new Date().toISOString(),
     });
     if (userErr) {
@@ -213,8 +198,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       throw userErr;
     }
 
+    // Insert into `clinics` table (use actual column names from your schema)
     const { error: clinicErr } = await supabase.from("clinics").insert({
-      owner_email: email,
+      owner_email: email,            // if your table uses owner_email instead of user_id
       name: clinicInfo.name,
       address: clinicInfo.address,
       postal_code: clinicInfo.postal_code,
@@ -226,14 +212,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       throw clinicErr;
     }
-    // onAuthStateChange will fire next
+    // onAuthStateChange listener will fire next
   };
 
-  // resendConfirmation
+  // 6) resendConfirmation
   const resendConfirmation = async (email: string) => {
     setLoading(true);
-    const { data, error } =
-      await supabase.auth.resendConfirmationForEmail(email);
+    // The Supabase JS method is `.resendConfirmationEmail(...)`—adjust to your installed version
+    const { data, error } = await supabase.auth.resendConfirmationEmail(email);
     setLoading(false);
     if (error) {
       throw error;
@@ -241,7 +227,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return data;
   };
 
-  // signOut
+  // 7) signOut
   const signOut = async () => {
     setLoading(true);
     const { error } = await supabase.auth.signOut();
