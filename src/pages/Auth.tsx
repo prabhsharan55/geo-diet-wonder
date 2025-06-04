@@ -30,7 +30,7 @@ const Auth = () => {
       setRole("admin");
       setActiveTab("signin");
     }
-  }, []);
+  }, [isAdminLogin]);
 
   // Clear error when switching tabs or changing inputs
   useEffect(() => {
@@ -159,9 +159,9 @@ const Auth = () => {
                 <Button 
                   type="submit" 
                   className="w-full bg-gradient-to-r from-[#160041] to-[#8D97DE]" 
-                  disabled={loading}
+                 // disabled={loading}
                 >
-                  {loading ? "Signing in..." : "Sign In"}
+                  {"Sign In"}
                 </Button>
                 <div className="text-sm text-center text-gray-500 mt-4">
                   <a href="#" className="hover:underline">Forgot your password?</a>
