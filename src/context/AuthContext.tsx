@@ -38,6 +38,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
 
   const cleanupAuthState = () => {
+    console.log('AuthContext: Cleaning up auth state');
     Object.keys(localStorage).forEach((key) => {
       if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
         localStorage.removeItem(key);
@@ -50,6 +51,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       });
     }
+    
+    // Clear React state immediately
+    setSession(null);
+    setUser(null);
+    setUserDetails(null);
   };
 
   const fetchUserDetails = async (userId: string): Promise<UserDetails | null> => {
@@ -162,6 +168,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         console.log('AuthContext: Auth state change:', event, 'User ID:', currentSession?.user?.id || 'No user');
         
+        if (event === 'SIGNED_OUT') {
+          console.log('AuthContext: Handling SIGNED_OUT event');
+          setSession(null);
+          setUser(null);
+          setUserDetails(null);
+          setLoading(false);
+          return;
+        }
+        
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
@@ -179,10 +194,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setUserDetails(details);
             await redirectBasedOnRole(details);
           }
-          if (mounted) setLoading(false);
-        } else if (event === 'SIGNED_OUT') {
-          console.log('AuthContext: User signed out, clearing state');
-          setUserDetails(null);
           if (mounted) setLoading(false);
         } else {
           if (mounted) setLoading(false);
@@ -312,29 +323,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(true);
     
     try {
-      // Clear state immediately
+      // First clear the state immediately to prevent any UI issues
       setSession(null);
       setUser(null);
       setUserDetails(null);
       
-      // Clean up auth state
+      // Clean up all auth state
       cleanupAuthState();
       
-      // Sign out from Supabase
+      // Sign out from Supabase with global scope
       const { error } = await supabase.auth.signOut({ scope: 'global' });
       if (error) {
         console.error('AuthContext: Supabase sign out error:', error);
+        // Continue with cleanup even if Supabase sign out fails
       }
       
       console.log('AuthContext: Sign out successful, redirecting to home');
       toast.success("Signed out successfully");
       
-      // Force redirect to home page
-      window.location.href = '/';
+      // Force a complete page reload to ensure clean state
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100);
       
     } catch (error: any) {
       console.error('AuthContext: Sign out process error:', error);
       toast.error(error.message || "Failed to sign out.");
+      
+      // Even if there's an error, try to redirect
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 100);
+    } finally {
       setLoading(false);
     }
   };
