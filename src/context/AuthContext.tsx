@@ -1,8 +1,8 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate }
-from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 type UserDetails = {
@@ -112,7 +112,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     let mounted = true;
     console.log('AuthContext: Setting up auth state listener (useEffect runs)');
-    setLoading(true); // Start with loading true when effect runs
+    setLoading(true);
 
     // Get initial session state
     supabase.auth.getSession().then(async ({ data: { session: initialSession } }) => {
@@ -138,29 +138,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (!mounted) return;
         console.log('AuthContext: onAuthStateChange event:', event, 'User ID:', currentSession?.user?.id || 'No user');
 
-        setSession(currentSession); // Update session regardless of event type first
-        setUser(currentSession?.user ?? null); // Update user
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
 
         if (event === 'SIGNED_OUT') {
           console.log('AuthContext: Handling SIGNED_OUT event in onAuthStateChange.');
-          setUserDetails(null); // Clear user details
-          setLoading(false); // Auth state resolved
-          // Navigation to '/' should be handled by the signOut function itself
-          // or by a ProtectedRoute if the user lands on a protected page while logged out.
-          // If current page isn't '/', navigate.
+          setUserDetails(null);
+          setLoading(false);
           if (window.location.pathname !== '/') {
-            // navigate('/', { replace: true }); // Optionally navigate here too
+            // navigate('/', { replace: true });
           }
-          return; // Stop further processing for SIGNED_OUT
+          return;
         }
 
         if (event === 'SIGNED_IN' && currentSession?.user) {
           console.log('AuthContext: SIGNED_IN event in onAuthStateChange.');
           if (!currentSession.user.email_confirmed_at) {
             console.log('AuthContext: Email not confirmed for SIGNED_IN user.');
-            setUserDetails(null); // Clear any stale details
+            setUserDetails(null);
             setLoading(false);
-            // Potentially navigate to a 'please confirm email' page or show a message
             return;
           }
           const details = await fetchUserDetails(currentSession.user.id);
@@ -168,17 +164,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setUserDetails(details);
             await redirectBasedOnRole(details);
           } else if (mounted) {
-            // Failed to get details after sign in, something is wrong
             console.error('AuthContext: SIGNED_IN but failed to fetch userDetails.');
-            setUserDetails(null); // Ensure details are cleared
-            // Optionally sign out again or navigate to an error page
+            setUserDetails(null);
           }
         } else if (!currentSession?.user) {
-            // If session becomes null for any other reason (e.g. token revoked, USER_DELETED)
-            setUserDetails(null);
+          setUserDetails(null);
         }
         
-        if (mounted) setLoading(false); // Set loading to false after processing other events
+        if (mounted) setLoading(false);
       }
     );
 
@@ -187,15 +180,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [navigate]); // navigate is a dependency
+  }, [navigate]);
 
   const signIn = async (email: string, password: string) => {
-    setLoading(true); // Indicate loading for the sign-in process
+    setLoading(true);
     try {
       console.log('AuthContext: Starting sign in process for:', email);
-      
-      // Optional: Attempt to sign out any lingering session first to ensure a clean slate.
-      // await supabase.auth.signOut({ scope: 'global' });
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -216,22 +206,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (data.user && !data.user.email_confirmed_at) {
         console.log('AuthContext: Sign in successful but email not confirmed.');
-        await supabase.auth.signOut(); // Sign out user if email is not confirmed
+        await supabase.auth.signOut();
         throw new Error('UNCONFIRMED_EMAIL');
       }
       
-      // If successful, onAuthStateChange with 'SIGNED_IN' will handle fetching details and redirecting.
-      // We don't need to call setLoading(false) here as onAuthStateChange will do it.
       console.log('AuthContext: Sign in successful, onAuthStateChange will handle next steps.');
       toast.success("Signed in successfully!");
       
     } catch (error: any) {
       console.error('AuthContext: Sign in process caught error:', error);
-      if (error.message !== 'UNCONFIRMED_EMAIL') { // Avoid double toasting for unconfirmed
+      if (error.message !== 'UNCONFIRMED_EMAIL') {
         toast.error(error.message || "Sign in failed.");
       }
-      setLoading(false); // Ensure loading is false if signIn itself fails
-      throw error; // Re-throw for the UI component to handle
+      setLoading(false);
+      throw error;
     }
   };
 
@@ -243,18 +231,113 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         full_name: fullName,
         role: role,
         ...(role === 'customer' && linkedPartnerId && { linked_partner_id: linkedPartnerId }),
-        ...(role === 'partner' && { approval_status: 'pending' }) // Assuming 'pending' is default
+        ...(role === 'partner' && { approval_status: 'pending' })
       };
       
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: userDataForSignUp, // This goes to raw_user_meta_data, ensure DB trigger copies it
-          emailRedirectTo: `${window.location.origin}/auth` // Or your login/confirmation page
+          data: userDataForSignUp,
+          emailRedirectTo: `${window.location.origin}/auth`
         },
       });
       
       if (error) {
         console.error('AuthContext: Sign up error from Supabase:', error.message);
         if (error.message.includes('User already registered')) {
+          throw new Error('User already registered');
+        }
+        throw new Error(error.message || 'Sign up failed.');
+      }
+      
+      console.log('AuthContext: Sign up successful:', data);
+      toast.success("Registration successful! Please check your email to confirm your account.");
+      
+    } catch (error: any) {
+      console.error('AuthContext: Sign up process caught error:', error);
+      setLoading(false);
+      throw error;
+    }
+  };
+
+  const signOut = async () => {
+    console.log('AuthContext: Starting sign out process');
+    try {
+      setLoading(true);
+      
+      // Clear auth state
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      
+      if (error) {
+        console.error('AuthContext: Sign out error:', error);
+      }
+      
+      // Clear local state
+      setSession(null);
+      setUser(null);
+      setUserDetails(null);
+      
+      console.log('AuthContext: Sign out successful, forcing page reload');
+      
+      // Force a complete page reload to ensure clean state
+      window.location.href = '/';
+      
+    } catch (error: any) {
+      console.error('AuthContext: Sign out process caught error:', error);
+      toast.error("Sign out failed.");
+      setLoading(false);
+    }
+  };
+
+  const resendConfirmation = async (email: string) => {
+    try {
+      console.log('AuthContext: Resending confirmation email for:', email);
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth`
+        }
+      });
+
+      if (error) {
+        console.error('AuthContext: Resend confirmation error:', error);
+        throw new Error(error.message || 'Failed to resend confirmation email.');
+      }
+
+      console.log('AuthContext: Confirmation email resent successfully');
+      toast.success("Confirmation email sent! Please check your inbox.");
+    } catch (error: any) {
+      console.error('AuthContext: Resend confirmation process caught error:', error);
+      toast.error(error.message || "Failed to resend confirmation email.");
+      throw error;
+    }
+  };
+
+  return (
+    <AuthContext.Provider value={{
+      session,
+      user,
+      userDetails,
+      signIn,
+      signUp,
+      signOut,
+      resendConfirmation,
+      loading
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
