@@ -13,11 +13,11 @@ import {
 import { Bell, LogOut, Settings, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUserData } from "@/context/UserDataContext";
-import {useAuth} from "@context/AuthContext"
+import { useAuthOperations } from "@/hooks/useAuthOperations";
 
 const CustomerHeaderUser = () => {
   const { userData } = useUserData();
-  const {signOut} = useAuth();
+  const {signOut} = useAuthOperations();
   const navigate = useNavigate();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
