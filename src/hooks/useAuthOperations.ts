@@ -135,7 +135,9 @@ export const useAuthOperations = () => {
     console.log("AuthOperations: Starting sign out process");
 
     try {
+      console.log("Entered in signout ")
       cleanupAuthState();
+      console.log("Clearing session andlocal storage");
 
       const { error } = await supabase.auth.signOut();
       if (error) {
