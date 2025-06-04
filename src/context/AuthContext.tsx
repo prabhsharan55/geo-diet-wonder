@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +23,7 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string, role: 'admin' | 'partner' | 'customer', linkedPartnerId?: string) => Promise<void>;
   signOut: () => Promise<void>;
+  resendConfirmation: (email: string) => Promise<void>;
   loading: boolean;
 };
 
@@ -141,7 +141,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(currentSession?.user ?? null);
         
         if (event === 'SIGNED_IN' && currentSession?.user) {
-          console.log('AuthContext: SIGNED_IN event, attempting to fetch details and redirect.');
+          console.log('AuthContext: SIGNED_IN event, checking email confirmation status.');
+          
+          // Check if email is confirmed
+          if (!currentSession.user.email_confirmed_at) {
+            console.log('AuthContext: Email not confirmed, signing out.');
+            toast.error("Please confirm your email address before signing in. Check your inbox for a confirmation link.");
+            await signOut();
+            return;
+          }
+          
           setTimeout(async () => {
             if (mounted) {
               const details = await fetchUserDetails(currentSession.user.id);
@@ -161,7 +170,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
              navigate('/', { replace: true });
           }
         } else if (event === 'INITIAL_SESSION' && currentSession?.user) {
-            console.log('AuthContext: INITIAL_SESSION event, fetching details.');
+            console.log('AuthContext: INITIAL_SESSION event, checking email confirmation.');
+            
+            // Check if email is confirmed for initial session
+            if (!currentSession.user.email_confirmed_at) {
+              console.log('AuthContext: Initial session with unconfirmed email, signing out.');
+              await signOut();
+              return;
+            }
+            
             const details = await fetchUserDetails(currentSession.user.id);
             if (details) {
                 setUserDetails(details);
@@ -201,17 +218,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (error) {
         console.error('AuthContext: signInWithPassword error:', error.message);
+        
+        // Handle specific error messages
         if (error.message === 'Email not confirmed') {
-          throw new Error('Please check your email and click the confirmation link before signing in.');
+          throw new Error('Please confirm your email address before signing in. Check your inbox for a confirmation link.');
         }
         if (error.message === 'Invalid login credentials') {
           throw new Error('Invalid email or password. Please check your credentials and try again.');
+        }
+        if (error.message.includes('email') && error.message.includes('confirm')) {
+          throw new Error('Please confirm your email address before signing in. Check your inbox for a confirmation link.');
         }
         throw new Error(error.message || 'Sign in failed.');
       }
       
       if (data.user) {
         console.log('AuthContext: signInWithPassword successful for user:', data.user.id);
+        
+        // Check email confirmation status
+        if (!data.user.email_confirmed_at) {
+          console.log('AuthContext: User signed in but email not confirmed.');
+          await supabase.auth.signOut();
+          throw new Error('Please confirm your email address before signing in. Check your inbox for a confirmation link.');
+        }
+        
         const details = await fetchUserDetails(data.user.id);
         if (details) {
             setUserDetails(details);
@@ -235,12 +265,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(true);
     try {
       console.log('AuthContext: Attempting signUp for email:', email, 'role:', role);
-      
-      // Check if user already exists
-      const { data: existingUser } = await supabase.auth.signInWithPassword({
-        email,
-        password: 'dummy' // This will fail but tells us if email exists
-      });
       
       const userDataForSignUp = {
         full_name: fullName,
@@ -283,6 +307,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const resendConfirmation = async (email: string) => {
+    try {
+      console.log('AuthContext: Resending confirmation email for:', email);
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth`
+        }
+      });
+      
+      if (error) {
+        console.error('AuthContext: Error resending confirmation:', error);
+        throw new Error(error.message || 'Failed to resend confirmation email.');
+      }
+      
+      toast.success("Confirmation email sent! Please check your inbox.");
+    } catch (error: any) {
+      console.error('AuthContext: Overall resendConfirmation error:', error);
+      toast.error(error.message || "Failed to resend confirmation email.");
+      throw error;
+    }
+  };
+
   const signOut = async () => {
     console.log('AuthContext: Attempting signOut.');
     try {
@@ -310,6 +358,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signIn,
     signUp,
     signOut,
+    resendConfirmation,
     loading,
   };
 

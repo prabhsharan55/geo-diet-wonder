@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Navigate, useSearchParams } from "react-router-dom";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Mail } from "lucide-react";
 
 const Auth = () => {
   const [activeTab, setActiveTab] = useState<string>("signin");
@@ -17,7 +17,8 @@ const Auth = () => {
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<'admin' | 'partner' | 'customer'>("customer");
   const [error, setError] = useState<string>("");
-  const { signIn, signUp, user, loading } = useAuth();
+  const [showResendConfirmation, setShowResendConfirmation] = useState(false);
+  const { signIn, signUp, resendConfirmation, user, loading } = useAuth();
   const [searchParams] = useSearchParams();
 
   // Check if this is an admin login request
@@ -33,6 +34,7 @@ const Auth = () => {
   // Clear error when switching tabs or changing inputs
   useEffect(() => {
     setError("");
+    setShowResendConfirmation(false);
   }, [activeTab, email, password]);
 
   // If user is already logged in, redirect to appropriate dashboard
@@ -43,12 +45,19 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setShowResendConfirmation(false);
     
     try {
       await signIn(email, password);
     } catch (err: any) {
       console.error('Sign in error:', err);
-      setError(err.message || "Failed to sign in. Please check your credentials and try again.");
+      const errorMessage = err.message || "Failed to sign in. Please check your credentials and try again.";
+      setError(errorMessage);
+      
+      // Show resend confirmation option if it's an email confirmation error
+      if (errorMessage.toLowerCase().includes('confirm') && errorMessage.toLowerCase().includes('email')) {
+        setShowResendConfirmation(true);
+      }
     }
   };
 
@@ -61,6 +70,16 @@ const Auth = () => {
     } catch (err: any) {
       console.error('Sign up error:', err);
       setError(err.message || "Failed to create account. Please try again.");
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    try {
+      await resendConfirmation(email);
+      setShowResendConfirmation(false);
+    } catch (err: any) {
+      console.error('Resend confirmation error:', err);
+      setError(err.message || "Failed to resend confirmation email.");
     }
   };
 
@@ -94,6 +113,25 @@ const Auth = () => {
             <Alert variant="destructive" className="mb-4">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {showResendConfirmation && (
+            <Alert className="mb-4 border-blue-200 bg-blue-50">
+              <Mail className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-800">
+                <div className="space-y-2">
+                  <p>Need to confirm your email?</p>
+                  <Button 
+                    onClick={handleResendConfirmation}
+                    variant="outline" 
+                    size="sm"
+                    className="text-blue-600 border-blue-300 hover:bg-blue-100"
+                  >
+                    Resend Confirmation Email
+                  </Button>
+                </div>
+              </AlertDescription>
             </Alert>
           )}
 
