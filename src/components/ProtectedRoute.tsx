@@ -70,7 +70,7 @@ const ProtectedRoute = ({ children, requiredRole, requireApproval = false }: Pro
 
   // Not authenticated - redirect to auth
   if (!user) {
-    console.log('No user, redirecting to /auth');
+    console.log('No user, redirecting to auth');
     // For admin routes, redirect to admin login
     if (requiredRole === 'admin') {
       return <Navigate to="/admin/login" replace />;
@@ -78,7 +78,7 @@ const ProtectedRoute = ({ children, requiredRole, requireApproval = false }: Pro
     return <Navigate to="/auth" replace />;
   }
 
-  // If user exists but userDetails is null, wait a bit more
+  // If user exists but userDetails is null, wait a bit more or redirect
   if (!userDetails) {
     console.log('User exists but no userDetails, showing loading...');
     return (
@@ -91,10 +91,29 @@ const ProtectedRoute = ({ children, requiredRole, requireApproval = false }: Pro
   // Check role requirement
   if (requiredRole && userDetails?.role !== requiredRole) {
     console.log('Wrong role, redirecting based on actual role:', userDetails?.role);
-    if (userDetails?.role === 'admin') {
+    
+    // If this is an admin trying to access non-admin routes, redirect to admin
+    if (userDetails?.role === 'admin' && requiredRole !== 'admin') {
       return <Navigate to="/admin" replace />;
-    } else if (userDetails?.role === 'partner') {
-      // For partners, check application status
+    }
+    
+    // If non-admin trying to access admin routes, redirect to appropriate dashboard
+    if (requiredRole === 'admin' && userDetails?.role !== 'admin') {
+      if (userDetails?.role === 'partner') {
+        if (partnerStatus === 'pending' || partnerStatus === 'not_found' || !partnerStatus) {
+          return <Navigate to="/partner/application-status" replace />;
+        } else {
+          return <Navigate to="/partner" replace />;
+        }
+      } else if (userDetails?.role === 'customer') {
+        return <Navigate to="/customer" replace />;
+      } else {
+        return <Navigate to="/auth" replace />;
+      }
+    }
+    
+    // Handle other role mismatches
+    if (userDetails?.role === 'partner') {
       if (partnerStatus === 'pending' || partnerStatus === 'not_found' || !partnerStatus) {
         return <Navigate to="/partner/application-status" replace />;
       } else {

@@ -94,22 +94,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     
     console.log('Redirecting based on role:', role);
     
-    if (role === 'admin') {
-      console.log('Redirecting admin to /admin');
-      navigate('/admin');
-    } else if (role === 'partner') {
-      // Check application status for partners
-      const applicationStatus = await checkPartnerApplicationStatus(userDetails.email);
-      console.log('Partner application status:', applicationStatus);
-      
-      if (applicationStatus === 'approved') {
-        navigate('/partner');
-      } else {
-        navigate('/partner/application-status');
+    // Use setTimeout to ensure redirect happens after state updates
+    setTimeout(() => {
+      if (role === 'admin') {
+        console.log('Redirecting admin to /admin');
+        window.location.href = '/admin'; // Force full page redirect for admin
+      } else if (role === 'partner') {
+        // Check application status for partners
+        checkPartnerApplicationStatus(userDetails.email).then((applicationStatus) => {
+          console.log('Partner application status:', applicationStatus);
+          
+          if (applicationStatus === 'approved') {
+            navigate('/partner');
+          } else {
+            navigate('/partner/application-status');
+          }
+        });
+      } else if (role === 'customer') {
+        navigate('/customer');
       }
-    } else if (role === 'customer') {
-      navigate('/customer');
-    }
+    }, 100);
   };
 
   useEffect(() => {
@@ -227,6 +231,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log('User details after sign in:', details);
         setUserDetails(details);
         toast.success("Signed in successfully");
+        
+        // Force immediate redirect for admin users
+        if (details.role === 'admin') {
+          console.log('Admin user detected, forcing redirect to /admin');
+          window.location.href = '/admin';
+          return;
+        }
+        
         await redirectBasedOnRole(details);
       }
     } catch (error: any) {
