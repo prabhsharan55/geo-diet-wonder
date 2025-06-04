@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -126,76 +127,71 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     let mounted = true;
-    console.log('AuthContext: Mounting and subscribing to onAuthStateChange.');
+    console.log('AuthContext: Setting up auth state listener');
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        if (!mounted) {
-          console.log('AuthContext: onAuthStateChange triggered on unmounted component.');
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      if (!mounted) return;
+      
+      console.log('AuthContext: Initial session check:', initialSession?.user?.id || 'No session');
+      setSession(initialSession);
+      setUser(initialSession?.user ?? null);
+      
+      if (initialSession?.user) {
+        if (!initialSession.user.email_confirmed_at) {
+          console.log('AuthContext: Initial session with unconfirmed email');
+          setLoading(false);
           return;
         }
         
-        console.log('AuthContext: onAuthStateChange event:', event, 'User ID:', currentSession?.user?.id);
+        fetchUserDetails(initialSession.user.id).then(details => {
+          if (mounted && details) {
+            setUserDetails(details);
+          }
+          if (mounted) setLoading(false);
+        });
+      } else {
+        if (mounted) setLoading(false);
+      }
+    });
+
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, currentSession) => {
+        if (!mounted) return;
+        
+        console.log('AuthContext: Auth state change:', event, 'User ID:', currentSession?.user?.id || 'No user');
         
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
         if (event === 'SIGNED_IN' && currentSession?.user) {
-          console.log('AuthContext: SIGNED_IN event, checking email confirmation status.');
+          console.log('AuthContext: User signed in, checking email confirmation');
           
-          // Check if email is confirmed
           if (!currentSession.user.email_confirmed_at) {
-            console.log('AuthContext: Email not confirmed, signing out.');
-            toast.error("Please confirm your email address before signing in. Check your inbox for a confirmation link.");
-            await signOut();
+            console.log('AuthContext: Email not confirmed, user should see confirmation screen');
+            setLoading(false);
             return;
           }
           
-          setTimeout(async () => {
-            if (mounted) {
-              const details = await fetchUserDetails(currentSession.user.id);
-              if (details) {
-                setUserDetails(details);
-                await redirectBasedOnRole(details);
-              } else {
-                console.error('AuthContext: SIGNED_IN event but no user details found. Signing out.');
-                await signOut();
-              }
-            }
-          }, 100);
-        } else if (event === 'SIGNED_OUT') {
-          console.log('AuthContext: SIGNED_OUT event. Clearing userDetails and navigating to home.');
-          setUserDetails(null);
-          if (window.location.pathname !== '/') {
-             navigate('/', { replace: true });
+          const details = await fetchUserDetails(currentSession.user.id);
+          if (details && mounted) {
+            setUserDetails(details);
+            await redirectBasedOnRole(details);
           }
-        } else if (event === 'INITIAL_SESSION' && currentSession?.user) {
-            console.log('AuthContext: INITIAL_SESSION event, checking email confirmation.');
-            
-            // Check if email is confirmed for initial session
-            if (!currentSession.user.email_confirmed_at) {
-              console.log('AuthContext: Initial session with unconfirmed email, signing out.');
-              await signOut();
-              return;
-            }
-            
-            const details = await fetchUserDetails(currentSession.user.id);
-            if (details) {
-                setUserDetails(details);
-            } else {
-                console.error('AuthContext: INITIAL_SESSION but no user details. Signing out.');
-                await signOut();
-            }
-        }
-        
-        if (mounted) {
-          setLoading(false);
+          if (mounted) setLoading(false);
+        } else if (event === 'SIGNED_OUT') {
+          console.log('AuthContext: User signed out, clearing state');
+          setUserDetails(null);
+          if (mounted) setLoading(false);
+        } else {
+          if (mounted) setLoading(false);
         }
       }
     );
 
     return () => {
-      console.log('AuthContext: Unmounting and unsubscribing from onAuthStateChange.');
+      console.log('AuthContext: Cleaning up auth listener');
       mounted = false;
       subscription.unsubscribe();
     };
@@ -204,25 +200,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signIn = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // Clean up any existing auth state
+      console.log('AuthContext: Starting sign in process for:', email);
+      
+      // Clean up any existing auth state first
       cleanupAuthState();
       
-      try {
-        await supabase.auth.signOut({ scope: 'global' });
-      } catch (signOutError) {
-        console.warn('AuthContext: Error during pre-signIn signOut, proceeding with signIn:', signOutError);
-      }
-      
-      console.log('AuthContext: Attempting sign in for email:', email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
       if (error) {
-        console.error('AuthContext: signInWithPassword error:', error.message);
+        console.error('AuthContext: Sign in error:', error.message);
         
-        // Handle specific error messages for email confirmation
         if (error.message === 'Email not confirmed' || 
             error.message.toLowerCase().includes('email') && error.message.toLowerCase().includes('confirm')) {
           throw new Error('UNCONFIRMED_EMAIL');
@@ -234,26 +224,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       if (data.user && !data.user.email_confirmed_at) {
-        console.log('AuthContext: User signed in but email not confirmed.');
+        console.log('AuthContext: Sign in successful but email not confirmed');
         await supabase.auth.signOut();
         throw new Error('UNCONFIRMED_EMAIL');
       }
       
-      if (data.user) {
-        console.log('AuthContext: signInWithPassword successful for user:', data.user.id);
-        const details = await fetchUserDetails(data.user.id);
-        if (details) {
-            setUserDetails(details);
-        } else {
-            await signOut();
-            throw new Error('User authenticated but details could not be fetched.');
-        }
-        toast.success("Signed in successfully!");
-      } else {
-        throw new Error('Sign in completed but no user data was returned.');
-      }
+      console.log('AuthContext: Sign in successful');
+      toast.success("Signed in successfully!");
+      
     } catch (error: any) {
-      console.error('AuthContext: Overall signIn function error:', error);
+      console.error('AuthContext: Sign in process error:', error);
       if (error.message !== 'UNCONFIRMED_EMAIL') {
         toast.error(error.message || "Sign in failed.");
       }
@@ -265,7 +245,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signUp = async (email: string, password: string, fullName: string, role: 'admin' | 'partner' | 'customer', linkedPartnerId?: string) => {
     setLoading(true);
     try {
-      console.log('AuthContext: Attempting signUp for email:', email, 'role:', role);
+      console.log('AuthContext: Starting sign up process for:', email, 'role:', role);
       
       const userDataForSignUp = {
         full_name: fullName,
@@ -284,23 +264,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
       
       if (error) {
-        console.error('AuthContext: signUp error:', error.message);
+        console.error('AuthContext: Sign up error:', error.message);
         if (error.message.includes('User already registered')) {
           throw new Error('An account with this email already exists. Please try signing in instead.');
         }
         throw new Error(error.message || 'Sign up failed.');
       }
       
-      if (data.user) {
-        console.log('AuthContext: signUp successful for user:', data.user.id);
-        toast.success("Registration successful! Please check your email to confirm your account.");
-      } else if (data.session === null && !data.user) {
-         console.log('AuthContext: signUp successful, email confirmation required.');
-         toast.success("Registration successful! Please check your email to confirm your account.");
-      }
+      console.log('AuthContext: Sign up successful');
+      toast.success("Registration successful! Please check your email to confirm your account.");
 
     } catch (error: any) {
-      console.error('AuthContext: Overall signUp function error:', error);
+      console.error('AuthContext: Sign up process error:', error);
       toast.error(error.message || "Sign up failed.");
       throw error;
     } finally {
@@ -326,29 +301,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       toast.success("Confirmation email sent! Please check your inbox.");
     } catch (error: any) {
-      console.error('AuthContext: Overall resendConfirmation error:', error);
+      console.error('AuthContext: Resend confirmation error:', error);
       toast.error(error.message || "Failed to resend confirmation email.");
       throw error;
     }
   };
 
   const signOut = async () => {
-    console.log('AuthContext: Attempting signOut.');
+    console.log('AuthContext: Starting sign out process');
+    setLoading(true);
+    
     try {
-      cleanupAuthState();
-      const { error } = await supabase.auth.signOut({ scope: 'global' });
-      if (error) {
-        console.error('AuthContext: Error during supabase.auth.signOut:', error);
-      }
+      // Clear state immediately
       setSession(null);
       setUser(null);
       setUserDetails(null);
+      
+      // Clean up auth state
+      cleanupAuthState();
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      if (error) {
+        console.error('AuthContext: Supabase sign out error:', error);
+      }
+      
+      console.log('AuthContext: Sign out successful, redirecting to home');
       toast.success("Signed out successfully");
-      console.log('AuthContext: Signed out, navigating to /');
-      navigate('/', { replace: true });
+      
+      // Force redirect to home page
+      window.location.href = '/';
+      
     } catch (error: any) {
-      console.error('AuthContext: Overall signOut function error:', error);
+      console.error('AuthContext: Sign out process error:', error);
       toast.error(error.message || "Failed to sign out.");
+      setLoading(false);
     }
   };
 
