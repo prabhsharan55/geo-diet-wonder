@@ -13,9 +13,11 @@ import {
 import { Bell, LogOut, Settings, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUserData } from "@/context/UserDataContext";
+import {useAuth} from "@context/AuthContext"
 
 const CustomerHeaderUser = () => {
   const { userData } = useUserData();
+  const {signOut} = useAuth();
   const navigate = useNavigate();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
@@ -33,7 +35,9 @@ const CustomerHeaderUser = () => {
 
   const handleSignOut = async () => {
     // Navigate to home page when signing out
+    signOut();
     navigate("/");
+    
   };
 
   const displayName = userData?.name || "User";
