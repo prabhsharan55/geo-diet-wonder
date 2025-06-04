@@ -1,3 +1,4 @@
+
 // src/context/AuthContext.tsx
 
 import React, {
@@ -406,11 +407,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       console.log("AuthContext: Sign out successful, redirecting to home");
       toast.success("Signed out successfully");
-      navigate("/");
+      
+      // Force a complete page reload to ensure clean state
+      window.location.href = "/";
     } catch (error: any) {
       console.error("AuthContext: Sign out process error:", error);
       toast.error(error.message || "Failed to sign out.");
-      navigate("/");
+      // Even if sign out fails, redirect to home
+      window.location.href = "/";
     } finally {
       setLoading(false);
     }
