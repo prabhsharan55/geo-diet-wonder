@@ -1,5 +1,5 @@
 
-// src/types/auth.ts
+import { Session, User } from "@supabase/supabase-js";
 
 export type UserDetails = {
   id: string;
