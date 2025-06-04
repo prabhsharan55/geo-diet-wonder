@@ -30,7 +30,7 @@ export const useAuthRedirect = () => {
         );
         navigate("/partner/application-status", { replace: true });
       }
-    } else if (role === "customer") {
+    } else if (role === "authenticated") {
       console.log("AuthRedirect: Navigating customer to /customer");
       navigate("/customer", { replace: true });
     } else {
