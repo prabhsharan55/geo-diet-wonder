@@ -36,11 +36,13 @@ const SignupWizard = () => {
   const { signUp, loading } = useAuth();
 
   const handleClinicSelection = (partnerId: string) => {
+    console.log('Clinic selected:', partnerId);
     setUserData(prev => ({ ...prev, linkedPartnerId: partnerId }));
     setStep(2);
   };
 
   const handleHealthDataSubmit = (healthData: Record<string, string>) => {
+    console.log('Health data submitted:', healthData);
     setUserData(prev => ({ ...prev, healthData }));
     setStep(3);
   };
@@ -52,11 +54,15 @@ const SignupWizard = () => {
     mobile: string;
     city: string;
   }) => {
+    console.log('User details submitted:', details);
     setUserData(prev => ({ ...prev, ...details }));
     setStep(4);
   };
 
   const handlePlanSelection = async (plan: string) => {
+    console.log('Plan selected:', plan);
+    console.log('Final user data:', { ...userData, selectedPlan: plan });
+    
     try {
       setUserData(prev => ({ ...prev, selectedPlan: plan }));
       
@@ -69,7 +75,10 @@ const SignupWizard = () => {
         userData.linkedPartnerId
       );
       
+      toast.success("Registration successful! Please check your email to confirm your account.");
+      
     } catch (error: any) {
+      console.error('Signup error:', error);
       toast.error(error.message || "Failed to complete registration");
     }
   };

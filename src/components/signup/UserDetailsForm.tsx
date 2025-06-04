@@ -47,7 +47,12 @@ const UserDetailsForm = ({ onSubmit }: UserDetailsFormProps) => {
   });
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    // Now we explicitly pass all required fields to ensure TypeScript is happy
+    console.log('Form submitted with values:', values);
+    
+    // Prevent default form behavior
+    event?.preventDefault();
+    
+    // Call the onSubmit prop with the form values
     onSubmit({
       fullName: values.fullName,
       email: values.email,
@@ -92,7 +97,7 @@ const UserDetailsForm = ({ onSubmit }: UserDetailsFormProps) => {
                 <FormControl>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input className="pl-10" placeholder="your@email.com" {...field} />
+                    <Input className="pl-10" placeholder="your@email.com" type="email" {...field} />
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -126,7 +131,7 @@ const UserDetailsForm = ({ onSubmit }: UserDetailsFormProps) => {
                 <FormControl>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input className="pl-10" placeholder="1234567890" {...field} />
+                    <Input className="pl-10" placeholder="1234567890" type="tel" {...field} />
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -155,8 +160,9 @@ const UserDetailsForm = ({ onSubmit }: UserDetailsFormProps) => {
             <Button 
               type="submit" 
               className="w-full bg-gradient-to-r from-[#291759] to-[#858CD3]"
+              disabled={form.formState.isSubmitting}
             >
-              Continue
+              {form.formState.isSubmitting ? "Processing..." : "Continue"}
             </Button>
           </div>
         </form>
