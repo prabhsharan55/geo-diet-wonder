@@ -157,3 +157,66 @@ const ProtectedRoute = ({ children, requiredRole, requireApproval = false }: Pro
 };
 
 export default ProtectedRoute;
+
+
+
+
+
+// src/components/ProtectedRoute.tsx
+
+import React from "react";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+
+// Assuming your routes use paths like:
+//   /admin/*     → only admins
+//   /partner/*   → only partners
+//   /customer/*  → only customers
+//   /auth/*      → sign-in / sign-up screens
+
+const ProtectedRoute: React.FC = () => {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+
+  // While loading the auth state, render nothing (or a spinner)
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  // If there's no logged-in user at all, redirect to /auth
+  if (!user) {
+    return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+
+  // Check role-based access:
+  const path = location.pathname;
+
+  // Admin pages
+  if (path.startsWith("/admin")) {
+    if (user.role !== "admin") {
+      return <Navigate to="/" replace />;
+    }
+    return <Outlet />;
+  }
+
+  // Partner pages
+  if (path.startsWith("/partner")) {
+    if (user.role !== "partner") {
+      return <Navigate to="/" replace />;
+    }
+    return <Outlet />;
+  }
+
+  // Customer pages
+  if (path.startsWith("/customer")) {
+    if (user.role !== "customer") {
+      return <Navigate to="/" replace />;
+    }
+    return <Outlet />;
+  }
+
+  // Any other route (public) – just render it
+  return <Outlet />;
+};
+
+export default ProtectedRoute;
