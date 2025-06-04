@@ -6,18 +6,9 @@ import { UserDetails, PartnerApplicationStatus } from "@/types/auth";
 
 export const cleanupAuthState = () => {
   console.log("AuthUtils: Cleaning up auth state");
-  Object.keys(localStorage).forEach((key) => {
-    if (key.startsWith("supabase.auth.") || key.includes("sb-")) {
-      localStorage.removeItem(key);
-    }
-  });
-  if (typeof sessionStorage !== "undefined") {
-    Object.keys(sessionStorage).forEach((key) => {
-      if (key.startsWith("supabase.auth.") || key.includes("sb-")) {
-        sessionStorage.removeItem(key);
-      }
-    });
-  }
+  localStorage.clear();
+  
+  sessionStorage.clear();
 };
 
 export const fetchUserDetails = async (
