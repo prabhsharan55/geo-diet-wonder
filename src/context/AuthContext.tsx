@@ -7,262 +7,425 @@ import React, {
   useState,
   ReactNode,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
-interface UserDetails {
+// Adjust this type to exactly match your `users` table schema
+type UserDetails = {
   id: string;
   email: string;
   full_name: string;
   role: "admin" | "partner" | "customer";
-  linked_partner_id?: string;
-  created_at?: string;
-}
+  approval_status?: "pending" | "approved";
+  // Remove linked_partner_id if it truly does not exist in your schema
+  // linked_partner_id?: string;
+  created_at: string;
+};
 
-interface AuthContextValue {
-  user: UserDetails | null;                     // renamed from userDetails
-  loading: boolean;                             // renamed from loading
+type PartnerApplicationStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "not_found"
+  | string
+  | null;
+
+type AuthContextType = {
+  session: Session | null;
+  user: User | null;
+  userDetails: UserDetails | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
-  signUpCustomer: (
+  signUp: (
     email: string,
     password: string,
     fullName: string,
-    partnerId: string
+    role: "admin" | "partner" | "customer",
+    linkedPartnerId?: string
   ) => Promise<void>;
-  signUpPartner: (
-    email: string,
-    password: string,
-    fullName: string,
-    clinicInfo: {
-      name: string;
-      address: string;
-      postal_code: string;
-      city: string;
-      region: string;
-    }
-  ) => Promise<void>;
-  resendConfirmation: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
-}
+  resendConfirmation: (email: string) => Promise<void>;
+  loading: boolean;
+};
 
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const navigate = useNavigate();
-  const [user, setUser] = useState<UserDetails | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-  // 1) Listen for Supabase auth state changes
+  const cleanupAuthState = () => {
+    console.log("AuthContext: Cleaning up auth state");
+    Object.keys(localStorage).forEach((key) => {
+      if (key.startsWith("supabase.auth.") || key.includes("sb-")) {
+        localStorage.removeItem(key);
+      }
+    });
+    if (typeof sessionStorage !== "undefined") {
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith("supabase.auth.") || key.includes("sb-")) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    }
+    setSession(null);
+    setUser(null);
+    setUserDetails(null);
+  };
+
+  const fetchUserDetails = async (userId: string): Promise<UserDetails | null> => {
+    try {
+      console.log("AuthContext: Fetching user details for ID:", userId);
+      const { data, error } = await supabase
+        .from("users")
+        .select(
+          // Select only actual columns in your `users` table
+          "id, email, full_name, role, approval_status, created_at"
+        )
+        .eq("id", userId)
+        .single();
+
+      if (error) {
+        console.error("AuthContext: Error fetching user details:", error);
+        return null;
+      }
+      console.log("AuthContext: User details fetched successfully:", data);
+      return data as UserDetails;
+    } catch (err) {
+      console.error("AuthContext: Exception fetching user details:", err);
+      return null;
+    }
+  };
+
+  const checkPartnerApplicationStatus = async (
+    userEmail: string
+  ): Promise<PartnerApplicationStatus> => {
+    try {
+      const normalizedEmail = userEmail.trim().toLowerCase();
+      console.log(
+        "AuthContext: Checking partner application status for email:",
+        normalizedEmail
+      );
+      const { data, error } = await supabase
+        .from("partner_applications")
+        .select("status")
+        .ilike("email", normalizedEmail)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error(
+          "AuthContext: Error checking partner application status:",
+          error
+        );
+        return null;
+      }
+
+      const status = data?.status?.trim().toLowerCase() || "not_found";
+      console.log("AuthContext: Partner application status result:", status);
+      return status as PartnerApplicationStatus;
+    } catch (err) {
+      console.error(
+        "AuthContext: Exception checking partner application status:",
+        err
+      );
+      return null;
+    }
+  };
+
+  const redirectBasedOnRole = async (currentDetails: UserDetails) => {
+    const { role, email: userEmail } = currentDetails;
+    console.log("AuthContext: redirectBasedOnRole called for role:", role);
+
+    if (role === "admin") {
+      console.log("AuthContext: Navigating admin to /admin");
+      navigate("/admin", { replace: true });
+    } else if (role === "partner") {
+      const applicationStatus = await checkPartnerApplicationStatus(userEmail);
+      console.log(
+        "AuthContext: Partner application status for redirect:",
+        applicationStatus
+      );
+      if (applicationStatus === "approved") {
+        console.log("AuthContext: Navigating approved partner to /partner");
+        navigate("/partner", { replace: true });
+      } else {
+        console.log(
+          "AuthContext: Navigating unapproved/pending partner to /partner/application-status"
+        );
+        navigate("/partner/application-status", { replace: true });
+      }
+    } else if (role === "customer") {
+      console.log("AuthContext: Navigating customer to /customer");
+      navigate("/customer", { replace: true });
+    } else {
+      console.warn("AuthContext: Unknown role for redirect:", role);
+      navigate("/", { replace: true });
+    }
+  };
+
   useEffect(() => {
+    let mounted = true;
+    console.log("AuthContext: Setting up auth state listener");
+
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      if (!mounted) return;
+
+      console.log(
+        "AuthContext: Initial session check:",
+        initialSession?.user?.id || "No session"
+      );
+      setSession(initialSession);
+      setUser(initialSession?.user ?? null);
+
+      if (initialSession?.user) {
+        if (!initialSession.user.email_confirmed_at) {
+          console.log("AuthContext: Initial session with unconfirmed email");
+          setLoading(false);
+          return;
+        }
+
+        fetchUserDetails(initialSession.user.id).then((details) => {
+          if (mounted && details) {
+            setUserDetails(details);
+          }
+          if (mounted) setLoading(false);
+        });
+      } else {
+        if (mounted) setLoading(false);
+      }
+    });
+
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
-        const { data: u, error } = await supabase
-          .from("users")
-          // Remove `approval_status` since that column does not exist
-          .select("id, email, full_name, role, linked_partner_id, created_at")
-          .eq("id", session.user.id)
-          .single();
+    } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      if (!mounted) return;
 
-        if (u && !error) {
-          setUser(u as UserDetails);
-        } else {
-          setUser(null);
+      console.log(
+        "AuthContext: Auth state change:",
+        event,
+        "User ID:",
+        currentSession?.user?.id || "No user"
+      );
+
+      if (event === "SIGNED_OUT") {
+        console.log("AuthContext: Handling SIGNED_OUT event");
+        setSession(null);
+        setUser(null);
+        setUserDetails(null);
+        setLoading(false);
+        return;
+      }
+
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+
+      if (event === "SIGNED_IN" && currentSession?.user) {
+        console.log("AuthContext: User signed in, checking email confirmation");
+
+        if (!currentSession.user.email_confirmed_at) {
+          console.log("AuthContext: Email not confirmed, user should see confirmation screen");
+          setLoading(false);
+          return;
         }
-      } else if (event === "SIGNED_OUT") {
-        setUser(null);
-      }
-      setLoading(false);
-    });
 
-    // 1a) On mount, check whether there's an existing session
-    (async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session?.user) {
-        const { data: u } = await supabase
-          .from("users")
-          .select("id, email, full_name, role, linked_partner_id, created_at")
-          .eq("id", session.user.id)
-          .single();
-        setUser(u as UserDetails);
+        const details = await fetchUserDetails(currentSession.user.id);
+        if (details && mounted) {
+          setUserDetails(details);
+          await redirectBasedOnRole(details);
+        }
+        if (mounted) setLoading(false);
       } else {
-        setUser(null);
+        if (mounted) setLoading(false);
       }
-      setLoading(false);
-    })();
+    });
 
     return () => {
+      console.log("AuthContext: Cleaning up auth listener");
+      mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
-  // 2) signIn
   const signIn = async (email: string, password: string) => {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) {
+    try {
+      console.log("AuthContext: Starting sign in process for:", email);
+
+      cleanupAuthState();
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error("AuthContext: Sign in error:", error.message);
+
+        if (
+          error.message === "Email not confirmed" ||
+          (error.message.toLowerCase().includes("email") &&
+            error.message.toLowerCase().includes("confirm"))
+        ) {
+          throw new Error("UNCONFIRMED_EMAIL");
+        }
+        if (error.message === "Invalid login credentials") {
+          throw new Error(
+            "Invalid email or password. Please check your credentials and try again."
+          );
+        }
+        throw new Error(error.message || "Sign in failed.");
+      }
+
+      if (data.user && !data.user.email_confirmed_at) {
+        console.log("AuthContext: Sign in successful but email not confirmed");
+        await supabase.auth.signOut();
+        throw new Error("UNCONFIRMED_EMAIL");
+      }
+
+      console.log("AuthContext: Sign in successful");
+      toast.success("Signed in successfully!");
+    } catch (error: any) {
+      console.error("AuthContext: Sign in process error:", error);
+      if (error.message !== "UNCONFIRMED_EMAIL") {
+        toast.error(error.message || "Sign in failed.");
+      }
       setLoading(false);
       throw error;
     }
-    // onAuthStateChange listener will populate `user`
   };
 
-  // 3) Generic signUp (only Supabase Auth; user table insert handled elsewhere)
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    fullName: string,
+    role: "admin" | "partner" | "customer",
+    linkedPartnerId?: string
+  ) => {
     setLoading(true);
-    const { data: authData, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    if (error) {
-      setLoading(false);
+    try {
+      console.log("AuthContext: Starting sign up process for:", email, "role:", role);
+
+      const userDataForSignUp: any = {
+        full_name: fullName,
+        role,
+      };
+      if (role === "partner") {
+        userDataForSignUp.approval_status = "pending";
+      }
+      if (role === "customer" && linkedPartnerId) {
+        userDataForSignUp.linked_partner_id = linkedPartnerId;
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: userDataForSignUp,
+          emailRedirectTo: `${window.location.origin}/auth`,
+        },
+      });
+
+      if (error) {
+        console.error("AuthContext: Sign up error:", error.message);
+        if (error.message.includes("User already registered")) {
+          throw new Error("An account with this email already exists. Please try signing in instead.");
+        }
+        throw new Error(error.message || "Sign up failed.");
+      }
+
+      console.log("AuthContext: Sign up successful");
+      toast.success("Registration successful! Please check your email to confirm your account.");
+    } catch (error: any) {
+      console.error("AuthContext: Sign up process error:", error);
+      toast.error(error.message || "Sign up failed.");
       throw error;
+    } finally {
+      setLoading(false);
     }
-    // Don’t insert into `users` here—SignupWizard or a component should do that
   };
 
-  // 4) signUpCustomer inserts into `users` table
-  const signUpCustomer = async (
-    email: string,
-    password: string,
-    fullName: string,
-    partnerId: string
-  ) => {
-    setLoading(true);
-    const { data: authData, error: authErr } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    if (authErr) {
-      setLoading(false);
-      throw authErr;
-    }
-
-    const userId = authData.user?.id!;
-    const { error: insertErr } = await supabase.from("users").insert({
-      id: userId,
-      email,
-      full_name: fullName,
-      role: "customer",
-      linked_partner_id: partnerId,
-      created_at: new Date().toISOString(),
-    });
-    if (insertErr) {
-      setLoading(false);
-      throw insertErr;
-    }
-    // onAuthStateChange listener will fire next
-  };
-
-  // 5) signUpPartner inserts into `users` and `clinics`
-  const signUpPartner = async (
-    email: string,
-    password: string,
-    fullName: string,
-    clinicInfo: {
-      name: string;
-      address: string;
-      postal_code: string;
-      city: string;
-      region: string;
-    }
-  ) => {
-    setLoading(true);
-    const { data: authData, error: authErr } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    if (authErr) {
-      setLoading(false);
-      throw authErr;
-    }
-
-    const userId = authData.user?.id!;
-    // Insert into `users` table
-    const { error: userErr } = await supabase.from("users").insert({
-      id: userId,
-      email,
-      full_name: fullName,
-      role: "partner",
-      created_at: new Date().toISOString(),
-    });
-    if (userErr) {
-      setLoading(false);
-      throw userErr;
-    }
-
-    // Insert into `clinics` table (use actual column names from your schema)
-    const { error: clinicErr } = await supabase.from("clinics").insert({
-      owner_email: email,            // if your table uses owner_email instead of user_id
-      name: clinicInfo.name,
-      address: clinicInfo.address,
-      postal_code: clinicInfo.postal_code,
-      city: clinicInfo.city,
-      region: clinicInfo.region,
-      created_at: new Date().toISOString(),
-    });
-    if (clinicErr) {
-      setLoading(false);
-      throw clinicErr;
-    }
-    // onAuthStateChange listener will fire next
-  };
-
-  // 6) resendConfirmation
   const resendConfirmation = async (email: string) => {
-    setLoading(true);
-    // The Supabase JS method is `.resendConfirmationEmail(...)`—adjust to your installed version
-    const { data, error } = await supabase.auth.resendConfirmationEmail(email);
-    setLoading(false);
-    if (error) {
+    try {
+      console.log("AuthContext: Resending confirmation email for:", email);
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth`,
+        },
+      });
+
+      if (error) {
+        console.error("AuthContext: Error resending confirmation:", error);
+        throw new Error(error.message || "Failed to resend confirmation email.");
+      }
+
+      toast.success("Confirmation email sent! Please check your inbox.");
+    } catch (error: any) {
+      console.error("AuthContext: Resend confirmation error:", error);
+      toast.error(error.message || "Failed to resend confirmation email.");
       throw error;
     }
-    return data;
   };
 
-  // 7) signOut
   const signOut = async () => {
+    console.log("AuthContext: Starting sign out process");
     setLoading(true);
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error("AuthContext: Sign out error:", error.message);
+
+    try {
+      // Clear React state immediately
+      setSession(null);
+      setUser(null);
+      setUserDetails(null);
+
+      cleanupAuthState();
+
+      const { error } = await supabase.auth.signOut({ scope: "global" });
+      if (error) {
+        console.error("AuthContext: Supabase sign out error:", error);
+      }
+
+      console.log("AuthContext: Sign out successful, redirecting to home");
+      toast.success("Signed out successfully");
+
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 100);
+    } catch (error: any) {
+      console.error("AuthContext: Sign out process error:", error);
+      toast.error(error.message || "Failed to sign out.");
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 100);
+    } finally {
       setLoading(false);
-      return;
     }
-    setUser(null);
-    setLoading(false);
-    navigate("/");
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        signIn,
-        signUp,
-        signUpCustomer,
-        signUpPartner,
-        resendConfirmation,
-        signOut,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  const value: AuthContextType = {
+    session,
+    user,
+    userDetails,
+    signIn,
+    signUp,
+    signOut,
+    resendConfirmation,
+    loading,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error("useAuth must be used inside AuthProvider");
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
   }
-  return ctx;
+  return context;
 };
