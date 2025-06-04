@@ -123,8 +123,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       await signIn(email, password);
-    } finally {
+    } catch (error) {
       setLoading(false);
+      throw error;
     }
   };
 
@@ -138,8 +139,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       await signUp(email, password, fullName, role, linkedPartnerId);
-    } finally {
+    } catch (error) {
       setLoading(false);
+      throw error;
     }
   };
 
