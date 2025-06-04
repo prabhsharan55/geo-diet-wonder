@@ -4,13 +4,16 @@ import { useAuth } from "@/context/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Navigate } from "react-router-dom";
+import { AlertTriangle } from "lucide-react";
 import MainNavigation from "@/components/MainNavigation";
 import Footer from "@/components/Footer";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string>("");
   const { signIn, user, loading } = useAuth();
 
   // If user is already logged in, redirect to appropriate dashboard
@@ -20,7 +23,25 @@ const AdminLogin = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    await signIn(email, password);
+    setError("");
+    
+    try {
+      await signIn(email, password);
+    } catch (err: any) {
+      console.error('Admin sign in error:', err);
+      setError(err.message || "Invalid admin credentials. Please check your email and password.");
+    }
+  };
+
+  // Clear error when inputs change
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    if (error) setError("");
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    if (error) setError("");
   };
 
   return (
@@ -44,13 +65,20 @@ const AdminLogin = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {error && (
+              <Alert variant="destructive" className="mb-4">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
             <form onSubmit={handleSignIn} className="space-y-4">
               <div className="space-y-2">
                 <Input
                   type="email"
                   placeholder="Admin Email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={handleEmailChange}
                   required
                 />
               </div>
@@ -59,7 +87,7 @@ const AdminLogin = () => {
                   type="password"
                   placeholder="Admin Password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={handlePasswordChange}
                   required
                 />
               </div>

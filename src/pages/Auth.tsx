@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Navigate, useSearchParams } from "react-router-dom";
+import { AlertTriangle } from "lucide-react";
 
 const Auth = () => {
   const [activeTab, setActiveTab] = useState<string>("signin");
@@ -14,6 +16,7 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<'admin' | 'partner' | 'customer'>("customer");
+  const [error, setError] = useState<string>("");
   const { signIn, signUp, user, loading } = useAuth();
   const [searchParams] = useSearchParams();
 
@@ -27,6 +30,11 @@ const Auth = () => {
     }
   }, [isAdminLogin]);
 
+  // Clear error when switching tabs or changing inputs
+  useEffect(() => {
+    setError("");
+  }, [activeTab, email, password]);
+
   // If user is already logged in, redirect to appropriate dashboard
   if (user) {
     return <Navigate to="/customer" replace />;
@@ -34,12 +42,26 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    await signIn(email, password);
+    setError("");
+    
+    try {
+      await signIn(email, password);
+    } catch (err: any) {
+      console.error('Sign in error:', err);
+      setError(err.message || "Failed to sign in. Please check your credentials and try again.");
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    await signUp(email, password, fullName, role);
+    setError("");
+    
+    try {
+      await signUp(email, password, fullName, role);
+    } catch (err: any) {
+      console.error('Sign up error:', err);
+      setError(err.message || "Failed to create account. Please try again.");
+    }
   };
 
   return (
@@ -68,6 +90,13 @@ const Auth = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             {!isAdminLogin && (
               <TabsList className="grid grid-cols-2 mb-6">

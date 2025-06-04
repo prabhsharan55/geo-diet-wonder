@@ -210,7 +210,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (error.message === 'Email not confirmed') {
           throw new Error('Please check your email and click the confirmation link before signing in.');
         }
-        throw error;
+        if (error.message === 'Invalid login credentials') {
+          throw new Error('Invalid email or password. Please check your credentials and try again.');
+        }
+        throw new Error(error.message);
       }
       
       if (data.user) {
@@ -228,7 +231,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } catch (error: any) {
       console.error('Sign in error:', error);
-      toast.error(error.message || "Failed to sign in");
+      // Re-throw the error so it can be caught by the component
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -254,7 +258,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         },
       });
       
-      if (error) throw error;
+      if (error) {
+        if (error.message === 'User already registered') {
+          throw new Error('An account with this email already exists. Please try signing in instead.');
+        }
+        throw new Error(error.message);
+      }
       
       if (data.user) {
         toast.success("Registration successful! Please check your email to confirm your account.");
@@ -273,7 +282,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     } catch (error: any) {
       console.error('Sign up error:', error);
-      toast.error(error.message || "Failed to create account");
+      // Re-throw the error so it can be caught by the component
+      throw error;
     } finally {
       setLoading(false);
     }
