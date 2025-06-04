@@ -7,6 +7,7 @@ import React, {
   useEffect,
   useState,
   ReactNode,
+  useCallback,
 } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,6 +26,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const { redirectBasedOnRole } = useAuthRedirect();
   const { signIn, signUp, signOut, resendConfirmation } = useAuthOperations();
+
+  // Memoize the redirect function to prevent infinite loops
+  const handleRedirect = useCallback(async (details: UserDetails) => {
+    await redirectBasedOnRole(details);
+  }, [redirectBasedOnRole]);
 
   useEffect(() => {
     let mounted = true;
@@ -98,7 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const details = await fetchUserDetails(currentSession.user.id);
         if (details && mounted) {
           setUserDetails(details);
-          await redirectBasedOnRole(details);
+          await handleRedirect(details);
         }
         if (mounted) setLoading(false);
       } else {
@@ -111,7 +117,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [redirectBasedOnRole]);
+  }, []); // Remove redirectBasedOnRole from dependencies
 
   const handleSignIn = async (email: string, password: string) => {
     setLoading(true);
