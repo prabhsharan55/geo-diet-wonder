@@ -1,7 +1,13 @@
 // src/context/AuthContext.tsx
 
-import { createContext, useContext, useEffect, useState } from "react";
-import { useRouter } from "next/router"; // If you use React Router, swap this for useNavigate
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
+import { useNavigate } from "react-router-dom"; // replaced next/router with react-router
 import { supabase } from "@/integrations/supabase/client";
 
 interface UserDetails {
@@ -11,11 +17,19 @@ interface UserDetails {
   role: "admin" | "partner" | "customer";
   approval_status?: "pending" | "approved";
   linked_partner_id?: string;
+  created_at?: string;
 }
- 
+
 interface AuthContextValue {
-  userDetails: UserDetails | null;
+  user: UserDetails | null;
+  loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  signUp: (
+    email: string,
+    password: string,
+    fullName?: string,
+    extra?: any
+  ) => Promise<void>;
   signUpCustomer: (
     email: string,
     password: string,
@@ -34,39 +48,41 @@ interface AuthContextValue {
       region: string;
     }
   ) => Promise<void>;
+  resendConfirmation: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const router = useRouter();
-  const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<UserDetails | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Listen for Supabase auth state changes
   useEffect(() => {
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === "SIGNED_IN" && session?.user) {
-          // Fetch the corresponding row from `users` table
-          const { data: u, error } = await supabase
-            .from("users")
-            .select(
-              "id, email, full_name, role, approval_status, linked_partner_id"
-            )
-            .eq("id", session.user.id)
-            .single();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session?.user) {
+        const { data: u, error } = await supabase
+          .from("users")
+          .select(
+            "id, email, full_name, role, approval_status, linked_partner_id, created_at"
+          )
+          .eq("id", session.user.id)
+          .single();
 
-          if (u && !error) {
-            setUserDetails(u as UserDetails);
-          } else {
-            setUserDetails(null);
-          }
-        } else if (event === "SIGNED_OUT") {
-          setUserDetails(null);
+        if (u && !error) {
+          setUser(u as UserDetails);
+        } else {
+          setUser(null);
         }
+      } else if (event === "SIGNED_OUT") {
+        setUser(null);
       }
-    );
+      setLoading(false);
+    });
 
     // On mount, check if there's already a session
     (async () => {
@@ -77,29 +93,53 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const { data: u } = await supabase
           .from("users")
           .select(
-            "id, email, full_name, role, approval_status, linked_partner_id"
+            "id, email, full_name, role, approval_status, linked_partner_id, created_at"
           )
           .eq("id", session.user.id)
           .single();
-        setUserDetails(u as UserDetails);
+        setUser(u as UserDetails);
+      } else {
+        setUser(null);
       }
+      setLoading(false);
     })();
 
     return () => {
-      listener.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
-  // signIn method
+  // Basic signIn
   const signIn = async (email: string, password: string) => {
+    setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     if (error) {
+      setLoading(false);
       throw error;
     }
-    // onAuthStateChange will populate userDetails
+    // onAuthStateChange will update `user`
+  };
+
+  // Generic signUp
+  const signUp = async (
+    email: string,
+    password: string,
+    fullName?: string,
+    extra?: any
+  ) => {
+    setLoading(true);
+    const { data: authData, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    if (error) {
+      setLoading(false);
+      throw error;
+    }
+    // DB insertion of `users` row should be handled elsewhere
   };
 
   // signUpCustomer
@@ -109,16 +149,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     fullName: string,
     partnerId: string
   ) => {
-    // Create Supabase Auth user
+    setLoading(true);
     const { data: authData, error: authErr } = await supabase.auth.signUp({
       email,
       password,
     });
     if (authErr) {
+      setLoading(false);
       throw authErr;
     }
 
-    // Insert into `users` table
     const userId = authData.user?.id!;
     const { error: insertErr } = await supabase.from("users").insert({
       id: userId,
@@ -127,11 +167,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       role: "customer",
       linked_partner_id: partnerId,
       approval_status: null,
+      created_at: new Date().toISOString(),
     });
     if (insertErr) {
+      setLoading(false);
       throw insertErr;
     }
-    // onAuthStateChange will fire and set userDetails
+    // onAuthStateChange will fire next
   };
 
   // signUpPartner
@@ -147,16 +189,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       region: string;
     }
   ) => {
-    // Create Supabase Auth user
+    setLoading(true);
     const { data: authData, error: authErr } = await supabase.auth.signUp({
       email,
       password,
     });
     if (authErr) {
+      setLoading(false);
       throw authErr;
     }
 
-    // Insert into `users` table
     const userId = authData.user?.id!;
     const { error: userErr } = await supabase.from("users").insert({
       id: userId,
@@ -164,40 +206,67 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       full_name: fullName,
       role: "partner",
       approval_status: "pending",
+      created_at: new Date().toISOString(),
     });
     if (userErr) {
+      setLoading(false);
       throw userErr;
     }
 
-    // Insert into `clinics` table
     const { error: clinicErr } = await supabase.from("clinics").insert({
-      user_id: userId,
+      owner_email: email,
       name: clinicInfo.name,
       address: clinicInfo.address,
       postal_code: clinicInfo.postal_code,
       city: clinicInfo.city,
       region: clinicInfo.region,
+      created_at: new Date().toISOString(),
     });
     if (clinicErr) {
+      setLoading(false);
       throw clinicErr;
     }
-    // onAuthStateChange will set userDetails (role=partner, status=pending)
+    // onAuthStateChange will fire next
   };
 
-  // signOut method
+  // resendConfirmation
+  const resendConfirmation = async (email: string) => {
+    setLoading(true);
+    const { data, error } =
+      await supabase.auth.resendConfirmationForEmail(email);
+    setLoading(false);
+    if (error) {
+      throw error;
+    }
+    return data;
+  };
+
+  // signOut
   const signOut = async () => {
+    setLoading(true);
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error("AuthContext: Sign out error:", error.message);
+      setLoading(false);
       return;
     }
-    setUserDetails(null);
-    router.push("/");
+    setUser(null);
+    setLoading(false);
+    navigate("/");
   };
 
   return (
     <AuthContext.Provider
-      value={{ userDetails, signIn, signUpCustomer, signUpPartner, signOut }}
+      value={{
+        user,
+        loading,
+        signIn,
+        signUp,
+        signUpCustomer,
+        signUpPartner,
+        resendConfirmation,
+        signOut,
+      }}
     >
       {children}
     </AuthContext.Provider>
