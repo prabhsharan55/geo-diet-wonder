@@ -12,7 +12,7 @@ interface UserDetails {
   approval_status?: "pending" | "approved";
   linked_partner_id?: string;
 }
-
+ 
 interface AuthContextValue {
   userDetails: UserDetails | null;
   signIn: (email: string, password: string) => Promise<void>;
