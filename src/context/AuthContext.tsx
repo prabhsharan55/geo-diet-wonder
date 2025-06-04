@@ -12,15 +12,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
-// Adjust this type to exactly match your `users` table schema
+// Removed `approval_status` and `linked_partner_id` since they don’t exist in `users` table
 type UserDetails = {
   id: string;
   email: string;
   full_name: string;
   role: "admin" | "partner" | "customer";
-  approval_status?: "pending" | "approved";
-  // Remove linked_partner_id if it truly does not exist in your schema
-  // linked_partner_id?: string;
   created_at: string;
 };
 
@@ -83,8 +80,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data, error } = await supabase
         .from("users")
         .select(
-          // Select only actual columns in your `users` table
-          "id, email, full_name, role, approval_status, created_at"
+          // Removed approval_status and linked_partner_id from select
+          "id, email, full_name, role, created_at"
         )
         .eq("id", userId)
         .single();
@@ -379,7 +376,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
 
     try {
-      // Clear React state immediately
       setSession(null);
       setUser(null);
       setUserDetails(null);
