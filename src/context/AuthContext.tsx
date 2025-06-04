@@ -222,7 +222,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(currentSession?.user ?? null);
 
       if (event === "SIGNED_IN" && currentSession?.user) {
-        console.log("AuthContext: User signed in, checking email confirmation");
+        console.log(
+          "AuthContext: User signed in, checking email confirmation"
+        );
 
         if (!currentSession.user.email_confirmed_at) {
           console.log(
@@ -232,4 +234,206 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
-        const details = await fetch
+        const details = await fetchUserDetails(currentSession.user.id);
+        if (details && mounted) {
+          setUserDetails(details);
+          await redirectBasedOnRole(details);
+        }
+        if (mounted) setLoading(false);
+      } else {
+        if (mounted) setLoading(false);
+      }
+    });
+
+    return () => {
+      console.log("AuthContext: Cleaning up auth listener");
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
+
+  const signIn = async (email: string, password: string) => {
+    setLoading(true);
+    try {
+      console.log("AuthContext: Starting sign in process for:", email);
+
+      cleanupAuthState();
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.error("AuthContext: Sign in error:", error.message);
+
+        if (
+          error.message === "Email not confirmed" ||
+          (error.message.toLowerCase().includes("email") &&
+            error.message.toLowerCase().includes("confirm"))
+        ) {
+          throw new Error("UNCONFIRMED_EMAIL");
+        }
+        if (error.message === "Invalid login credentials") {
+          throw new Error(
+            "Invalid email or password. Please check your credentials and try again."
+          );
+        }
+        throw new Error(error.message || "Sign in failed.");
+      }
+
+      if (data.user && !data.user.email_confirmed_at) {
+        console.log(
+          "AuthContext: Sign in successful but email not confirmed"
+        );
+        await supabase.auth.signOut();
+        throw new Error("UNCONFIRMED_EMAIL");
+      }
+
+      console.log("AuthContext: Sign in successful");
+      toast.success("Signed in successfully!");
+    } catch (error: any) {
+      console.error("AuthContext: Sign in process error:", error);
+      if (error.message !== "UNCONFIRMED_EMAIL") {
+        toast.error(error.message || "Sign in failed.");
+      }
+      setLoading(false);
+      throw error;
+    }
+  };
+
+  const signUp = async (
+    email: string,
+    password: string,
+    fullName: string,
+    role: "admin" | "partner" | "customer",
+    linkedPartnerId?: string
+  ) => {
+    setLoading(true);
+    try {
+      console.log(
+        "AuthContext: Starting sign up process for:",
+        email,
+        "role:",
+        role
+      );
+
+      const userDataForSignUp: any = {
+        full_name: fullName,
+        role,
+        ...(linkedPartnerId ? { linked_partner_id: linkedPartnerId } : {}),
+      };
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: userDataForSignUp,
+          emailRedirectTo: `${window.location.origin}/auth`,
+        },
+      });
+
+      if (error) {
+        console.error("AuthContext: Sign up error:", error.message);
+        if (
+          error.message.includes("User already registered")
+        ) {
+          throw new Error(
+            "An account with this email already exists. Please try signing in instead."
+          );
+        }
+        throw new Error(error.message || "Sign up failed.");
+      }
+
+      console.log("AuthContext: Sign up successful");
+      toast.success(
+        "Registration successful! Please check your email to confirm your account."
+      );
+    } catch (error: any) {
+      console.error("AuthContext: Sign up process error:", error);
+      toast.error(error.message || "Sign up failed.");
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendConfirmation = async (email: string) => {
+    try {
+      console.log("AuthContext: Resending confirmation email for:", email);
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth`,
+        },
+      });
+
+      if (error) {
+        console.error(
+          "AuthContext: Error resending confirmation:",
+          error
+        );
+        throw new Error(
+          error.message || "Failed to resend confirmation email."
+        );
+      }
+
+      toast.success("Confirmation email sent! Please check your inbox.");
+    } catch (error: any) {
+      console.error("AuthContext: Resend confirmation error:", error);
+      toast.error(error.message || "Failed to resend confirmation email.");
+      throw error;
+    }
+  };
+
+  const signOut = async () => {
+    console.log("AuthContext: Starting sign out process");
+    setLoading(true);
+
+    try {
+      // Immediately clear React state
+      setSession(null);
+      setUser(null);
+      setUserDetails(null);
+
+      cleanupAuthState();
+
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("AuthContext: Supabase sign out error:", error);
+      }
+
+      console.log("AuthContext: Sign out successful, redirecting to home");
+      toast.success("Signed out successfully");
+      navigate("/");
+    } catch (error: any) {
+      console.error("AuthContext: Sign out process error:", error);
+      toast.error(error.message || "Failed to sign out.");
+      navigate("/");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const value: AuthContextType = {
+    session,
+    user,
+    userDetails,
+    signIn,
+    signUp,
+    signOut,
+    resendConfirmation,
+    loading,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};
