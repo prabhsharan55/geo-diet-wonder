@@ -30,7 +30,7 @@ const Auth = () => {
       setRole("admin");
       setActiveTab("signin");
     }
-  }, [isAdminLogin]);
+  }, []);
 
   // Clear error when switching tabs or changing inputs
   useEffect(() => {

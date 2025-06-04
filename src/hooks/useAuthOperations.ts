@@ -39,7 +39,7 @@ export const useAuthOperations = () => {
         console.log(
           "AuthOperations: Sign in successful but email not confirmed"
         );
-        await supabase.auth.signOut();
+      //  await supabase.auth.signOut();
         throw new Error("UNCONFIRMED_EMAIL");
       }
 
