@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useUserData } from '@/context/UserDataContext';
 import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 const DataInputForm = () => {
-  const { userData, updateUserData, addProgressEntry, addNutritionEntry, addActivityEntry, addAppointment } = useUserData();
+  const { userData, updateUserData, addProgressEntry, addNutritionEntry, addActivityEntry, addAppointment, loading: contextLoading } = useUserData();
   
   const [basicData, setBasicData] = useState({
     name: userData.name,
@@ -42,57 +43,101 @@ const DataInputForm = () => {
     time: ''
   });
 
-  const handleBasicUpdate = (e: React.FormEvent) => {
+  const [submitting, setSubmitting] = useState({
+    basic: false,
+    progress: false,
+    nutrition: false,
+    activity: false,
+    appointment: false
+  });
+
+  const handleBasicUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateUserData(basicData);
-    toast.success('Profile updated successfully!');
+    setSubmitting(prev => ({ ...prev, basic: true }));
+    
+    try {
+      await updateUserData(basicData);
+    } finally {
+      setSubmitting(prev => ({ ...prev, basic: false }));
+    }
   };
 
-  const handleProgressSubmit = (e: React.FormEvent) => {
+  const handleProgressSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    addProgressEntry({
-      month: progressData.month,
-      weight: Number(progressData.weight),
-      calories: Number(progressData.calories)
-    });
-    setProgressData({ month: '', weight: '', calories: '' });
-    toast.success('Progress data added!');
+    setSubmitting(prev => ({ ...prev, progress: true }));
+    
+    try {
+      await addProgressEntry({
+        month: progressData.month,
+        weight: Number(progressData.weight),
+        calories: Number(progressData.calories)
+      });
+      setProgressData({ month: '', weight: '', calories: '' });
+    } finally {
+      setSubmitting(prev => ({ ...prev, progress: false }));
+    }
   };
 
-  const handleNutritionSubmit = (e: React.FormEvent) => {
+  const handleNutritionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    addNutritionEntry({
-      date: nutritionData.date,
-      protein: Number(nutritionData.protein),
-      carbs: Number(nutritionData.carbs),
-      fats: Number(nutritionData.fats)
-    });
-    setNutritionData({ date: '', protein: '', carbs: '', fats: '' });
-    toast.success('Nutrition data added!');
+    setSubmitting(prev => ({ ...prev, nutrition: true }));
+    
+    try {
+      await addNutritionEntry({
+        date: nutritionData.date,
+        protein: Number(nutritionData.protein),
+        carbs: Number(nutritionData.carbs),
+        fats: Number(nutritionData.fats)
+      });
+      setNutritionData({ date: '', protein: '', carbs: '', fats: '' });
+    } finally {
+      setSubmitting(prev => ({ ...prev, nutrition: false }));
+    }
   };
 
-  const handleActivitySubmit = (e: React.FormEvent) => {
+  const handleActivitySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    addActivityEntry({
-      date: activityData.date,
-      steps: Number(activityData.steps),
-      minutes: Number(activityData.minutes)
-    });
-    setActivityData({ date: '', steps: '', minutes: '' });
-    toast.success('Activity data added!');
+    setSubmitting(prev => ({ ...prev, activity: true }));
+    
+    try {
+      await addActivityEntry({
+        date: activityData.date,
+        steps: Number(activityData.steps),
+        minutes: Number(activityData.minutes)
+      });
+      setActivityData({ date: '', steps: '', minutes: '' });
+    } finally {
+      setSubmitting(prev => ({ ...prev, activity: false }));
+    }
   };
 
-  const handleAppointmentSubmit = (e: React.FormEvent) => {
+  const handleAppointmentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    addAppointment({
-      title: appointmentData.title,
-      date: appointmentData.date,
-      time: appointmentData.time,
-      status: 'booked'
-    });
-    setAppointmentData({ title: '', date: '', time: '' });
-    toast.success('Appointment added!');
+    setSubmitting(prev => ({ ...prev, appointment: true }));
+    
+    try {
+      await addAppointment({
+        title: appointmentData.title,
+        date: appointmentData.date,
+        time: appointmentData.time,
+        status: 'booked'
+      });
+      setAppointmentData({ title: '', date: '', time: '' });
+    } finally {
+      setSubmitting(prev => ({ ...prev, appointment: false }));
+    }
   };
+
+  if (contextLoading) {
+    return (
+      <Card className="mb-6">
+        <CardContent className="flex items-center justify-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Loading your data...</span>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="mb-6">
@@ -146,7 +191,10 @@ const DataInputForm = () => {
                   onChange={(e) => setBasicData(prev => ({ ...prev, caloriesTracked: Number(e.target.value) }))}
                 />
               </div>
-              <Button type="submit">Update Profile</Button>
+              <Button type="submit" disabled={submitting.basic}>
+                {submitting.basic && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Update Profile
+              </Button>
             </form>
           </TabsContent>
 
@@ -179,7 +227,10 @@ const DataInputForm = () => {
                   onChange={(e) => setProgressData(prev => ({ ...prev, calories: e.target.value }))}
                 />
               </div>
-              <Button type="submit">Add Progress Entry</Button>
+              <Button type="submit" disabled={submitting.progress}>
+                {submitting.progress && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Add Progress Entry
+              </Button>
             </form>
           </TabsContent>
 
@@ -221,7 +272,10 @@ const DataInputForm = () => {
                   onChange={(e) => setNutritionData(prev => ({ ...prev, fats: e.target.value }))}
                 />
               </div>
-              <Button type="submit">Add Nutrition Entry</Button>
+              <Button type="submit" disabled={submitting.nutrition}>
+                {submitting.nutrition && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Add Nutrition Entry
+              </Button>
             </form>
           </TabsContent>
 
@@ -254,7 +308,10 @@ const DataInputForm = () => {
                   onChange={(e) => setActivityData(prev => ({ ...prev, minutes: e.target.value }))}
                 />
               </div>
-              <Button type="submit">Add Activity Entry</Button>
+              <Button type="submit" disabled={submitting.activity}>
+                {submitting.activity && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Add Activity Entry
+              </Button>
             </form>
           </TabsContent>
 
@@ -287,7 +344,10 @@ const DataInputForm = () => {
                   placeholder="e.g., 2:30 PM"
                 />
               </div>
-              <Button type="submit">Add Appointment</Button>
+              <Button type="submit" disabled={submitting.appointment}>
+                {submitting.appointment && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Add Appointment
+              </Button>
             </form>
           </TabsContent>
         </Tabs>

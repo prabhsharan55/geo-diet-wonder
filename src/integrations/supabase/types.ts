@@ -9,6 +9,72 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      activity_entries: {
+        Row: {
+          created_at: string
+          date: string
+          exercise_minutes: number
+          id: string
+          steps: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          exercise_minutes: number
+          id?: string
+          steps: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          exercise_minutes?: number
+          id?: string
+          steps?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      appointments: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          reschedule_request: Json | null
+          status: string
+          time: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          reschedule_request?: Json | null
+          status?: string
+          time: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          reschedule_request?: Json | null
+          status?: string
+          time?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       clinics: {
         Row: {
           address: string
@@ -150,6 +216,39 @@ export type Database = {
           },
         ]
       }
+      nutrition_entries: {
+        Row: {
+          carbs: number
+          created_at: string
+          date: string
+          fats: number
+          id: string
+          protein: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          carbs: number
+          created_at?: string
+          date: string
+          fats: number
+          id?: string
+          protein: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          carbs?: number
+          created_at?: string
+          date?: string
+          fats?: number
+          id?: string
+          protein?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       partner_applications: {
         Row: {
           address: string
@@ -238,8 +337,10 @@ export type Database = {
       }
       user_profiles: {
         Row: {
+          calories_tracked: number | null
           city: string | null
           created_at: string
+          current_weight: number | null
           full_name: string
           gender: string | null
           health_data: Json | null
@@ -249,10 +350,13 @@ export type Database = {
           selected_plan: string | null
           user_id: string
           weight: number | null
+          workout_completed: number | null
         }
         Insert: {
+          calories_tracked?: number | null
           city?: string | null
           created_at?: string
+          current_weight?: number | null
           full_name: string
           gender?: string | null
           health_data?: Json | null
@@ -262,10 +366,13 @@ export type Database = {
           selected_plan?: string | null
           user_id: string
           weight?: number | null
+          workout_completed?: number | null
         }
         Update: {
+          calories_tracked?: number | null
           city?: string | null
           created_at?: string
+          current_weight?: number | null
           full_name?: string
           gender?: string | null
           health_data?: Json | null
@@ -275,6 +382,7 @@ export type Database = {
           selected_plan?: string | null
           user_id?: string
           weight?: number | null
+          workout_completed?: number | null
         }
         Relationships: []
       }

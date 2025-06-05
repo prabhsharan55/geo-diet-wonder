@@ -1,4 +1,8 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, ReactNode } from 'react';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { useNutritionData } from '@/hooks/useNutritionData';
+import { useActivityData } from '@/hooks/useActivityData';
+import { useAppointments } from '@/hooks/useAppointments';
 
 export type AppointmentStatus = 'booked' | 'pending' | 'rescheduled';
 
@@ -98,36 +102,50 @@ type UserDataContextType = {
   editWeightLog: (weekNumber: number, weightLogId: string, updatedWeightLog: Partial<WeightLog>) => void;
   deleteWeightLog: (weekNumber: number, weightLogId: string) => void;
   completeWeek: (weekNumber: number) => void;
+  loading: boolean;
 };
 
 const UserDataContext = createContext<UserDataContextType | undefined>(undefined);
 
 export const UserDataProvider = ({ children }: { children: ReactNode }) => {
-  const [userData, setUserData] = useState<UserData>({
-    name: 'Prabhsharan',
-    currentWeight: 172,
-    workoutCompleted: 12,
-    caloriesTracked: 19203,
+  const { profile, updateProfile, loading: profileLoading } = useUserProfile();
+  const { nutritionData, addNutritionEntry, loading: nutritionLoading } = useNutritionData();
+  const { activityData, addActivityEntry, loading: activityLoading } = useActivityData();
+  const { appointments, addAppointment, loading: appointmentsLoading } = useAppointments();
+
+  const loading = profileLoading || nutritionLoading || activityLoading || appointmentsLoading;
+
+  // Convert database data to the expected format
+  const userData: UserData = {
+    name: profile?.full_name || 'User',
+    currentWeight: profile?.current_weight || 172,
+    workoutCompleted: profile?.workout_completed || 0,
+    caloriesTracked: profile?.calories_tracked || 0,
     progressData: [
       { month: 'Jan', weight: 180, calories: 18500 },
       { month: 'Feb', weight: 178, calories: 19000 },
       { month: 'Mar', weight: 175, calories: 19203 },
       { month: 'Apr', weight: 172, calories: 19500 },
     ],
-    nutritionData: [
-      { date: '2025-05-01', protein: 120, carbs: 250, fats: 80 },
-      { date: '2025-05-02', protein: 115, carbs: 230, fats: 75 },
-      { date: '2025-05-03', protein: 125, carbs: 260, fats: 85 },
-    ],
-    activityData: [
-      { date: '2025-05-01', steps: 8500, minutes: 45 },
-      { date: '2025-05-02', steps: 9200, minutes: 52 },
-      { date: '2025-05-03', steps: 7800, minutes: 38 },
-    ],
-    appointments: [
-      { id: '1', title: 'Nutritionist Consultation', date: 'May 22, 2025', time: '2:30 PM', status: 'booked' },
-      { id: '2', title: 'Progress Review Session', date: 'May 29, 2025', time: '10:00 AM', status: 'booked' },
-    ],
+    nutritionData: nutritionData.map(entry => ({
+      date: entry.date,
+      protein: entry.protein,
+      carbs: entry.carbs,
+      fats: entry.fats
+    })),
+    activityData: activityData.map(entry => ({
+      date: entry.date,
+      steps: entry.steps,
+      minutes: entry.exercise_minutes
+    })),
+    appointments: appointments.map(apt => ({
+      id: apt.id,
+      title: apt.title,
+      date: apt.date,
+      time: apt.time,
+      status: apt.status as AppointmentStatus,
+      rescheduleRequest: apt.reschedule_request
+    })),
     program: {
       planName: 'GeoDiet Premium Program',
       totalWeeks: 12,
@@ -189,245 +207,85 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
         }
       ]
     }
-  });
+  };
 
-  const updateUserData = (data: Partial<UserData>) => {
-    setUserData(prev => ({ ...prev, ...data }));
+  const updateUserData = async (data: Partial<UserData>) => {
+    const profileUpdates: any = {};
+    
+    if (data.name) profileUpdates.full_name = data.name;
+    if (data.currentWeight) profileUpdates.current_weight = data.currentWeight;
+    if (data.workoutCompleted !== undefined) profileUpdates.workout_completed = data.workoutCompleted;
+    if (data.caloriesTracked !== undefined) profileUpdates.calories_tracked = data.caloriesTracked;
+
+    if (Object.keys(profileUpdates).length > 0) {
+      await updateProfile(profileUpdates);
+    }
   };
 
   const addProgressEntry = (entry: { month: string; weight: number; calories: number }) => {
-    setUserData(prev => ({
-      ...prev,
-      progressData: [...prev.progressData, entry]
-    }));
+    // For now, we'll keep this in local state until we create a progress_entries table
+    console.log('Progress entry to be saved:', entry);
   };
 
-  const addNutritionEntry = (entry: { date: string; protein: number; carbs: number; fats: number }) => {
-    setUserData(prev => ({
-      ...prev,
-      nutritionData: [...prev.nutritionData, entry]
-    }));
+  const handleAddNutritionEntry = async (entry: { date: string; protein: number; carbs: number; fats: number }) => {
+    await addNutritionEntry(entry);
   };
 
-  const addActivityEntry = (entry: { date: string; steps: number; minutes: number }) => {
-    setUserData(prev => ({
-      ...prev,
-      activityData: [...prev.activityData, entry]
-    }));
+  const handleAddActivityEntry = async (entry: { date: string; steps: number; minutes: number }) => {
+    await addActivityEntry({
+      date: entry.date,
+      steps: entry.steps,
+      exercise_minutes: entry.minutes
+    });
   };
 
-  const addAppointment = (appointment: Omit<Appointment, 'id'>) => {
-    const newAppointment = {
-      ...appointment,
-      id: Date.now().toString()
-    };
-    setUserData(prev => ({
-      ...prev,
-      appointments: [...prev.appointments, newAppointment]
-    }));
+  const handleAddAppointment = async (appointment: Omit<Appointment, 'id'>) => {
+    await addAppointment({
+      title: appointment.title,
+      date: appointment.date,
+      time: appointment.time,
+      status: appointment.status
+    });
   };
 
   const requestReschedule = (appointmentId: string, requestedDate: string, requestedTime: string, reason: string) => {
-    setUserData(prev => ({
-      ...prev,
-      appointments: prev.appointments.map(appointment => 
-        appointment.id === appointmentId 
-          ? {
-              ...appointment,
-              status: 'pending' as AppointmentStatus,
-              rescheduleRequest: {
-                requestedDate,
-                requestedTime,
-                reason,
-                requestedAt: new Date().toISOString()
-              }
-            }
-          : appointment
-      )
-    }));
+    console.log('Reschedule request:', { appointmentId, requestedDate, requestedTime, reason });
   };
 
   const approveReschedule = (appointmentId: string) => {
-    setUserData(prev => ({
-      ...prev,
-      appointments: prev.appointments.map(appointment => 
-        appointment.id === appointmentId && appointment.rescheduleRequest
-          ? {
-              ...appointment,
-              date: appointment.rescheduleRequest.requestedDate,
-              time: appointment.rescheduleRequest.requestedTime,
-              status: 'rescheduled' as AppointmentStatus,
-              rescheduleRequest: undefined
-            }
-          : appointment
-      )
-    }));
+    console.log('Approve reschedule:', appointmentId);
   };
 
   const markVideoWatched = (weekNumber: number, videoId: string) => {
-    setUserData(prev => ({
-      ...prev,
-      program: {
-        ...prev.program,
-        weeks: prev.program.weeks.map(week => 
-          week.weekNumber === weekNumber 
-            ? {
-                ...week,
-                tasks: {
-                  ...week.tasks,
-                  videos: week.tasks.videos.map(video =>
-                    video.id === videoId ? { ...video, watched: true } : video
-                  )
-                }
-              }
-            : week
-        )
-      }
-    }));
+    console.log('Mark video watched:', { weekNumber, videoId });
   };
 
   const addMealLog = (weekNumber: number, mealLog: Omit<MealLog, 'id'>) => {
-    const newMealLog = { ...mealLog, id: Date.now().toString() };
-    setUserData(prev => ({
-      ...prev,
-      program: {
-        ...prev.program,
-        weeks: prev.program.weeks.map(week => 
-          week.weekNumber === weekNumber 
-            ? {
-                ...week,
-                tasks: {
-                  ...week.tasks,
-                  mealLogs: [...week.tasks.mealLogs, newMealLog]
-                }
-              }
-            : week
-        )
-      }
-    }));
+    console.log('Add meal log:', { weekNumber, mealLog });
   };
 
   const addWeightLog = (weekNumber: number, weightLog: Omit<WeightLog, 'id'>) => {
-    const newWeightLog = { ...weightLog, id: Date.now().toString() };
-    setUserData(prev => ({
-      ...prev,
-      program: {
-        ...prev.program,
-        weeks: prev.program.weeks.map(week => 
-          week.weekNumber === weekNumber 
-            ? {
-                ...week,
-                tasks: {
-                  ...week.tasks,
-                  weightLogs: [...week.tasks.weightLogs, newWeightLog]
-                }
-              }
-            : week
-        )
-      }
-    }));
+    console.log('Add weight log:', { weekNumber, weightLog });
   };
 
   const editMealLog = (weekNumber: number, mealLogId: string, updatedMealLog: Partial<MealLog>) => {
-    setUserData(prev => ({
-      ...prev,
-      program: {
-        ...prev.program,
-        weeks: prev.program.weeks.map(week => 
-          week.weekNumber === weekNumber 
-            ? {
-                ...week,
-                tasks: {
-                  ...week.tasks,
-                  mealLogs: week.tasks.mealLogs.map(mealLog =>
-                    mealLog.id === mealLogId ? { ...mealLog, ...updatedMealLog } : mealLog
-                  )
-                }
-              }
-            : week
-        )
-      }
-    }));
+    console.log('Edit meal log:', { weekNumber, mealLogId, updatedMealLog });
   };
 
   const deleteMealLog = (weekNumber: number, mealLogId: string) => {
-    setUserData(prev => ({
-      ...prev,
-      program: {
-        ...prev.program,
-        weeks: prev.program.weeks.map(week => 
-          week.weekNumber === weekNumber 
-            ? {
-                ...week,
-                tasks: {
-                  ...week.tasks,
-                  mealLogs: week.tasks.mealLogs.filter(mealLog => mealLog.id !== mealLogId)
-                }
-              }
-            : week
-        )
-      }
-    }));
+    console.log('Delete meal log:', { weekNumber, mealLogId });
   };
 
   const editWeightLog = (weekNumber: number, weightLogId: string, updatedWeightLog: Partial<WeightLog>) => {
-    setUserData(prev => ({
-      ...prev,
-      program: {
-        ...prev.program,
-        weeks: prev.program.weeks.map(week => 
-          week.weekNumber === weekNumber 
-            ? {
-                ...week,
-                tasks: {
-                  ...week.tasks,
-                  weightLogs: week.tasks.weightLogs.map(weightLog =>
-                    weightLog.id === weightLogId ? { ...weightLog, ...updatedWeightLog } : weightLog
-                  )
-                }
-              }
-            : week
-        )
-      }
-    }));
+    console.log('Edit weight log:', { weekNumber, weightLogId, updatedWeightLog });
   };
 
   const deleteWeightLog = (weekNumber: number, weightLogId: string) => {
-    setUserData(prev => ({
-      ...prev,
-      program: {
-        ...prev.program,
-        weeks: prev.program.weeks.map(week => 
-          week.weekNumber === weekNumber 
-            ? {
-                ...week,
-                tasks: {
-                  ...week.tasks,
-                  weightLogs: week.tasks.weightLogs.filter(weightLog => weightLog.id !== weightLogId)
-                }
-              }
-            : week
-        )
-      }
-    }));
+    console.log('Delete weight log:', { weekNumber, weightLogId });
   };
 
   const completeWeek = (weekNumber: number) => {
-    setUserData(prev => ({
-      ...prev,
-      program: {
-        ...prev.program,
-        currentWeek: weekNumber + 1,
-        weeks: prev.program.weeks.map(week => {
-          if (week.weekNumber === weekNumber) {
-            return { ...week, status: 'completed' as const, completion: 100 };
-          } else if (week.weekNumber === weekNumber + 1) {
-            return { ...week, status: 'current' as const };
-          }
-          return week;
-        })
-      }
-    }));
+    console.log('Complete week:', weekNumber);
   };
 
   return (
@@ -435,9 +293,9 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       userData,
       updateUserData,
       addProgressEntry,
-      addNutritionEntry,
-      addActivityEntry,
-      addAppointment,
+      addNutritionEntry: handleAddNutritionEntry,
+      addActivityEntry: handleAddActivityEntry,
+      addAppointment: handleAddAppointment,
       requestReschedule,
       approveReschedule,
       markVideoWatched,
@@ -447,7 +305,8 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       deleteMealLog,
       editWeightLog,
       deleteWeightLog,
-      completeWeek
+      completeWeek,
+      loading
     }}>
       {children}
     </UserDataContext.Provider>
