@@ -34,7 +34,7 @@ const ProgressChart = () => {
           name="Weight (lbs)"
         />
         <Line 
-          yAxisid="calories"
+          yAxisId="calories"
           type="monotone" 
           dataKey="calories" 
           stroke="#7072B7" 
