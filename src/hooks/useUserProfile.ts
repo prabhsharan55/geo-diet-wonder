@@ -56,7 +56,7 @@ export const useUserProfile = () => {
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
-    if (!user) return;
+    if (!user) return { success: false, error: 'Not authenticated' };
 
     try {
       const { data, error } = await supabase
@@ -72,14 +72,16 @@ export const useUserProfile = () => {
       if (error) {
         console.error('Error updating profile:', error);
         toast.error('Failed to update profile');
-        return;
+        return { success: false, error: error.message };
       }
 
       setProfile(data);
       toast.success('Profile updated successfully!');
-    } catch (error) {
+      return { success: true, error: null };
+    } catch (error: any) {
       console.error('Error updating profile:', error);
       toast.error('Failed to update profile');
+      return { success: false, error: error.message };
     }
   };
 
