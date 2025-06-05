@@ -56,6 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         fetchUserDetails(initialSession.user.id).then((details) => {
           if (mounted && details) {
             setUserDetails(details);
+            // Don't redirect on initial load, only on auth state changes
           }
           if (mounted) setLoading(false);
         });
@@ -104,9 +105,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const details = await fetchUserDetails(currentSession.user.id);
         if (details && mounted) {
           setUserDetails(details);
-          await handleRedirect(details);
+          // Only redirect on actual sign in events, not initial load
+          setTimeout(() => {
+            handleRedirect(details);
+            setLoading(false);
+          }, 100);
+        } else {
+          if (mounted) setLoading(false);
         }
-        if (mounted) setLoading(false);
       } else {
         if (mounted) setLoading(false);
       }
@@ -117,12 +123,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []); // Remove redirectBasedOnRole from dependencies
+  }, [handleRedirect]);
 
   const handleSignIn = async (email: string, password: string) => {
     setLoading(true);
     try {
       await signIn(email, password);
+      // Don't set loading to false here - let the auth state change handle it
     } catch (error) {
       setLoading(false);
       throw error;
@@ -139,6 +146,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       await signUp(email, password, fullName, role, linkedPartnerId);
+      setLoading(false);
     } catch (error) {
       setLoading(false);
       throw error;

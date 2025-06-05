@@ -19,6 +19,7 @@ const Auth = () => {
   const [role, setRole] = useState<'admin' | 'partner' | 'customer'>("customer");
   const [error, setError] = useState<string>("");
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { signIn, signUp, user, loading } = useAuth();
   const [searchParams] = useSearchParams();
 
@@ -39,8 +40,25 @@ const Auth = () => {
   }, [activeTab, email, password]);
 
   // If user is already logged in, redirect to appropriate dashboard
-  if (user) {
+  if (user && !loading) {
     return <Navigate to="/customer" replace />;
+  }
+
+  // Show loading while auth state is being determined
+  if (loading && !isSubmitting) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 p-4">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold mb-2">
+            <span className="text-black">Geo</span>
+            <span className="text-[#1B5E20]">Di</span>
+            <span className="text-black">et</span>
+          </h1>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   // Show email confirmation page if needed
@@ -66,11 +84,14 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsSubmitting(true);
     
     try {
       await signIn(email, password);
+      // Don't set isSubmitting to false here - let the redirect handle the state
     } catch (err: any) {
       console.error('Sign in error:', err);
+      setIsSubmitting(false);
       
       if (err.message === 'UNCONFIRMED_EMAIL') {
         setShowEmailConfirmation(true);
@@ -85,6 +106,7 @@ const Auth = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsSubmitting(true);
     
     try {
       await signUp(email, password, fullName, role);
@@ -92,6 +114,8 @@ const Auth = () => {
     } catch (err: any) {
       console.error('Sign up error:', err);
       setError(err.message || "Failed to create account. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -145,6 +169,7 @@ const Auth = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div className="space-y-2">
@@ -154,14 +179,15 @@ const Auth = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    disabled={isSubmitting}
                   />
                 </div>
                 <Button 
                   type="submit" 
                   className="w-full bg-gradient-to-r from-[#160041] to-[#8D97DE]" 
-                 // disabled={loading}
+                  disabled={isSubmitting}
                 >
-                  {"Sign In"}
+                  {isSubmitting ? "Signing in..." : "Sign In"}
                 </Button>
                 <div className="text-sm text-center text-gray-500 mt-4">
                   <a href="#" className="hover:underline">Forgot your password?</a>
@@ -179,6 +205,7 @@ const Auth = () => {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required
+                      disabled={isSubmitting}
                     />
                   </div>
                   <div className="space-y-2">
@@ -188,6 +215,7 @@ const Auth = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
+                      disabled={isSubmitting}
                     />
                   </div>
                   <div className="space-y-2">
@@ -197,10 +225,11 @@ const Auth = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
+                      disabled={isSubmitting}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Select value={role} onValueChange={(value: 'partner' | 'customer') => setRole(value)}>
+                    <Select value={role} onValueChange={(value: 'partner' | 'customer') => setRole(value)} disabled={isSubmitting}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select your role" />
                       </SelectTrigger>
@@ -213,9 +242,9 @@ const Auth = () => {
                   <Button 
                     type="submit" 
                     className="w-full bg-gradient-to-r from-[#160041] to-[#8D97DE]" 
-                    disabled={loading}
+                    disabled={isSubmitting}
                   >
-                    {loading ? "Creating account..." : "Create Account"}
+                    {isSubmitting ? "Creating account..." : "Create Account"}
                   </Button>
                 </form>
               </TabsContent>
