@@ -14,7 +14,7 @@ import RescheduleAppointmentDialog from "@/components/customer/RescheduleAppoint
 import { useState } from "react";
 
 const CustomerDashboard = () => {
-  const { userData, approveReschedule } = useUserData();
+  const { userData, approveReschedule, loading } = useUserData();
   const [rescheduleDialog, setRescheduleDialog] = useState<{
     isOpen: boolean;
     appointmentId: string;
@@ -103,6 +103,16 @@ const CustomerDashboard = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <CustomerLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg">Loading your dashboard...</div>
+        </div>
+      </CustomerLayout>
+    );
+  }
+
   return (
     <CustomerLayout>
       <header className="mb-8 flex items-center justify-between">
@@ -118,18 +128,18 @@ const CustomerDashboard = () => {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <StatCard 
           title="Current Weight" 
-          value={`${userData.currentWeight} lbs`}
-          description="-3 lbs from last week" 
+          value={userData.currentWeight ? `${userData.currentWeight} lbs` : "Not set"}
+          description={userData.currentWeight ? "-3 lbs from last week" : "Add your weight in Progress & Reports"} 
         />
         <StatCard 
           title="Workouts Completed" 
           value={userData.workoutCompleted.toString()}
-          description="+2 from last week" 
+          description={userData.workoutCompleted > 0 ? "+2 from last week" : "Start tracking your workouts"} 
         />
         <StatCard 
           title="Calories Tracked" 
-          value={userData.caloriesTracked.toLocaleString()}
-          description="93% of weekly target" 
+          value={userData.caloriesTracked > 0 ? userData.caloriesTracked.toLocaleString() : "0"}
+          description={userData.caloriesTracked > 0 ? "93% of weekly target" : "Add nutrition entries to track calories"} 
         />
       </div>
       

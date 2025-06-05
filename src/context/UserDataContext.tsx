@@ -1,3 +1,4 @@
+
 import { createContext, useContext, ReactNode } from 'react';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useNutritionData } from '@/hooks/useNutritionData';
@@ -115,18 +116,40 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
 
   const loading = profileLoading || nutritionLoading || activityLoading || appointmentsLoading;
 
+  // Create progress data from nutrition and activity data
+  const createProgressData = () => {
+    const monthlyData: { [key: string]: { weight: number; calories: number; count: number } } = {};
+    
+    // Aggregate nutrition data by month
+    nutritionData.forEach(entry => {
+      const date = new Date(entry.date);
+      const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
+      
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = { weight: profile?.current_weight || 172, calories: 0, count: 0 };
+      }
+      
+      // Calculate total calories (protein*4 + carbs*4 + fats*9)
+      const totalCalories = (entry.protein * 4) + (entry.carbs * 4) + (entry.fats * 9);
+      monthlyData[monthKey].calories += totalCalories;
+      monthlyData[monthKey].count += 1;
+    });
+
+    // Convert to array format expected by the chart
+    return Object.entries(monthlyData).map(([month, data]) => ({
+      month,
+      weight: data.weight,
+      calories: data.count > 0 ? Math.round(data.calories / data.count) : 0
+    }));
+  };
+
   // Convert database data to the expected format
   const userData: UserData = {
     name: profile?.full_name || 'User',
     currentWeight: profile?.current_weight || 172,
     workoutCompleted: profile?.workout_completed || 0,
     caloriesTracked: profile?.calories_tracked || 0,
-    progressData: [
-      { month: 'Jan', weight: 180, calories: 18500 },
-      { month: 'Feb', weight: 178, calories: 19000 },
-      { month: 'Mar', weight: 175, calories: 19203 },
-      { month: 'Apr', weight: 172, calories: 19500 },
-    ],
+    progressData: createProgressData(),
     nutritionData: nutritionData.map(entry => ({
       date: entry.date,
       protein: entry.protein,
