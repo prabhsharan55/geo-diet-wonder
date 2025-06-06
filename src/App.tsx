@@ -37,7 +37,6 @@ import PartnerSupport from "./pages/partner/Support";
 import PartnerSettings from "./pages/partner/Settings";
 import AdminDashboard from "./pages/admin/Dashboard";
 import NotFound from "./pages/NotFound";
-import ApplicationStatus from "./pages/partner/ApplicationStatus";
 
 function App() {
   return (
@@ -61,7 +60,7 @@ function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/signup" element={<SignupPage />} />
 
-            {/* Customer Routes - No longer protected */}
+            {/* Customer Routes */}
             <Route path="/customer" element={<CustomerDashboard />} />
             <Route path="/customer/program" element={<CustomerProgram />} />
             <Route path="/customer/videos" element={<CustomerVideos />} />
@@ -72,9 +71,8 @@ function App() {
             <Route path="/customer/support" element={<CustomerSupport />} />
             <Route path="/customer/settings" element={<CustomerSettings />} />
 
-            {/* Partner Routes - No longer protected */}
+            {/* Partner Routes */}
             <Route path="/partner" element={<PartnerDashboard />} />
-            <Route path="/partner/application-status" element={<ApplicationStatus />} />
             <Route path="/partner/client-management" element={<ClientManagement />} />
             <Route path="/partner/access-requests" element={<AccessRequests />} />
             <Route path="/partner/plans-management" element={<PlansManagement />} />
@@ -84,7 +82,7 @@ function App() {
             <Route path="/partner/support" element={<PartnerSupport />} />
             <Route path="/partner/settings" element={<PartnerSettings />} />
 
-            {/* Admin Routes - No longer protected */}
+            {/* Admin Routes */}
             <Route path="/admin" element={<AdminDashboard />} />
 
             {/* Fallback route */}

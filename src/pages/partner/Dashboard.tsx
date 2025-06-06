@@ -1,3 +1,4 @@
+
 // @ts-nocheck
 
 import { BarChart2, Clock, PlusCircle, Upload, Users } from "lucide-react";
@@ -6,127 +7,56 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PartnerLayout from "@/components/partner/PartnerLayout";
-import { supabase } from "@/integrations/supabase/client";
-import ApplicationStatus from "./ApplicationStatus";
 import { useState, useEffect } from "react";
 
 const PartnerDashboard = () => {
-  const [application, setApplication] = useState<any>(null);
-  const [applicationLoading, setApplicationLoading] = useState(true);
-  const [customerStats, setCustomerStats] = useState<any>({ total: 0, active: 0, pending: 0 });
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  // Mock data since we're not using authentication
+  const mockClients = [
+    {
+      id: "1",
+      full_name: "Sarah Johnson",
+      email: "sarah.johnson@email.com",
+      role: "customer",
+      created_at: "2024-01-15T10:00:00Z"
+    },
+    {
+      id: "2", 
+      full_name: "Michael Chen",
+      email: "michael.chen@email.com",
+      role: "customer",
+      created_at: "2024-01-20T14:30:00Z"
+    },
+    {
+      id: "3",
+      full_name: "Emily Davis",
+      email: "emily.davis@email.com", 
+      role: "customer",
+      created_at: "2024-02-01T09:15:00Z"
+    }
+  ];
 
-  // Mock user data since we're not using authentication
-  const mockUser = { email: "partner@example.com" };
-  const mockUserDetails = { id: "mock-partner-id", full_name: "Partner User", email: "partner@example.com" };
-
-  useEffect(() => {
-    const checkApplication = async () => {
-      if (!mockUser?.email) return;
-      
-      try {
-        const userEmail = mockUser.email.trim().toLowerCase();
-        console.log("Dashboard checking application for:", userEmail);
-        
-        const result = await supabase
-          .from('partner_applications')
-          .select('status, email')
-          .ilike('email', userEmail)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        
-        console.log("Dashboard application check result:", result);
-        setApplication(result.data as any);
-      } catch (error) {
-        console.error('Error checking application:', error);
-        setApplication(null);
-      } finally {
-        setApplicationLoading(false);
-      }
-    };
-
-    checkApplication();
-  }, [mockUser?.email]);
+  const [customerStats, setCustomerStats] = useState({ total: 0, active: 0, pending: 0 });
+  const [recentActivity, setRecentActivity] = useState([]);
 
   useEffect(() => {
-    const fetchCustomerStats = async () => {
-      if (!mockUserDetails?.id) return;
-      
-      try {
-        const customersResult = await supabase
-          .from('users')
-          .select('id, role, created_at')
-          .eq('role', 'customer')
-          .eq('linked_partner_id', mockUserDetails.id);
+    // Set up mock data
+    setCustomerStats({
+      total: mockClients.length,
+      active: mockClients.length,
+      pending: 0
+    });
+    setRecentActivity(mockClients);
+  }, []);
 
-        const customers = (customersResult.data || []) as any[];
-        
-        if (customers) {
-          const stats = {
-            total: customers.length,
-            active: customers.length,
-            pending: 0
-          };
-          setCustomerStats(stats);
-        }
-      } catch (error) {
-        console.error('Error fetching customer stats:', error);
-      }
-    };
-
-    fetchCustomerStats();
-  }, [mockUserDetails?.id]);
-
-  useEffect(() => {
-    const fetchRecentActivity = async () => {
-      if (!mockUserDetails?.id) return;
-      
-      try {
-        const activityResult = await supabase
-          .from('users')
-          .select('id, email, full_name, created_at')
-          .eq('role', 'customer')
-          .eq('linked_partner_id', mockUserDetails.id)
-          .order('created_at', { ascending: false })
-          .limit(5);
-
-        setRecentActivity((activityResult.data || []) as any[]);
-      } catch (error) {
-        console.error('Error fetching recent activity:', error);
-      }
-    };
-
-    fetchRecentActivity();
-  }, [mockUserDetails?.id]);
-
-  if (applicationLoading) {
-    return (
-      <PartnerLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        </div>
-      </PartnerLayout>
-    );
-  }
-
-  // Check if application exists and is approved
-  const isApproved = application && application.status?.trim().toLowerCase() === 'approved';
-  
-  if (!application || !isApproved) {
-    console.log("Application not approved, showing ApplicationStatus. Application:", application);
-    return <ApplicationStatus />;
-  }
-
-  const getActivityText = (customer: any): string => {
+  const getActivityText = (customer) => {
     return 'Active access';
   };
 
-  const getStatusColor = (status: string): string => {
+  const getStatusColor = (status) => {
     return 'bg-green-100 text-green-800';
   };
 
-  const formatDate = (dateString: string): string => {
+  const formatDate = (dateString) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInMs = now.getTime() - date.getTime();
@@ -139,7 +69,7 @@ const PartnerDashboard = () => {
   };
 
   // Pre-render activity rows to prevent TypeScript deep inference
-  const activityRows = recentActivity.map((customer: any) => (
+  const activityRows = recentActivity.map((customer) => (
     <tr key={customer.id} className="hover:bg-gray-50">
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center">
@@ -204,27 +134,6 @@ const PartnerDashboard = () => {
             className="bg-gradient-to-br from-[#FFEFEF] to-white"
           />
         </div>
-
-        {/* Debug section - temporarily show raw data */}
-        {process.env.NODE_ENV === 'development' && (
-          <Card>
-            <CardContent className="p-4">
-              <h3 className="font-medium mb-2">Debug Info:</h3>
-              <pre className="text-xs bg-gray-100 p-2 rounded">
-                Partner ID: {mockUserDetails?.id || 'Not set'}
-              </pre>
-              <pre className="text-xs bg-gray-100 p-2 rounded mt-2">
-                Application Status: {application?.status || 'Not found'}
-              </pre>
-              <pre className="text-xs bg-gray-100 p-2 rounded mt-2">
-                Customer Stats: {JSON.stringify(customerStats, null, 2)}
-              </pre>
-              <pre className="text-xs bg-gray-100 p-2 rounded mt-2">
-                Recent Activity Count: {recentActivity?.length || 0}
-              </pre>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Quick Actions */}
         <div>

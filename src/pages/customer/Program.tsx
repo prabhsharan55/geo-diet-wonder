@@ -1,310 +1,355 @@
+// @ts-nocheck
+
 import { useState, useEffect } from "react";
-import CustomerLayout from "@/components/customer/CustomerLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Lock, PlayCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { useUserData } from "@/context/UserDataContext";
-import AnimatedProgressBar from "@/components/customer/AnimatedProgressBar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar, CheckCircle, Clock, Play, Book } from "lucide-react";
+import CustomerLayout from "@/components/customer/CustomerLayout";
 import VideoTaskRow from "@/components/customer/VideoTaskRow";
 import MealLogTaskRow from "@/components/customer/MealLogTaskRow";
 import WeightTrackingTaskRow from "@/components/customer/WeightTrackingTaskRow";
 
+interface Video {
+  id: string;
+  title: string;
+  url: string;
+  weekNumber: number;
+  completed: boolean;
+}
+
+interface MealLog {
+  id: string;
+  date: string;
+  meal: string;
+  calories: number;
+  weekNumber: number;
+}
+
+interface WeightLog {
+  id: string;
+  date: string;
+  weight: number;
+  weekNumber: number;
+}
+
+// Mock data for videos
+const mockVideos: Video[] = [
+  {
+    id: "video-1",
+    title: "Introduction to Metabolism",
+    url: "https://example.com/video1",
+    weekNumber: 1,
+    completed: true,
+  },
+  {
+    id: "video-2",
+    title: "Understanding Macronutrients",
+    url: "https://example.com/video2",
+    weekNumber: 1,
+    completed: false,
+  },
+  {
+    id: "video-3",
+    title: "Advanced Nutrition Science",
+    url: "https://example.com/video3",
+    weekNumber: 2,
+    completed: false,
+  },
+];
+
+// Mock data for meal logs
+const mockMealLogs: MealLog[] = [
+  {
+    id: "meal-1",
+    date: "2024-07-15",
+    meal: "Breakfast",
+    calories: 300,
+    weekNumber: 1,
+  },
+  {
+    id: "meal-2",
+    date: "2024-07-15",
+    meal: "Lunch",
+    calories: 500,
+    weekNumber: 1,
+  },
+  {
+    id: "meal-3",
+    date: "2024-07-22",
+    meal: "Dinner",
+    calories: 700,
+    weekNumber: 2,
+  },
+];
+
+// Mock data for weight logs
+const mockWeightLogs: WeightLog[] = [
+  {
+    id: "weight-1",
+    date: "2024-07-15",
+    weight: 150,
+    weekNumber: 1,
+  },
+  {
+    id: "weight-2",
+    date: "2024-07-22",
+    weight: 148,
+    weekNumber: 2,
+  },
+];
+
 const Program = () => {
-  const { userData, markVideoWatched, addMealLog, addWeightLog, editMealLog, deleteMealLog, editWeightLog, deleteWeightLog, completeWeek } = useUserData();
-  const [shouldAnimateProgress, setShouldAnimateProgress] = useState(false);
-  const [showWeekCompleteAnimation, setShowWeekCompleteAnimation] = useState(false);
-  const [selectedDay, setSelectedDay] = useState(1);
-  
-  const { program } = userData;
-  const currentWeek = program.currentWeek;
-  const totalWeeks = program.totalWeeks;
+  const { userData, updateUserData } = useUserData();
+  const [selectedWeek, setSelectedWeek] = useState(1);
+  const [videos, setVideos] = useState(mockVideos);
+  const [mealLogs, setMealLogs] = useState(mockMealLogs);
+  const [weightLogs, setWeightLogs] = useState(mockWeightLogs);
 
-  // Get current date info
-  const currentDate = new Date();
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const currentDayName = dayNames[currentDate.getDay()];
-  const currentDayOfWeek = currentDate.getDay() === 0 ? 7 : currentDate.getDay(); // Convert Sunday (0) to 7
-  
-  // Check if a day tab should be accessible based on current system day
-  const isDayAccessible = (weekNumber: number, dayNumber: number) => {
-    if (weekNumber < currentWeek) return true; // Past weeks are fully accessible
-    if (weekNumber > currentWeek) return false; // Future weeks are locked
-    if (weekNumber === currentWeek) {
-      return dayNumber <= currentDayOfWeek; // Current week: only current and past days
-    }
-    return false;
-  };
-
-  // Check if it's current day for edit/delete permissions
-  const isCurrentDay = (weekNumber: number, dayNumber: number) => {
-    return weekNumber === currentWeek && dayNumber === currentDayOfWeek;
-  };
-
-  // Check if user just completed a week (simulate checking on page load)
   useEffect(() => {
-    // This would normally check if user just completed tasks and trigger animation
-    const hasJustCompletedWeek = localStorage.getItem('weekJustCompleted');
-    if (hasJustCompletedWeek) {
-      setShouldAnimateProgress(true);
-      localStorage.removeItem('weekJustCompleted');
-    }
-  }, []);
-
-  const getWeekStatus = (weekNumber: number) => {
-    if (weekNumber < currentWeek) return "completed";
-    if (weekNumber === currentWeek) return "current";
-    return "locked";
-  };
-
-  const calculateWeekCompletion = (week: any) => {
-    const totalTasks = week.tasks.videos.length + 7 + 7; // videos + daily meals + weekly weights
-    const completedVideos = week.tasks.videos.filter((v: any) => v.watched).length;
-    const completedMeals = week.tasks.mealLogs.length;
-    const completedWeights = week.tasks.weightLogs.length;
-    
-    return Math.round(((completedVideos + completedMeals + completedWeights) / totalTasks) * 100);
-  };
-
-  const canCompleteWeek = (week: any) => {
-    const allVideosWatched = week.tasks.videos.every((v: any) => v.watched);
-    const hasMealLogs = week.tasks.mealLogs.length >= 7; // At least 7 meal logs
-    const hasWeightLogs = week.tasks.weightLogs.length >= 1; // At least 1 weight log
-    
-    return allVideosWatched && hasMealLogs && hasWeightLogs;
-  };
-
-  const handleCompleteWeek = (weekNumber: number) => {
-    completeWeek(weekNumber);
-    localStorage.setItem('weekJustCompleted', 'true');
-    setShowWeekCompleteAnimation(true);
-    setTimeout(() => setShowWeekCompleteAnimation(false), 3000);
-  };
-
-  const overallCompletion = Math.round(((currentWeek - 1) / totalWeeks) * 100);
-
-  // Generate day tabs for any week
-  const generateDayTabs = (weekNumber: number) => {
-    const days = [];
-    for (let i = 1; i <= 7; i++) {
-      const dayName = dayNames[i % 7]; // Start from Monday
-      const accessible = isDayAccessible(weekNumber, i);
-      days.push({
-        day: i,
-        name: dayName,
-        accessible
+    // Mock function to simulate fetching user data
+    const fetchUserData = async () => {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      updateUserData({
+        currentWeek: 3,
+        daysRemaining: 42,
+        completedTasks: 15,
+        totalTasks: 30,
       });
-    }
-    return days;
+    };
+
+    fetchUserData();
+  }, [updateUserData]);
+
+  const handleVideoComplete = (videoId: string) => {
+    setVideos(
+      videos.map((video) =>
+        video.id === videoId ? { ...video, completed: true } : video
+      )
+    );
   };
 
-  const formatDateWithDay = () => {
-    const options: Intl.DateTimeFormatOptions = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    };
-    return currentDate.toLocaleDateString('en-US', options);
+  const handleVideoPlay = (videoId: string) => {
+    console.log(`Playing video with ID: ${videoId}`);
+  };
+
+  const handleAddMealLog = (newMealLog: MealLog) => {
+    setMealLogs([...mealLogs, newMealLog]);
+  };
+
+  const handleEditMealLog = (updatedMealLog: MealLog) => {
+    setMealLogs(
+      mealLogs.map((mealLog) =>
+        mealLog.id === updatedMealLog.id ? updatedMealLog : mealLog
+      )
+    );
+  };
+
+  const handleDeleteMealLog = (mealLogId: string) => {
+    setMealLogs(mealLogs.filter((mealLog) => mealLog.id !== mealLogId));
+  };
+
+  const handleAddWeightLog = (newWeightLog: WeightLog) => {
+    setWeightLogs([...weightLogs, newWeightLog]);
+  };
+
+  const handleEditWeightLog = (updatedWeightLog: WeightLog) => {
+    setWeightLogs(
+      weightLogs.map((weightLog) =>
+        weightLog.id === updatedWeightLog.id ? updatedWeightLog : weightLog
+      )
+    );
+  };
+
+  const handleDeleteWeightLog = (weightLogId: string) => {
+    setWeightLogs(weightLogs.filter((weightLog) => weightLog.id !== weightLogId));
+  };
+
+  const currentWeekVideos = videos.filter(video => video.weekNumber === selectedWeek);
+  const currentWeekMealLogs = mealLogs.filter(log => log.weekNumber === selectedWeek);
+  const currentWeekWeightLogs = weightLogs.filter(log => log.weekNumber === selectedWeek);
+
+  const getWeekProgress = (weekNum: number) => {
+    const weekVideos = videos.filter(v => v.weekNumber === weekNum);
+    const completedVideos = weekVideos.filter(v => v.completed).length;
+    return weekVideos.length > 0 ? Math.round((completedVideos / weekVideos.length) * 100) : 0;
+  };
+
+  const canEditWeek = (weekNum: number) => {
+    return weekNum <= userData.currentWeek;
   };
 
   return (
     <CustomerLayout>
       <div className="space-y-6">
-        <div>
-          <h2 className="text-3xl font-bold">My Program</h2>
-          <p className="text-gray-500 mt-1">Your {totalWeeks}-week {program.planName} journey</p>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-3xl font-bold">Your Program</h2>
+            <p className="text-gray-500 mt-1">Week {userData.currentWeek} of 7</p>
+          </div>
+          <div className="flex items-center gap-2 mt-4 md:mt-0">
+            <Badge variant="secondary">
+              <Calendar className="mr-1 h-3 w-3" />
+              {userData.daysRemaining} days left
+            </Badge>
+            <Badge variant="outline">
+              {userData.completedTasks}/{userData.totalTasks} tasks completed
+            </Badge>
+          </div>
         </div>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Program Progress</span>
-              <span className="text-sm font-medium bg-[#F4D374] text-[#160041] py-1 px-3 rounded-full">
-                Week {currentWeek} of {totalWeeks}
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4 flex justify-between text-sm">
-              <span>Overall Completion</span>
-              <span className="font-medium">{overallCompletion}%</span>
-            </div>
-            <div className="max-w-xs">
-              <AnimatedProgressBar 
-                value={overallCompletion} 
-                userName={userData.name}
-                shouldAnimate={shouldAnimateProgress}
-                onAnimationComplete={() => setShouldAnimateProgress(false)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Tabs defaultValue={`week-${currentWeek}`} className="w-full">
-          <div className="overflow-x-auto">
-            <TabsList className="w-full min-w-max grid" style={{ gridTemplateColumns: `repeat(${totalWeeks}, minmax(80px, 1fr))` }}>
-              {program.weeks.map((week) => {
-                const status = getWeekStatus(week.weekNumber);
-                return (
-                  <TabsTrigger 
-                    key={`week-${week.weekNumber}`} 
-                    value={`week-${week.weekNumber}`}
-                    disabled={status === "locked"}
-                    className={cn(
-                      "text-xs px-3 py-2 min-w-[80px]",
-                      status === "completed" && "bg-green-100 data-[state=active]:bg-green-200"
-                    )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Program Overview</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {[1, 2, 3, 4, 5, 6, 7].map((week) => (
+                  <div
+                    key={week}
+                    className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                      selectedWeek === week
+                        ? "border-[#8D97DE] bg-[#8D97DE]/5"
+                        : canEditWeek(week)
+                        ? "border-gray-200 hover:border-gray-300"
+                        : "border-gray-100 bg-gray-50 cursor-not-allowed"
+                    }`}
+                    onClick={() => canEditWeek(week) && setSelectedWeek(week)}
                   >
-                    <span className="truncate">
-                      Week {week.weekNumber}
-                      {status === "completed" && <Check className="ml-1 h-3 w-3 text-green-500 inline" />}
-                      {status === "locked" && <Lock className="ml-1 h-3 w-3 inline" />}
-                    </span>
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
-          </div>
-          
-          {program.weeks.map((week) => {
-            const status = getWeekStatus(week.weekNumber);
-            const completion = calculateWeekCompletion(week);
-            const canComplete = canCompleteWeek(week);
-            const isCurrentWeek = status === "current";
-            
-            return (
-              <TabsContent key={`content-${week.weekNumber}`} value={`week-${week.weekNumber}`} className="mt-6 space-y-6">
-                {/* Show current date and day for current week */}
-                {isCurrentWeek && (
-                  <Card className="bg-blue-50 border-blue-200">
-                    <CardContent className="p-4">
-                      <div className="text-center">
-                        <h3 className="font-semibold text-lg text-blue-800">Today</h3>
-                        <p className="text-blue-600">{formatDateWithDay()}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Day tabs for all weeks */}
-                <Tabs defaultValue="day-1" className="w-full">
-                  <TabsList className="w-full grid grid-cols-7">
-                    {generateDayTabs(week.weekNumber).map((day) => (
-                      <TabsTrigger 
-                        key={`day-${day.day}`} 
-                        value={`day-${day.day}`}
-                        disabled={!day.accessible}
-                        className={cn(
-                          "text-xs px-2 py-1",
-                          !day.accessible && "opacity-50"
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {week < userData.currentWeek ? (
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        ) : week === userData.currentWeek ? (
+                          <Clock className="h-4 w-4 text-[#8D97DE]" />
+                        ) : (
+                          <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
                         )}
-                        onClick={() => day.accessible && setSelectedDay(day.day)}
-                      >
-                        <span className="truncate">
-                          Day {day.day}
-                          <br />
-                          <span className="text-xs text-gray-500">{day.name}</span>
-                          {!day.accessible && <Lock className="h-3 w-3 inline ml-1" />}
+                        <span className={`font-medium ${!canEditWeek(week) ? "text-gray-400" : ""}`}>
+                          Week {week}
                         </span>
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                  
-                  {generateDayTabs(week.weekNumber).map((day) => (
-                    <TabsContent key={`day-content-${day.day}`} value={`day-${day.day}`} className="mt-4">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle className="text-lg">
-                            Day {day.day} - {day.name} Tracking
-                            {isCurrentWeek && day.day === currentDayOfWeek && (
-                              <span className="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">Today</span>
-                            )}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-6">
-                            <VideoTaskRow 
-                              videos={week.tasks.videos}
-                              weekNumber={week.weekNumber}
-                              onVideoComplete={(videoId) => markVideoWatched(week.weekNumber, videoId)}
-                            />
-                            
-                            <MealLogTaskRow 
-                              mealLogs={week.tasks.mealLogs.filter(log => 
-                                new Date(log.date).getDay() === (day.day % 7)
-                              )}
-                              weekNumber={week.weekNumber}
-                              onAddMealLog={(mealLog) => addMealLog(week.weekNumber, mealLog)}
-                              onEditMealLog={(mealLogId, updatedMealLog) => editMealLog(week.weekNumber, mealLogId, updatedMealLog)}
-                              onDeleteMealLog={(mealLogId) => deleteMealLog(week.weekNumber, mealLogId)}
-                              canEdit={isCurrentDay(week.weekNumber, day.day)}
-                            />
-                            
-                            <WeightTrackingTaskRow 
-                              weightLogs={week.tasks.weightLogs}
-                              weekNumber={week.weekNumber}
-                              onAddWeightLog={(weightLog) => addWeightLog(week.weekNumber, weightLog)}
-                              onEditWeightLog={(weightLogId, updatedWeightLog) => editWeightLog(week.weekNumber, weightLogId, updatedWeightLog)}
-                              onDeleteWeightLog={(weightLogId) => deleteWeightLog(week.weekNumber, weightLogId)}
-                              canEdit={isCurrentDay(week.weekNumber, day.day)}
-                            />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </TabsContent>
-                  ))}
-                </Tabs>
-
-                {/* Week completion button for current week */}
-                {status === "current" && canComplete && (
-                  <Card>
-                    <CardContent className="p-4 text-center">
-                      <Button 
-                        onClick={() => handleCompleteWeek(week.weekNumber)}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        Complete Week {week.weekNumber}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
-                
-                {status !== "locked" && week.recommendedVideos.length > 0 && (
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Recommended Videos</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {week.recommendedVideos.map((video) => (
-                          <div key={video.id} className="flex items-center gap-3">
-                            <PlayCircle className="h-5 w-5 text-[#8D97DE]" />
-                            <span className="flex-1">{video.title}</span>
-                            <span className="text-sm text-gray-500">{video.duration}</span>
-                            <Button size="sm" variant="outline">Watch</Button>
-                          </div>
-                        ))}
                       </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-            );
-          })}
-        </Tabs>
-
-        {/* Week completion celebration */}
-        {showWeekCompleteAnimation && (
-          <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-6xl mb-4">🎉</div>
-              <h2 className="text-3xl font-bold text-green-600 mb-2">Week Completed!</h2>
-              <p className="text-lg text-gray-600">Great job! Moving to the next week...</p>
-            </div>
+                      <span className={`text-sm ${!canEditWeek(week) ? "text-gray-400" : "text-gray-500"}`}>
+                        {getWeekProgress(week)}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           </div>
-        )}
+
+          <div className="lg:col-span-3">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <span>Week {selectedWeek} Tasks</span>
+                  <Badge variant={selectedWeek === userData.currentWeek ? "default" : "secondary"}>
+                    {selectedWeek === userData.currentWeek ? "Current" : selectedWeek < userData.currentWeek ? "Completed" : "Upcoming"}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="videos" className="space-y-6">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="videos" className="flex items-center gap-2">
+                      <Play className="h-4 w-4" />
+                      Videos ({currentWeekVideos.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="meals" className="flex items-center gap-2">
+                      <Book className="h-4 w-4" />
+                      Meal Logs ({currentWeekMealLogs.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="weight" className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Weight Tracking ({currentWeekWeightLogs.length})
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="videos" className="space-y-4">
+                    {currentWeekVideos.length > 0 ? (
+                      currentWeekVideos.map((video) => (
+                        <VideoTaskRow
+                          key={video.id}
+                          video={video}
+                          onComplete={handleVideoComplete}
+                          onPlay={handleVideoPlay}
+                          canEdit={canEditWeek(selectedWeek)}
+                        />
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        <Play className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                        <p>No videos scheduled for this week</p>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="meals" className="space-y-4">
+                    {currentWeekMealLogs.map((mealLog) => (
+                      <MealLogTaskRow
+                        key={mealLog.id}
+                        mealLog={mealLog}
+                        weekNumber={selectedWeek}
+                        onAddMealLog={handleAddMealLog}
+                        onEditMealLog={handleEditMealLog}
+                        onDeleteMealLog={handleDeleteMealLog}
+                        canEdit={canEditWeek(selectedWeek)}
+                      />
+                    ))}
+                    {canEditWeek(selectedWeek) && (
+                      <Button
+                        variant="outline"
+                        onClick={() => handleAddMealLog({
+                          id: `meal-${Date.now()}`,
+                          date: new Date().toISOString().split('T')[0],
+                          meal: "New Meal",
+                          calories: 0,
+                          weekNumber: selectedWeek
+                        })}
+                        className="w-full"
+                      >
+                        Add Meal Log
+                      </Button>
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="weight" className="space-y-4">
+                    {currentWeekWeightLogs.map((weightLog) => (
+                      <WeightTrackingTaskRow
+                        key={weightLog.id}
+                        weightLog={weightLog}
+                        weekNumber={selectedWeek}
+                        onAddWeightLog={handleAddWeightLog}
+                        onEditWeightLog={handleEditWeightLog}
+                        onDeleteWeightLog={handleDeleteWeightLog}
+                        canEdit={canEditWeek(selectedWeek)}
+                      />
+                    ))}
+                    {canEditWeek(selectedWeek) && (
+                      <Button
+                        variant="outline"
+                        onClick={() => handleAddWeightLog({
+                          id: `weight-${Date.now()}`,
+                          date: new Date().toISOString().split('T')[0],
+                          weight: 0,
+                          weekNumber: selectedWeek
+                        })}
+                        className="w-full"
+                      >
+                        Add Weight Log
+                      </Button>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </CustomerLayout>
   );
