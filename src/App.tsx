@@ -36,6 +36,9 @@ import Announcements from "./pages/partner/Announcements";
 import PartnerSupport from "./pages/partner/Support";
 import PartnerSettings from "./pages/partner/Settings";
 import AdminDashboard from "./pages/admin/Dashboard";
+import CustomersPage from "./pages/admin/customers/index";
+import CustomerReportsPage from "./pages/admin/customers/reports";
+import BlogPage from "./pages/admin/content/blog";
 import NotFound from "./pages/NotFound";
 
 function App() {
@@ -84,6 +87,21 @@ function App() {
 
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/partners" element={<CustomersPage />} />
+            <Route path="/admin/partners/add" element={<CustomersPage />} />
+            <Route path="/admin/partners/map" element={<CustomersPage />} />
+            <Route path="/admin/customers" element={<CustomersPage />} />
+            <Route path="/admin/customers/reports" element={<CustomerReportsPage />} />
+            <Route path="/admin/packages" element={<CustomersPage />} />
+            <Route path="/admin/packages/add" element={<CustomersPage />} />
+            <Route path="/admin/content/videos" element={<BlogPage />} />
+            <Route path="/admin/content/blog" element={<BlogPage />} />
+            <Route path="/admin/analytics" element={<CustomersPage />} />
+            <Route path="/admin/partner-locator" element={<CustomersPage />} />
+            <Route path="/admin/email" element={<CustomersPage />} />
+            <Route path="/admin/legal/terms" element={<CustomersPage />} />
+            <Route path="/admin/legal/policy" element={<CustomersPage />} />
+            <Route path="/admin/settings" element={<CustomersPage />} />
 
             {/* Fallback route */}
             <Route path="*" element={<NotFound />} />
