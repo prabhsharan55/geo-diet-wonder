@@ -39,6 +39,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import CustomersPage from "./pages/admin/customers/index";
 import CustomerReportsPage from "./pages/admin/customers/reports";
 import BlogPage from "./pages/admin/content/blog";
+import EmailPage from "./pages/admin/email";
 import NotFound from "./pages/NotFound";
 
 function App() {
@@ -98,7 +99,7 @@ function App() {
             <Route path="/admin/content/blog" element={<BlogPage />} />
             <Route path="/admin/analytics" element={<CustomersPage />} />
             <Route path="/admin/partner-locator" element={<CustomersPage />} />
-            <Route path="/admin/email" element={<CustomersPage />} />
+            <Route path="/admin/email" element={<EmailPage />} />
             <Route path="/admin/legal/terms" element={<CustomersPage />} />
             <Route path="/admin/legal/policy" element={<CustomersPage />} />
             <Route path="/admin/settings" element={<CustomersPage />} />
