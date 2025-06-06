@@ -8,7 +8,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/context/AuthContext";
 
 interface PartnerHeaderProps {
   sidebarOpen: boolean;
@@ -16,10 +15,9 @@ interface PartnerHeaderProps {
 }
 
 const PartnerHeader = ({ sidebarOpen, setSidebarOpen }: PartnerHeaderProps) => {
-  const { signOut } = useAuth();
-
   const handleSignOut = async () => {
-    await signOut();
+    // Mock sign out - redirect to home page
+    window.location.href = "/";
   };
 
   return (

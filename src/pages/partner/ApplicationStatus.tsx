@@ -1,7 +1,6 @@
 // src/pages/partner/ApplicationStatus.tsx
 
 import { useEffect, useState } from "react";
-import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,16 +9,24 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 const ApplicationStatus = () => {
-  const { userDetails, signOut, user } = useAuth();
   const navigate = useNavigate();
+
+  // Mock user data since we're not using authentication
+  const mockUser = { email: "partner@example.com" };
+  const mockUserDetails = { 
+    id: "mock-partner-id", 
+    full_name: "Partner User", 
+    email: "partner@example.com",
+    created_at: new Date().toISOString()
+  };
 
   // Track the raw status string returned by Supabase (e.g. "pending" or "approved")
   const [rawStatus, setRawStatus] = useState<string | null>(null);
 
-  // We’ll normalize rawStatus to one of: "pending" | "approved" | null
+  // We'll normalize rawStatus to one of: "pending" | "approved" | null
   const [validatedStatus, setValidatedStatus] = useState<"pending" | "approved" | null>(null);
 
-  // True while we’re fetching from Supabase
+  // True while we're fetching from Supabase
   const [loading, setLoading] = useState(true);
 
   // If Supabase returns an error, capture its message here
@@ -28,9 +35,14 @@ const ApplicationStatus = () => {
   // Entire Supabase response (data + error), for debugging if needed
   const [fullResponse, setFullResponse] = useState<any>(null);
 
+  const handleSignOut = async () => {
+    // Mock sign out - redirect to home page
+    window.location.href = "/";
+  };
+
   useEffect(() => {
-    // Don’t run until we know the user’s email exists
-    if (!user?.email) {
+    // Don't run until we know the user's email exists
+    if (!mockUser?.email) {
       setLoading(false);
       return;
     }
@@ -41,7 +53,7 @@ const ApplicationStatus = () => {
       setDbError(null);
 
       // Normalize the email to lowercase (Trim whitespace, just in case)
-      const normalizedEmail = user.email.trim().toLowerCase();
+      const normalizedEmail = mockUser.email.trim().toLowerCase();
 
       // Query using ILIKE, which is case‐insensitive (e.g. 'cohif70519@baxima.com' matches 'COHIF70519@BAXIMA.COM')
       const { data, error } = await supabase
@@ -69,7 +81,7 @@ const ApplicationStatus = () => {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [user?.email]);
+  }, [mockUser?.email]);
 
   // Convert rawStatus → exactly "pending" | "approved" or null
   useEffect(() => {
@@ -123,7 +135,7 @@ const ApplicationStatus = () => {
     }
     return {
       title: "Status Unknown",
-      message: "We couldn’t find a pending application for your email. Please contact support or try again.",
+      message: "We couldn't find a pending application for your email. Please contact support or try again.",
       action: null,
     };
   };
@@ -152,7 +164,7 @@ const ApplicationStatus = () => {
             <Button className="w-full" onClick={() => window.location.reload()}>
               Try Again
             </Button>
-            <Button variant="outline" className="w-full" onClick={signOut}>
+            <Button variant="outline" className="w-full" onClick={handleSignOut}>
               Sign Out
             </Button>
           </CardContent>
@@ -161,7 +173,7 @@ const ApplicationStatus = () => {
     );
   }
 
-  // Otherwise, render the status card (or “Status Unknown”)
+  // Otherwise, render the status card (or "Status Unknown")
   const status = getStatusMessage();
 
   return (
@@ -174,14 +186,14 @@ const ApplicationStatus = () => {
         <CardContent className="text-center space-y-6">
           <p className="text-gray-600">{status.message}</p>
 
-          {userDetails && (
+          {mockUserDetails && (
             <div className="bg-gray-100 p-4 rounded-lg text-left">
               <h4 className="font-medium mb-2">Application Details</h4>
               <p className="text-sm text-gray-600">
-                <strong>Name:</strong> {userDetails.full_name}
+                <strong>Name:</strong> {mockUserDetails.full_name}
               </p>
               <p className="text-sm text-gray-600">
-                <strong>Email:</strong> {userDetails.email}
+                <strong>Email:</strong> {mockUserDetails.email}
               </p>
               <p className="text-sm text-gray-600">
                 <strong>Raw DB Status:</strong> {rawStatus ?? "none found"}
@@ -191,7 +203,7 @@ const ApplicationStatus = () => {
               </p>
               <p className="text-sm text-gray-600">
                 <strong>Account Created:</strong>{" "}
-                {new Date(userDetails.created_at).toLocaleDateString()}
+                {new Date(mockUserDetails.created_at).toLocaleDateString()}
               </p>
             </div>
           )}
@@ -202,7 +214,7 @@ const ApplicationStatus = () => {
                 {status.action}
               </Button>
             )}
-            <Button variant="outline" className="w-full" onClick={signOut}>
+            <Button variant="outline" className="w-full" onClick={handleSignOut}>
               Sign Out
             </Button>
           </div>

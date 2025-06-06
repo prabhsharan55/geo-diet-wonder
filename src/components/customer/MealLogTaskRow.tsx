@@ -1,297 +1,110 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Utensils, Plus, Check, Clock, Edit, Trash2 } from 'lucide-react';
-import { MealLog } from '@/context/UserDataContext';
+import React, { useState } from "react";
+import { MealLog } from "@/context/UserDataContext";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 interface MealLogTaskRowProps {
-  mealLogs: MealLog[];
-  weekNumber: number;
-  onAddMealLog: (mealLog: Omit<MealLog, 'id'>) => void;
-  onEditMealLog: (mealLogId: string, updatedMealLog: Partial<MealLog>) => void;
-  onDeleteMealLog: (mealLogId: string) => void;
-  canEdit?: boolean;
+  mealLog: MealLog;
+  onEdit: (id: string, mealLog: Partial<MealLog>) => void;
+  onDelete: (id: string) => void;
 }
 
-const MealLogTaskRow = ({ mealLogs, weekNumber, onAddMealLog, onEditMealLog, onDeleteMealLog, canEdit = false }: MealLogTaskRowProps) => {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingMeal, setEditingMeal] = useState<MealLog | null>(null);
-  const [mealData, setMealData] = useState({
-    mealType: '',
-    description: '',
-    time: '',
-    photo: ''
-  });
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+const MealLogTaskRow = ({ 
+  mealLog, 
+  onEdit, 
+  onDelete 
+}: MealLogTaskRowProps) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState(mealLog);
 
-  const handleSubmit = () => {
-    const now = new Date();
-    const currentTime = now.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: true 
+  const handleSave = () => {
+    onEdit(mealLog.id, {
+      meal: editData.meal,
+      calories: editData.calories,
+      mealType: editData.mealType,
+      description: editData.description,
+      time: editData.time
     });
-    
-    onAddMealLog({
-      date: now.toISOString().split('T')[0],
-      mealType: mealData.mealType,
-      description: mealData.description,
-      time: mealData.time || currentTime,
-      photo: selectedImage ? URL.createObjectURL(selectedImage) : '',
-      completed: true
-    });
-    setMealData({ mealType: '', description: '', time: '', photo: '' });
-    setSelectedImage(null);
-    setIsDialogOpen(false);
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedImage(e.target.files[0]);
-    }
-  };
-
-  const todayLogs = mealLogs.filter(log => 
-    log.date === new Date().toISOString().split('T')[0]
-  );
-
-  const formatDateTime = (date: string, time: string) => {
-    const dateObj = new Date(date);
-    const formattedDate = dateObj.toLocaleDateString();
-    return `${formattedDate} at ${time}`;
-  };
-
-  const handleEdit = (meal: MealLog) => {
-    setEditingMeal(meal);
-    setMealData({
-      mealType: meal.mealType,
-      description: meal.description,
-      time: meal.time,
-      photo: meal.photo || ''
-    });
-    setIsEditDialogOpen(true);
-  };
-
-  const handleEditSubmit = () => {
-    if (editingMeal) {
-      onEditMealLog(editingMeal.id, {
-        mealType: mealData.mealType,
-        description: mealData.description,
-        time: mealData.time,
-        photo: selectedImage ? URL.createObjectURL(selectedImage) : mealData.photo
-      });
-      setIsEditDialogOpen(false);
-      setEditingMeal(null);
-      setMealData({ mealType: '', description: '', time: '', photo: '' });
-      setSelectedImage(null);
-    }
-  };
-
-  const handleDelete = (mealId: string) => {
-    onDeleteMealLog(mealId);
+    setIsEditing(false);
   };
 
   return (
-    <div className="space-y-3">
-      <h3 className="font-semibold text-lg flex items-center gap-2">
-        <Utensils className="h-5 w-5 text-green-500" />
-        Log Daily Meals
-        <span className="text-sm font-normal text-gray-500">
-          ({todayLogs.length} logged today)
-        </span>
-      </h3>
-      
-      <div className="flex gap-3 overflow-x-auto pb-2">
-        {/* Add new meal log - only show if canEdit */}
-        {canEdit && (
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Card className="min-w-[250px] cursor-pointer hover:shadow-md border-dashed border-2">
-                <CardContent className="p-4 flex flex-col items-center justify-center h-40">
-                  <Plus className="h-8 w-8 text-gray-400 mb-2" />
-                  <span className="text-sm text-gray-500">Add Meal</span>
-                </CardContent>
-              </Card>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Log Your Meal</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="mealType">Meal Type</Label>
-                  <Input
-                    id="mealType"
-                    value={mealData.mealType}
-                    onChange={(e) => setMealData(prev => ({ ...prev, mealType: e.target.value }))}
-                    placeholder="e.g., Breakfast, Lunch, Dinner"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="description">What did you eat?</Label>
-                  <Textarea
-                    id="description"
-                    value={mealData.description}
-                    onChange={(e) => setMealData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Describe your meal..."
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="time">Time (optional)</Label>
-                  <Input
-                    id="time"
-                    type="time"
-                    value={mealData.time}
-                    onChange={(e) => setMealData(prev => ({ ...prev, time: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="photo">Photo</Label>
-                  <Input
-                    id="photo"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                  />
-                  {selectedImage && (
-                    <div className="mt-2">
-                      <img 
-                        src={URL.createObjectURL(selectedImage)} 
-                        alt="Meal preview" 
-                        className="w-full h-32 object-cover rounded-md"
-                      />
-                    </div>
-                  )}
-                </div>
-                <Button onClick={handleSubmit} className="w-full">
-                  Log Meal
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+    <tr key={mealLog.id} className="hover:bg-gray-50">
+      <td className="px-6 py-4 whitespace-nowrap">
+        {isEditing ? (
+          <Input
+            type="text"
+            value={editData.meal}
+            onChange={(e) => setEditData({ ...editData, meal: e.target.value })}
+          />
+        ) : (
+          mealLog.meal
         )}
-
-        {/* Edit meal dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Meal</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="editMealType">Meal Type</Label>
-                <Input
-                  id="editMealType"
-                  value={mealData.mealType}
-                  onChange={(e) => setMealData(prev => ({ ...prev, mealType: e.target.value }))}
-                  placeholder="e.g., Breakfast, Lunch, Dinner"
-                />
-              </div>
-              <div>
-                <Label htmlFor="editDescription">What did you eat?</Label>
-                <Textarea
-                  id="editDescription"
-                  value={mealData.description}
-                  onChange={(e) => setMealData(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Describe your meal..."
-                />
-              </div>
-              <div>
-                <Label htmlFor="editTime">Time</Label>
-                <Input
-                  id="editTime"
-                  type="time"
-                  value={mealData.time}
-                  onChange={(e) => setMealData(prev => ({ ...prev, time: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="editPhoto">Photo</Label>
-                <Input
-                  id="editPhoto"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                />
-                {(selectedImage || mealData.photo) && (
-                  <div className="mt-2">
-                    <img 
-                      src={selectedImage ? URL.createObjectURL(selectedImage) : mealData.photo} 
-                      alt="Meal preview" 
-                      className="w-full h-32 object-cover rounded-md"
-                    />
-                  </div>
-                )}
-              </div>
-              <Button onClick={handleEditSubmit} className="w-full">
-                Update Meal
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Existing meal logs */}
-        {todayLogs.map((meal) => (
-          <Card key={meal.id} className="min-w-[250px]">
-            <CardContent className="p-4">
-              {/* Meal Photo */}
-              {meal.photo && (
-                <div className="mb-3 rounded-lg overflow-hidden">
-                  <img 
-                    src={meal.photo} 
-                    alt={meal.mealType}
-                    className="w-full h-24 object-cover"
-                  />
-                </div>
-              )}
-              
-              <div className="flex items-center gap-2 mb-2">
-                <Check className="h-4 w-4 text-green-500" />
-                <Clock className="h-3 w-3 text-gray-400" />
-                <span className="text-xs text-gray-500">
-                  {formatDateTime(meal.date, meal.time)}
-                </span>
-              </div>
-              
-              <h4 className="font-medium text-sm mb-1">{meal.mealType}</h4>
-              <p className="text-xs text-gray-600 mb-3 line-clamp-2">{meal.description}</p>
-              
-              {canEdit ? (
-                <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="flex-1"
-                    onClick={() => handleEdit(meal)}
-                  >
-                    <Edit className="h-3 w-3 mr-1" />
-                    Edit
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="flex-1 text-red-600 hover:text-red-700"
-                    onClick={() => handleDelete(meal.id)}
-                  >
-                    <Trash2 className="h-3 w-3 mr-1" />
-                    Delete
-                  </Button>
-                </div>
-              ) : (
-                <Button size="sm" variant="outline" className="w-full" disabled>
-                  Logged
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        {isEditing ? (
+          <Input
+            type="number"
+            value={editData.calories}
+            onChange={(e) => setEditData({ ...editData, calories: parseInt(e.target.value) })}
+          />
+        ) : (
+          mealLog.calories
+        )}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        {isEditing ? (
+          <Input
+            type="text"
+            value={editData.mealType || ""}
+            onChange={(e) => setEditData({ ...editData, mealType: e.target.value })}
+          />
+        ) : (
+          mealLog.mealType || "-"
+        )}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        {isEditing ? (
+          <Input
+            type="text"
+            value={editData.time || ""}
+            onChange={(e) => setEditData({ ...editData, time: e.target.value })}
+          />
+        ) : (
+          mealLog.time || "-"
+        )}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        {isEditing ? (
+          <Textarea
+            value={editData.description || ""}
+            onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+          />
+        ) : (
+          mealLog.description || "-"
+        )}
+      </td>
+      <td className="px-6 py-4 whitespace-nowrap">
+        {isEditing ? (
+          <div className="flex space-x-2">
+            <Button size="sm" onClick={handleSave}>Save</Button>
+            <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Cancel</Button>
+          </div>
+        ) : (
+          <div className="flex space-x-2">
+            <Button size="sm" onClick={() => setIsEditing(true)}>Edit</Button>
+            <Button variant="destructive" size="sm" onClick={() => onDelete(mealLog.id)}>Delete</Button>
+          </div>
+        )}
+      </td>
+    </tr>
   );
 };
 

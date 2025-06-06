@@ -7,23 +7,25 @@ import { StatCard } from "@/components/ui/stat-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PartnerLayout from "@/components/partner/PartnerLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/context/AuthContext";
 import ApplicationStatus from "./ApplicationStatus";
 import { useState, useEffect } from "react";
 
 const PartnerDashboard = () => {
-  const { userDetails, user } = useAuth();
   const [application, setApplication] = useState<any>(null);
   const [applicationLoading, setApplicationLoading] = useState(true);
   const [customerStats, setCustomerStats] = useState<any>({ total: 0, active: 0, pending: 0 });
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
 
+  // Mock user data since we're not using authentication
+  const mockUser = { email: "partner@example.com" };
+  const mockUserDetails = { id: "mock-partner-id", full_name: "Partner User", email: "partner@example.com" };
+
   useEffect(() => {
     const checkApplication = async () => {
-      if (!user?.email) return;
+      if (!mockUser?.email) return;
       
       try {
-        const userEmail = user.email.trim().toLowerCase();
+        const userEmail = mockUser.email.trim().toLowerCase();
         console.log("Dashboard checking application for:", userEmail);
         
         const result = await supabase
@@ -45,18 +47,18 @@ const PartnerDashboard = () => {
     };
 
     checkApplication();
-  }, [user?.email]);
+  }, [mockUser?.email]);
 
   useEffect(() => {
     const fetchCustomerStats = async () => {
-      if (!userDetails?.id) return;
+      if (!mockUserDetails?.id) return;
       
       try {
         const customersResult = await supabase
           .from('users')
           .select('id, role, created_at')
           .eq('role', 'customer')
-          .eq('linked_partner_id', userDetails.id);
+          .eq('linked_partner_id', mockUserDetails.id);
 
         const customers = (customersResult.data || []) as any[];
         
@@ -74,18 +76,18 @@ const PartnerDashboard = () => {
     };
 
     fetchCustomerStats();
-  }, [userDetails?.id]);
+  }, [mockUserDetails?.id]);
 
   useEffect(() => {
     const fetchRecentActivity = async () => {
-      if (!userDetails?.id) return;
+      if (!mockUserDetails?.id) return;
       
       try {
         const activityResult = await supabase
           .from('users')
           .select('id, email, full_name, created_at')
           .eq('role', 'customer')
-          .eq('linked_partner_id', userDetails.id)
+          .eq('linked_partner_id', mockUserDetails.id)
           .order('created_at', { ascending: false })
           .limit(5);
 
@@ -96,7 +98,7 @@ const PartnerDashboard = () => {
     };
 
     fetchRecentActivity();
-  }, [userDetails?.id]);
+  }, [mockUserDetails?.id]);
 
   if (applicationLoading) {
     return (
@@ -209,7 +211,7 @@ const PartnerDashboard = () => {
             <CardContent className="p-4">
               <h3 className="font-medium mb-2">Debug Info:</h3>
               <pre className="text-xs bg-gray-100 p-2 rounded">
-                Partner ID: {userDetails?.id || 'Not set'}
+                Partner ID: {mockUserDetails?.id || 'Not set'}
               </pre>
               <pre className="text-xs bg-gray-100 p-2 rounded mt-2">
                 Application Status: {application?.status || 'Not found'}
