@@ -1,3 +1,4 @@
+
 // src/pages/partner/ClientManagement.tsx
 
 import { Search, PlusCircle, Clock, FileBarChart, Users } from "lucide-react";
@@ -6,9 +7,31 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import PartnerLayout from "@/components/partner/PartnerLayout";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client"; // Ensure this client is typed with generated schema
-import { useAuth } from "@/context/AuthContext";
+
+// Mock data for clients since we're not using authentication
+const mockClients = [
+  {
+    id: "1",
+    full_name: "Sarah Johnson",
+    email: "sarah.johnson@email.com",
+    role: "customer",
+    created_at: "2024-01-15T10:00:00Z"
+  },
+  {
+    id: "2", 
+    full_name: "Michael Chen",
+    email: "michael.chen@email.com",
+    role: "customer",
+    created_at: "2024-01-20T14:30:00Z"
+  },
+  {
+    id: "3",
+    full_name: "Emily Davis",
+    email: "emily.davis@email.com", 
+    role: "customer",
+    created_at: "2024-02-01T09:15:00Z"
+  }
+];
 
 // Simplified Client interface
 interface Client {
@@ -21,52 +44,21 @@ interface Client {
 
 const ClientManagement = () => {
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
-  const { userDetails } = useAuth();
-
-  const { data, isLoading, error: queryError } = useQuery<Client[], Error>({
-    queryKey: ["partner-clients", userDetails?.id],
-    queryFn: async (): Promise<Client[]> => {
-      if (!userDetails?.id) {
-        return [];
-      }
-
-      // *** WORKAROUND for TS2589 - Attempt 2: Cast after .select() ***
-      // The error moved to .eq(), suggesting type complexity from .select() onwards.
-      // Casting the result of .select() to 'any'.
-      const queryBuilder = supabase
-        .from("users")
-        .select("id, full_name, email, role, created_at") as any; // Cast here
-
-      const { data: rows, error: supabaseError } = await queryBuilder
-        .eq("role", "customer") // Previously: error TS2589 at this line (34,25)
-        .eq("linked_partner_id", userDetails.id) // userDetails.id is known non-null
-        .order("created_at", { ascending: false });
-      // *** END WORKAROUND ***
-
-      if (supabaseError) {
-        console.error("Supabase query error:", supabaseError.message, supabaseError.details);
-        throw new Error(typeof supabaseError.message === 'string' ? supabaseError.message : 'Unknown Supabase error');
-      }
-
-      // 'rows' will be 'any[]' due to the 'as any' cast.
-      // The 'as Client[]' cast is crucial here for type safety downstream.
-      return (rows || []) as Client[];
-    },
-    enabled: !!userDetails?.id,
-    initialData: [] as Client[],
-  });
+  
+  // Use mock data instead of querying with auth
+  const clients: Client[] = mockClients;
+  const isLoading = false;
+  const queryError = null;
 
   if (queryError) {
     return (
       <PartnerLayout>
         <div className="p-4 text-red-500">
-          Error loading client data: {queryError.message}
+          Error loading client data: {queryError}
         </div>
       </PartnerLayout>
     );
   }
-
-  const clients: Client[] = data;
 
   const handleClientClick = (id: string) => {
     setSelectedClient(id === selectedClient ? null : id);
