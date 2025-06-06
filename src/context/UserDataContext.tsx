@@ -11,6 +11,41 @@ interface UserData {
     weight: number;
     calories: number;
   }>;
+  nutritionData: Array<{
+    id: string;
+    date: string;
+    protein: number;
+    carbs: number;
+    fats: number;
+  }>;
+  activityData: Array<{
+    id: string;
+    date: string;
+    steps: number;
+    minutes: number;
+  }>;
+  program: {
+    planName: string;
+    currentWeek: number;
+    totalWeeks: number;
+    videos: Array<{
+      id: string;
+      title: string;
+      watched: boolean;
+      week: number;
+    }>;
+    mealLogs: Array<{
+      id: string;
+      date: string;
+      meal: string;
+      calories: number;
+    }>;
+    weightLogs: Array<{
+      id: string;
+      date: string;
+      weight: number;
+    }>;
+  };
   appointments: Array<{
     id: string;
     title: string;
@@ -25,10 +60,44 @@ interface UserData {
   }>;
 }
 
+export interface MealLog {
+  id: string;
+  date: string;
+  meal: string;
+  calories: number;
+}
+
+export interface Video {
+  id: string;
+  title: string;
+  watched: boolean;
+  week: number;
+}
+
+export interface WeightLog {
+  id: string;
+  date: string;
+  weight: number;
+}
+
 interface UserDataContextType {
   userData: UserData;
   loading: boolean;
   approveReschedule: (appointmentId: string) => void;
+  requestReschedule: (appointmentId: string, requestedDate: string, requestedTime: string, reason: string) => void;
+  updateUserData: (data: Partial<UserData>) => Promise<void>;
+  addProgressEntry: (entry: { month: string; weight: number; calories: number }) => Promise<void>;
+  addNutritionEntry: (entry: { date: string; protein: number; carbs: number; fats: number }) => Promise<void>;
+  addActivityEntry: (entry: { date: string; steps: number; minutes: number }) => Promise<void>;
+  addAppointment: (appointment: { title: string; date: string; time: string; status: string }) => Promise<void>;
+  markVideoWatched: (videoId: string) => void;
+  addMealLog: (mealLog: Omit<MealLog, 'id'>) => void;
+  addWeightLog: (weightLog: Omit<WeightLog, 'id'>) => void;
+  editMealLog: (id: string, mealLog: Partial<MealLog>) => void;
+  deleteMealLog: (id: string) => void;
+  editWeightLog: (id: string, weightLog: Partial<WeightLog>) => void;
+  deleteWeightLog: (id: string) => void;
+  completeWeek: (week: number) => void;
 }
 
 const UserDataContext = createContext<UserDataContextType | undefined>(undefined);
@@ -50,6 +119,34 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       { month: "May", weight: 178, calories: 1900 },
       { month: "Jun", weight: 176, calories: 1850 },
     ],
+    nutritionData: [
+      { id: "1", date: "2024-01-15", protein: 150, carbs: 200, fats: 70 },
+      { id: "2", date: "2024-01-16", protein: 140, carbs: 180, fats: 65 },
+      { id: "3", date: "2024-01-17", protein: 160, carbs: 220, fats: 75 },
+    ],
+    activityData: [
+      { id: "1", date: "2024-01-15", steps: 8500, minutes: 45 },
+      { id: "2", date: "2024-01-16", steps: 9200, minutes: 60 },
+      { id: "3", date: "2024-01-17", steps: 7800, minutes: 30 },
+    ],
+    program: {
+      planName: "Weight Loss Program",
+      currentWeek: 3,
+      totalWeeks: 12,
+      videos: [
+        { id: "1", title: "Introduction to Nutrition", watched: true, week: 1 },
+        { id: "2", title: "Exercise Basics", watched: true, week: 1 },
+        { id: "3", title: "Meal Planning", watched: false, week: 2 },
+      ],
+      mealLogs: [
+        { id: "1", date: "2024-01-15", meal: "Breakfast: Oatmeal with fruits", calories: 350 },
+        { id: "2", date: "2024-01-15", meal: "Lunch: Grilled chicken salad", calories: 450 },
+      ],
+      weightLogs: [
+        { id: "1", date: "2024-01-15", weight: 180 },
+        { id: "2", date: "2024-01-08", weight: 182 },
+      ],
+    },
     appointments: [
       {
         id: "1",
@@ -84,10 +181,178 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     }));
   };
 
+  const requestReschedule = (appointmentId: string, requestedDate: string, requestedTime: string, reason: string) => {
+    setUserData(prev => ({
+      ...prev,
+      appointments: prev.appointments.map(apt => 
+        apt.id === appointmentId 
+          ? { 
+              ...apt, 
+              status: 'pending' as const,
+              rescheduleRequest: { requestedDate, requestedTime, reason }
+            }
+          : apt
+      )
+    }));
+  };
+
+  const updateUserData = async (data: Partial<UserData>) => {
+    setUserData(prev => ({ ...prev, ...data }));
+  };
+
+  const addProgressEntry = async (entry: { month: string; weight: number; calories: number }) => {
+    setUserData(prev => ({
+      ...prev,
+      progressData: [...prev.progressData, entry]
+    }));
+  };
+
+  const addNutritionEntry = async (entry: { date: string; protein: number; carbs: number; fats: number }) => {
+    const newEntry = {
+      id: Date.now().toString(),
+      ...entry
+    };
+    setUserData(prev => ({
+      ...prev,
+      nutritionData: [...prev.nutritionData, newEntry]
+    }));
+  };
+
+  const addActivityEntry = async (entry: { date: string; steps: number; minutes: number }) => {
+    const newEntry = {
+      id: Date.now().toString(),
+      ...entry
+    };
+    setUserData(prev => ({
+      ...prev,
+      activityData: [...prev.activityData, newEntry]
+    }));
+  };
+
+  const addAppointment = async (appointment: { title: string; date: string; time: string; status: string }) => {
+    const newAppointment = {
+      id: Date.now().toString(),
+      ...appointment,
+      status: appointment.status as 'booked' | 'pending' | 'rescheduled'
+    };
+    setUserData(prev => ({
+      ...prev,
+      appointments: [...prev.appointments, newAppointment]
+    }));
+  };
+
+  const markVideoWatched = (videoId: string) => {
+    setUserData(prev => ({
+      ...prev,
+      program: {
+        ...prev.program,
+        videos: prev.program.videos.map(video =>
+          video.id === videoId ? { ...video, watched: true } : video
+        )
+      }
+    }));
+  };
+
+  const addMealLog = (mealLog: Omit<MealLog, 'id'>) => {
+    const newMealLog = {
+      id: Date.now().toString(),
+      ...mealLog
+    };
+    setUserData(prev => ({
+      ...prev,
+      program: {
+        ...prev.program,
+        mealLogs: [...prev.program.mealLogs, newMealLog]
+      }
+    }));
+  };
+
+  const addWeightLog = (weightLog: Omit<WeightLog, 'id'>) => {
+    const newWeightLog = {
+      id: Date.now().toString(),
+      ...weightLog
+    };
+    setUserData(prev => ({
+      ...prev,
+      program: {
+        ...prev.program,
+        weightLogs: [...prev.program.weightLogs, newWeightLog]
+      }
+    }));
+  };
+
+  const editMealLog = (id: string, mealLog: Partial<MealLog>) => {
+    setUserData(prev => ({
+      ...prev,
+      program: {
+        ...prev.program,
+        mealLogs: prev.program.mealLogs.map(log =>
+          log.id === id ? { ...log, ...mealLog } : log
+        )
+      }
+    }));
+  };
+
+  const deleteMealLog = (id: string) => {
+    setUserData(prev => ({
+      ...prev,
+      program: {
+        ...prev.program,
+        mealLogs: prev.program.mealLogs.filter(log => log.id !== id)
+      }
+    }));
+  };
+
+  const editWeightLog = (id: string, weightLog: Partial<WeightLog>) => {
+    setUserData(prev => ({
+      ...prev,
+      program: {
+        ...prev.program,
+        weightLogs: prev.program.weightLogs.map(log =>
+          log.id === id ? { ...log, ...weightLog } : log
+        )
+      }
+    }));
+  };
+
+  const deleteWeightLog = (id: string) => {
+    setUserData(prev => ({
+      ...prev,
+      program: {
+        ...prev.program,
+        weightLogs: prev.program.weightLogs.filter(log => log.id !== id)
+      }
+    }));
+  };
+
+  const completeWeek = (week: number) => {
+    setUserData(prev => ({
+      ...prev,
+      program: {
+        ...prev.program,
+        currentWeek: Math.max(prev.program.currentWeek, week + 1)
+      }
+    }));
+  };
+
   const value: UserDataContextType = {
     userData,
     loading,
     approveReschedule,
+    requestReschedule,
+    updateUserData,
+    addProgressEntry,
+    addNutritionEntry,
+    addActivityEntry,
+    addAppointment,
+    markVideoWatched,
+    addMealLog,
+    addWeightLog,
+    editMealLog,
+    deleteMealLog,
+    editWeightLog,
+    deleteWeightLog,
+    completeWeek,
   };
 
   return (
