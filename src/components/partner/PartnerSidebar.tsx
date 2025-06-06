@@ -15,10 +15,10 @@ import {
 
 const navigation = [
   { name: "Dashboard", href: "/partner", icon: BarChart3 },
-  { name: "Client Management", href: "/partner/clients", icon: Users },
-  { name: "Access Requests", href: "/partner/requests", icon: UserPlus },
-  { name: "Plans Management", href: "/partner/plans", icon: FileText },
-  { name: "Content Management", href: "/partner/content", icon: Video },
+  { name: "Client Management", href: "/partner/client-management", icon: Users },
+  { name: "Access Requests", href: "/partner/access-requests", icon: UserPlus },
+  { name: "Plans Management", href: "/partner/plans-management", icon: FileText },
+  { name: "Content Management", href: "/partner/content-management", icon: Video },
   { name: "Meal Planning", href: "/partner/meal-planning", icon: Utensils },
   { name: "Announcements", href: "/partner/announcements", icon: Megaphone },
   { name: "Settings", href: "/partner/settings", icon: Settings },
