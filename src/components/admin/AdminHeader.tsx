@@ -8,7 +8,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/context/AuthContext";
 
 interface AdminHeaderProps {
   sidebarOpen: boolean;
@@ -16,10 +15,9 @@ interface AdminHeaderProps {
 }
 
 const AdminHeader = ({ sidebarOpen, setSidebarOpen }: AdminHeaderProps) => {
-  const { signOut, userDetails } = useAuth();
-
   const handleSignOut = async () => {
-    await signOut();
+    // Since we removed auth, just redirect to home
+    window.location.href = "/";
   };
 
   return (
@@ -50,7 +48,7 @@ const AdminHeader = ({ sidebarOpen, setSidebarOpen }: AdminHeaderProps) => {
           <DropdownMenuTrigger asChild>
             <Avatar className="cursor-pointer">
               <AvatarFallback className="bg-[#160041] text-white">
-                {userDetails?.full_name?.substring(0, 2).toUpperCase() || 'AD'}
+                AD
               </AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
