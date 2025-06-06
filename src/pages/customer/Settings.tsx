@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import CustomerLayout from "@/components/customer/CustomerLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,53 +11,25 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bell, Camera, Check, Lock, User } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useUserProfile } from "@/hooks/useUserProfile";
-import { useAuth } from "@/context/AuthContext";
+import { useUserData } from "@/context/UserDataContext";
 
 const Settings = () => {
-  const { profile, loading, updateProfile } = useUserProfile();
-  const { userDetails } = useAuth();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const { userData } = useUserData();
+  const [firstName, setFirstName] = useState("John");
+  const [lastName, setLastName] = useState("Doe");
   const [mobile, setMobile] = useState("");
   const [city, setCity] = useState("");
-  const [gender, setGender] = useState("female");
-  const [weight, setWeight] = useState("");
-  const [height, setHeight] = useState("");
+  const [gender, setGender] = useState("male");
+  const [weight, setWeight] = useState("180");
+  const [height, setHeight] = useState("175");
   const [formLoading, setFormLoading] = useState(false);
-  
-  // Set form values when profile data loads
-  useEffect(() => {
-    if (profile) {
-      const nameParts = profile.full_name.split(" ");
-      setFirstName(nameParts[0] || "");
-      setLastName(nameParts.slice(1).join(" ") || "");
-      setMobile(profile.mobile || "");
-      setCity(profile.city || "");
-      setGender(profile.gender || "female");
-      setWeight(profile.weight ? profile.weight.toString() : "");
-      setHeight(profile.height ? profile.height.toString() : "");
-    }
-  }, [profile]);
   
   const handleSaveProfile = async () => {
     setFormLoading(true);
     try {
-      const fullName = `${firstName} ${lastName}`.trim();
-      const { success, error } = await updateProfile({
-        full_name: fullName,
-        mobile,
-        city,
-        gender,
-        weight: weight ? parseFloat(weight) : null,
-        height: height ? parseFloat(height) : null
-      });
-      
-      if (success) {
-        toast.success("Profile updated successfully");
-      } else {
-        toast.error(error || "Failed to update profile");
-      }
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      toast.success("Profile updated successfully");
     } finally {
       setFormLoading(false);
     }
@@ -72,27 +44,8 @@ const Settings = () => {
   };
 
   const getUserInitials = () => {
-    if (!profile?.full_name) {
-      return userDetails?.full_name?.substring(0, 2).toUpperCase() || "U";
-    }
-    
-    return profile.full_name
-      .split(" ")
-      .map((name) => name[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
+    return `${firstName[0]}${lastName[0]}`.toUpperCase();
   };
-
-  if (loading) {
-    return (
-      <CustomerLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        </div>
-      </CustomerLayout>
-    );
-  }
 
   return (
     <CustomerLayout>
@@ -158,7 +111,7 @@ const Settings = () => {
                     <Input 
                       id="email" 
                       type="email" 
-                      value={userDetails?.email || ""}
+                      value="john.doe@example.com"
                       disabled 
                     />
                   </div>
@@ -289,9 +242,7 @@ const Settings = () => {
               <CardContent className="space-y-6">
                 <div className="flex justify-between items-center p-4 bg-green-50 border border-green-200 rounded-md">
                   <div>
-                    <p className="font-medium text-green-900">
-                      {profile?.selected_plan || "GeoDiet + CGM Complete"}
-                    </p>
+                    <p className="font-medium text-green-900">GeoDiet + CGM Complete</p>
                     <p className="text-sm text-green-700">Active until June 30, 2025</p>
                   </div>
                   <span className="bg-green-100 text-green-800 py-1 px-3 text-sm font-medium rounded-full">
@@ -305,7 +256,7 @@ const Settings = () => {
                     <div className="text-sm space-y-2">
                       <div className="flex justify-between">
                         <span className="text-gray-500">Program Type:</span>
-                        <span>{profile?.selected_plan || "7-Week CGM + Diet Plan"}</span>
+                        <span>7-Week CGM + Diet Plan</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-500">Renewal Date:</span>
