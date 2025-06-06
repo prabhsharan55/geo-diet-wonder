@@ -45,6 +45,42 @@ interface UserData {
       date: string;
       weight: number;
     }>;
+    weeks: Array<{
+      weekNumber: number;
+      tasks: {
+        videos: Array<{
+          id: string;
+          title: string;
+          watched: boolean;
+          week: number;
+          duration?: string;
+          accessType?: string;
+          dayRequired?: number;
+        }>;
+        mealLogs: Array<{
+          id: string;
+          date: string;
+          meal: string;
+          calories: number;
+          mealType?: string;
+          description?: string;
+          time?: string;
+          photo?: string;
+        }>;
+        weightLogs: Array<{
+          id: string;
+          date: string;
+          weight: number;
+          notes?: string;
+          photo?: string;
+        }>;
+      };
+      recommendedVideos: Array<{
+        id: string;
+        title: string;
+        duration: string;
+      }>;
+    }>;
   };
   appointments: Array<{
     id: string;
@@ -65,6 +101,10 @@ export interface MealLog {
   date: string;
   meal: string;
   calories: number;
+  mealType?: string;
+  description?: string;
+  time?: string;
+  photo?: string;
 }
 
 export interface Video {
@@ -72,12 +112,17 @@ export interface Video {
   title: string;
   watched: boolean;
   week: number;
+  duration?: string;
+  accessType?: string;
+  dayRequired?: number;
 }
 
 export interface WeightLog {
   id: string;
   date: string;
   weight: number;
+  notes?: string;
+  photo?: string;
 }
 
 interface UserDataContextType {
@@ -90,13 +135,13 @@ interface UserDataContextType {
   addNutritionEntry: (entry: { date: string; protein: number; carbs: number; fats: number }) => Promise<void>;
   addActivityEntry: (entry: { date: string; steps: number; minutes: number }) => Promise<void>;
   addAppointment: (appointment: { title: string; date: string; time: string; status: string }) => Promise<void>;
-  markVideoWatched: (videoId: string) => void;
-  addMealLog: (mealLog: Omit<MealLog, 'id'>) => void;
-  addWeightLog: (weightLog: Omit<WeightLog, 'id'>) => void;
-  editMealLog: (id: string, mealLog: Partial<MealLog>) => void;
-  deleteMealLog: (id: string) => void;
-  editWeightLog: (id: string, weightLog: Partial<WeightLog>) => void;
-  deleteWeightLog: (id: string) => void;
+  markVideoWatched: (weekNumber: number, videoId: string) => void;
+  addMealLog: (weekNumber: number, mealLog: Omit<MealLog, 'id'>) => void;
+  addWeightLog: (weekNumber: number, weightLog: Omit<WeightLog, 'id'>) => void;
+  editMealLog: (weekNumber: number, id: string, mealLog: Partial<MealLog>) => void;
+  deleteMealLog: (weekNumber: number, id: string) => void;
+  editWeightLog: (weekNumber: number, id: string, weightLog: Partial<WeightLog>) => void;
+  deleteWeightLog: (weekNumber: number, id: string) => void;
   completeWeek: (week: number) => void;
 }
 
@@ -145,6 +190,48 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       weightLogs: [
         { id: "1", date: "2024-01-15", weight: 180 },
         { id: "2", date: "2024-01-08", weight: 182 },
+      ],
+      weeks: [
+        {
+          weekNumber: 1,
+          tasks: {
+            videos: [
+              { id: "1", title: "Introduction to Nutrition", watched: true, week: 1, duration: "15 min", accessType: "always", dayRequired: 1 },
+              { id: "2", title: "Exercise Basics", watched: true, week: 1, duration: "12 min", accessType: "always", dayRequired: 1 },
+            ],
+            mealLogs: [
+              { id: "1", date: "2024-01-15", meal: "Breakfast: Oatmeal with fruits", calories: 350, mealType: "breakfast", description: "Healthy start", time: "08:00" },
+            ],
+            weightLogs: [
+              { id: "1", date: "2024-01-15", weight: 180, notes: "Morning weight" },
+            ],
+          },
+          recommendedVideos: [
+            { id: "r1", title: "Nutrition Basics", duration: "10 min" },
+          ],
+        },
+        {
+          weekNumber: 2,
+          tasks: {
+            videos: [
+              { id: "3", title: "Meal Planning", watched: false, week: 2, duration: "18 min", accessType: "always", dayRequired: 1 },
+            ],
+            mealLogs: [],
+            weightLogs: [],
+          },
+          recommendedVideos: [
+            { id: "r2", title: "Advanced Meal Planning", duration: "15 min" },
+          ],
+        },
+        {
+          weekNumber: 3,
+          tasks: {
+            videos: [],
+            mealLogs: [],
+            weightLogs: [],
+          },
+          recommendedVideos: [],
+        },
       ],
     },
     appointments: [
@@ -241,19 +328,29 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
     }));
   };
 
-  const markVideoWatched = (videoId: string) => {
+  const markVideoWatched = (weekNumber: number, videoId: string) => {
     setUserData(prev => ({
       ...prev,
       program: {
         ...prev.program,
-        videos: prev.program.videos.map(video =>
-          video.id === videoId ? { ...video, watched: true } : video
+        weeks: prev.program.weeks.map(week =>
+          week.weekNumber === weekNumber
+            ? {
+                ...week,
+                tasks: {
+                  ...week.tasks,
+                  videos: week.tasks.videos.map(video =>
+                    video.id === videoId ? { ...video, watched: true } : video
+                  )
+                }
+              }
+            : week
         )
       }
     }));
   };
 
-  const addMealLog = (mealLog: Omit<MealLog, 'id'>) => {
+  const addMealLog = (weekNumber: number, mealLog: Omit<MealLog, 'id'>) => {
     const newMealLog = {
       id: Date.now().toString(),
       ...mealLog
@@ -262,12 +359,22 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       ...prev,
       program: {
         ...prev.program,
-        mealLogs: [...prev.program.mealLogs, newMealLog]
+        weeks: prev.program.weeks.map(week =>
+          week.weekNumber === weekNumber
+            ? {
+                ...week,
+                tasks: {
+                  ...week.tasks,
+                  mealLogs: [...week.tasks.mealLogs, newMealLog]
+                }
+              }
+            : week
+        )
       }
     }));
   };
 
-  const addWeightLog = (weightLog: Omit<WeightLog, 'id'>) => {
+  const addWeightLog = (weekNumber: number, weightLog: Omit<WeightLog, 'id'>) => {
     const newWeightLog = {
       id: Date.now().toString(),
       ...weightLog
@@ -276,51 +383,101 @@ export const UserDataProvider = ({ children }: { children: ReactNode }) => {
       ...prev,
       program: {
         ...prev.program,
-        weightLogs: [...prev.program.weightLogs, newWeightLog]
-      }
-    }));
-  };
-
-  const editMealLog = (id: string, mealLog: Partial<MealLog>) => {
-    setUserData(prev => ({
-      ...prev,
-      program: {
-        ...prev.program,
-        mealLogs: prev.program.mealLogs.map(log =>
-          log.id === id ? { ...log, ...mealLog } : log
+        weeks: prev.program.weeks.map(week =>
+          week.weekNumber === weekNumber
+            ? {
+                ...week,
+                tasks: {
+                  ...week.tasks,
+                  weightLogs: [...week.tasks.weightLogs, newWeightLog]
+                }
+              }
+            : week
         )
       }
     }));
   };
 
-  const deleteMealLog = (id: string) => {
+  const editMealLog = (weekNumber: number, id: string, mealLog: Partial<MealLog>) => {
     setUserData(prev => ({
       ...prev,
       program: {
         ...prev.program,
-        mealLogs: prev.program.mealLogs.filter(log => log.id !== id)
-      }
-    }));
-  };
-
-  const editWeightLog = (id: string, weightLog: Partial<WeightLog>) => {
-    setUserData(prev => ({
-      ...prev,
-      program: {
-        ...prev.program,
-        weightLogs: prev.program.weightLogs.map(log =>
-          log.id === id ? { ...log, ...weightLog } : log
+        weeks: prev.program.weeks.map(week =>
+          week.weekNumber === weekNumber
+            ? {
+                ...week,
+                tasks: {
+                  ...week.tasks,
+                  mealLogs: week.tasks.mealLogs.map(log =>
+                    log.id === id ? { ...log, ...mealLog } : log
+                  )
+                }
+              }
+            : week
         )
       }
     }));
   };
 
-  const deleteWeightLog = (id: string) => {
+  const deleteMealLog = (weekNumber: number, id: string) => {
     setUserData(prev => ({
       ...prev,
       program: {
         ...prev.program,
-        weightLogs: prev.program.weightLogs.filter(log => log.id !== id)
+        weeks: prev.program.weeks.map(week =>
+          week.weekNumber === weekNumber
+            ? {
+                ...week,
+                tasks: {
+                  ...week.tasks,
+                  mealLogs: week.tasks.mealLogs.filter(log => log.id !== id)
+                }
+              }
+            : week
+        )
+      }
+    }));
+  };
+
+  const editWeightLog = (weekNumber: number, id: string, weightLog: Partial<WeightLog>) => {
+    setUserData(prev => ({
+      ...prev,
+      program: {
+        ...prev.program,
+        weeks: prev.program.weeks.map(week =>
+          week.weekNumber === weekNumber
+            ? {
+                ...week,
+                tasks: {
+                  ...week.tasks,
+                  weightLogs: week.tasks.weightLogs.map(log =>
+                    log.id === id ? { ...log, ...weightLog } : log
+                  )
+                }
+              }
+            : week
+        )
+      }
+    }));
+  };
+
+  const deleteWeightLog = (weekNumber: number, id: string) => {
+    setUserData(prev => ({
+      ...prev,
+      program: {
+        ...prev.program,
+        weeks: prev.program.weeks.map(week =>
+          week.weekNumber === weekNumber
+            ? {
+                ...week,
+                tasks: {
+                  ...week.tasks,
+                  weightLogs: week.tasks.weightLogs.filter(log => log.id !== id)
+                }
+              }
+            : week
+        )
       }
     }));
   };
